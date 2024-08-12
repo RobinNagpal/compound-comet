@@ -7,8 +7,12 @@ import "./ConfiguratorStorage.sol";
 
 contract Configurator is ConfiguratorStorage {
 
-    /** Custom events **/
+    bool public paused = false; // pause flag to deal with any compromise from market update admin
+    address public marketUpdateAdmin;  // Address of the Market Update Admin
 
+    /** Custom events **/
+    
+    event Paused(bool isPaused);
     event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
     event CometDeployed(address indexed cometProxy, address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
@@ -55,15 +59,21 @@ contract Configurator is ConfiguratorStorage {
         version = type(uint256).max;
     }
 
-    address public marketUpdateAdmin;  // Address of the Market Update Administrator
 
     modifier onlyMarketUpdateAdmin {
-        require(msg.sender == governor || msg.sender == marketUpdateAdmin, "Unauthorized: caller is not authorized");
+        if (msg.sender != governor || msg.sender != marketUpdateAdmin) {
+            revert Unauthorized();
+        }
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused, "Contract is paused");
         _;
     }
 
     function setMarketUpdateAdmin(address _newAdmin) external {
-        require(msg.sender == governor, "Unauthorized: only the governor can set the market update admin");
+        if (msg.sender != governor) revert Unauthorized();
         marketUpdateAdmin = _newAdmin;
     }
 
@@ -125,6 +135,18 @@ contract Configurator is ConfiguratorStorage {
         emit SetPauseGuardian(cometProxy, oldPauseGuardian, newPauseGuardian);
     }
 
+    function pause() external {
+        if (msg.sender != governor) revert Unauthorized();
+        paused = true;
+        emit Paused(true);
+    }
+
+    function unpause() external {
+        if (msg.sender != governor) revert Unauthorized();
+        paused = false;
+        emit Paused(false);
+    }
+
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -141,7 +163,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetExtensionDelegate(cometProxy, oldExtensionDelegate, newExtensionDelegate);
     }
 
-    function setSupplyKink(address cometProxy, uint64 newSupplyKink) external onlyMarketUpdateAdmin{
+    function setSupplyKink(address cometProxy, uint64 newSupplyKink) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldSupplyKink = configuratorParams[cometProxy].supplyKink;
@@ -149,7 +171,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetSupplyKink(cometProxy, oldSupplyKink, newSupplyKink);
     }
 
-    function setSupplyPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin{
+    function setSupplyPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldSlope = configuratorParams[cometProxy].supplyPerYearInterestRateSlopeLow;
@@ -157,7 +179,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetSupplyPerYearInterestRateSlopeLow(cometProxy, oldSlope, newSlope);
     }
 
-    function setSupplyPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin{
+    function setSupplyPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldSlope = configuratorParams[cometProxy].supplyPerYearInterestRateSlopeHigh;
@@ -165,7 +187,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetSupplyPerYearInterestRateSlopeHigh(cometProxy, oldSlope, newSlope);
     }
 
-    function setSupplyPerYearInterestRateBase(address cometProxy, uint64 newBase) external onlyMarketUpdateAdmin{
+    function setSupplyPerYearInterestRateBase(address cometProxy, uint64 newBase) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldBase = configuratorParams[cometProxy].supplyPerYearInterestRateBase;
@@ -173,7 +195,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetSupplyPerYearInterestRateBase(cometProxy, oldBase, newBase);
     }
 
-    function setBorrowKink(address cometProxy, uint64 newBorrowKink) external onlyMarketUpdateAdmin{
+    function setBorrowKink(address cometProxy, uint64 newBorrowKink) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldBorrowKink = configuratorParams[cometProxy].borrowKink;
@@ -181,7 +203,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBorrowKink(cometProxy, oldBorrowKink, newBorrowKink);
     }
 
-    function setBorrowPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin{
+    function setBorrowPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldSlope = configuratorParams[cometProxy].borrowPerYearInterestRateSlopeLow;
@@ -189,7 +211,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBorrowPerYearInterestRateSlopeLow(cometProxy, oldSlope, newSlope);
     }
 
-    function setBorrowPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin{
+    function setBorrowPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldSlope = configuratorParams[cometProxy].borrowPerYearInterestRateSlopeHigh;
@@ -197,7 +219,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBorrowPerYearInterestRateSlopeHigh(cometProxy, oldSlope, newSlope);
     }
 
-    function setBorrowPerYearInterestRateBase(address cometProxy, uint64 newBase) external onlyMarketUpdateAdmin{
+    function setBorrowPerYearInterestRateBase(address cometProxy, uint64 newBase) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldBase = configuratorParams[cometProxy].borrowPerYearInterestRateBase;
@@ -205,7 +227,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBorrowPerYearInterestRateBase(cometProxy, oldBase, newBase);
     }
 
-    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external onlyMarketUpdateAdmin{
+    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldStoreFrontPriceFactor = configuratorParams[cometProxy].storeFrontPriceFactor;
@@ -213,7 +235,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetStoreFrontPriceFactor(cometProxy, oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
     }
 
-    function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external onlyMarketUpdateAdmin{
+    function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldBaseTrackingSupplySpeed = configuratorParams[cometProxy].baseTrackingSupplySpeed;
@@ -221,7 +243,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseTrackingSupplySpeed(cometProxy, oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
     }
 
-    function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external onlyMarketUpdateAdmin{
+    function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint64 oldBaseTrackingBorrowSpeed = configuratorParams[cometProxy].baseTrackingBorrowSpeed;
@@ -229,7 +251,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseTrackingBorrowSpeed(cometProxy, oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
     }
 
-    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external onlyMarketUpdateAdmin{
+    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint104 oldBaseMinForRewards = configuratorParams[cometProxy].baseMinForRewards;
@@ -237,7 +259,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseMinForRewards(cometProxy, oldBaseMinForRewards, newBaseMinForRewards);
     }
 
-    function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external onlyMarketUpdateAdmin{
+    function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint104 oldBaseBorrowMin = configuratorParams[cometProxy].baseBorrowMin;
@@ -245,7 +267,7 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseBorrowMin(cometProxy, oldBaseBorrowMin, newBaseBorrowMin);
     }
 
-    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external onlyMarketUpdateAdmin{
+    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
@@ -278,7 +300,7 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetPriceFeed(cometProxy, asset, oldPriceFeed, newPriceFeed);
     }
 
-    function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external onlyMarketUpdateAdmin{
+    function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(cometProxy, asset);
@@ -287,7 +309,7 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetBorrowCollateralFactor(cometProxy, asset, oldBorrowCF, newBorrowCF);
     }
 
-    function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external onlyMarketUpdateAdmin{
+    function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(cometProxy, asset);
@@ -296,7 +318,7 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetLiquidateCollateralFactor(cometProxy, asset, oldLiquidateCF, newLiquidateCF);
     }
 
-    function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external onlyMarketUpdateAdmin{
+    function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(cometProxy, asset);
@@ -305,7 +327,7 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetLiquidationFactor(cometProxy, asset, oldLiquidationFactor, newLiquidationFactor);
     }
 
-    function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external onlyMarketUpdateAdmin{
+    function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external onlyMarketUpdateAdmin whenNotPaused{
         // if (msg.sender != governor) revert Unauthorized();
 
         uint assetIndex = getAssetIndex(cometProxy, asset);

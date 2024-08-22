@@ -17,6 +17,7 @@ contract Configurator is ConfiguratorStorage {
     event CometDeployed(address indexed cometProxy, address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
     event SetFactory(address indexed cometProxy, address indexed oldFactory, address indexed newFactory);
+    event SetMarketUpdateAdmin(address indexed oldAdmin, address indexed newAdmin);
     event SetGovernor(address indexed cometProxy, address indexed oldGovernor, address indexed newGovernor);
     event SetConfiguration(address indexed cometProxy, Configuration oldConfiguration, Configuration newConfiguration);
     event SetPauseGuardian(address indexed cometProxy, address indexed oldPauseGuardian, address indexed newPauseGuardian);
@@ -61,7 +62,7 @@ contract Configurator is ConfiguratorStorage {
 
 
     modifier onlyMarketUpdateAdmin {
-        if (msg.sender != governor || msg.sender != marketUpdateAdmin) {
+        if (msg.sender != governor && msg.sender != marketUpdateAdmin) {
             revert Unauthorized();
         }
         _;
@@ -72,9 +73,12 @@ contract Configurator is ConfiguratorStorage {
         _;
     }
 
-    function setMarketUpdateAdmin(address _newAdmin) external {
+    function setMarketUpdateAdmin(address newAdmin) external {
         if (msg.sender != governor) revert Unauthorized();
-        marketUpdateAdmin = _newAdmin;
+        // require(msg.sender == governor, "Unauthorized: caller is not the governor");
+        address oldAdmin = marketUpdateAdmin;
+        marketUpdateAdmin = newAdmin;
+        emit SetMarketUpdateAdmin(oldAdmin, newAdmin);
     }
 
     /**

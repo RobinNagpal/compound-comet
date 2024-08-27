@@ -8,28 +8,28 @@ interface Deployable {
 }
 
 contract CometProxyAdmin is ProxyAdmin {
-    address public marketUpdateAdmin;
+    address public marketAdmin;
 
     /**
      * @dev Throws if called by any account other than the owner and market update admin
      */
-    modifier ownerAndMarketUpdateAdmin() {
-        require(owner() == _msgSender() || _msgSender() == marketUpdateAdmin, "Unauthorized: caller is not owner or market update admin");
+    modifier ownerOrMarketAdmin() {
+        require(owner() == _msgSender() || _msgSender() == marketAdmin, "Unauthorized: caller is not owner or market update admin");
         _;
     }
 
     function setMarketUpdateAdmin(address newAdmin) public{
         require(_msgSender() == owner(), "Unauthorized: caller is not the owner");
-        marketUpdateAdmin = newAdmin;
+        marketAdmin = newAdmin;
     }
     /**
      * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy
      *  Requirements:
      *   - This contract must be the admin of `CometProxy`
      */
-    function deployAndUpgradeTo(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy) public virtual ownerAndMarketUpdateAdmin {
+    function deployAndUpgradeTo(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy) public virtual ownerOrMarketAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
-        _customUpgrade(cometProxy, newCometImpl);
+        upgrade(cometProxy, newCometImpl);
     }
 
     /**
@@ -37,22 +37,22 @@ contract CometProxyAdmin is ProxyAdmin {
      *  Requirements:
      *   - This contract must be the admin of `CometProxy`
      */
-    function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual ownerAndMarketUpdateAdmin {
+    function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual ownerOrMarketAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
-        _customUpgradeAndCall(cometProxy, newCometImpl, data);
+        upgradeAndCall(cometProxy, newCometImpl, data);
     }
 
        /**
      * @dev Custom upgrade function that allows marketUpdateAdmin to call it
      */
-    function _customUpgrade(TransparentUpgradeableProxy proxy, address implementation) internal {
-        super.upgrade(proxy, implementation);  // Call ProxyAdmin's upgrade function
+    function upgrade(TransparentUpgradeableProxy proxy, address implementation) public virtual ownerOrMarketAdmin {
+        proxy.upgradeTo(implementation);
     }
 
     /**
      * @dev Custom upgradeAndCall function that allows marketUpdateAdmin to call it
      */
-    function _customUpgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) internal {
-        super.upgradeAndCall(proxy, implementation, data);  // Call ProxyAdmin's upgradeAndCall function
+    function upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) public payable virtual ownerOrMarketAdmin {
+        proxy.upgradeToAndCall{value: msg.value}(implementation, data);
     }
 }

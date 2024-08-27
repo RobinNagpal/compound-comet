@@ -27,6 +27,10 @@ contract SimpleTimelock {
 
     receive() external payable {}
 
+    function isAdmin(address admin) external view returns (bool) {
+        return tx.origin == admin;
+    }
+
     function acceptAdmin() external {
         return; // Note: not used, just for GovernorBravo compatability
     }

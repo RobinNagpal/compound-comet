@@ -8,9 +8,7 @@ describe("configuration market admin", function() {
       configuratorProxy,
       users: [alice],
     } = await makeConfigurator();
-
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-
     await expect(
       configuratorAsProxy.connect(alice).setMarketUpdateAdmin(alice.address)
     ).to.be.revertedWithCustomError(configuratorAsProxy, "Unauthorized");
@@ -23,7 +21,6 @@ describe("configuration market admin", function() {
       cometProxy,
       users: [alice],
     } = await makeConfigurator();
-
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const oldAdmin = await configuratorAsProxy.marketUpdateAdmin();
     const newAdmin = alice.address;
@@ -50,7 +47,6 @@ describe("configuration market admin", function() {
       cometProxy,
       users: [alice],
     } = await makeConfigurator();
-
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy.setMarketUpdateAdmin(alice.address);
     await expect(
@@ -68,7 +64,6 @@ describe("configuration market admin", function() {
       cometProxy,
       users: [alice],
     } = await makeConfigurator();
-
     const cometAsProxy = comet.attach(cometProxy.address);
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy.setMarketUpdateAdmin(alice.address);
@@ -87,7 +82,6 @@ describe("configuration market admin", function() {
         cometProxy.address
       )
     );
-
     expect(event(txn, 0)).to.be.deep.equal({
       SetSupplyKink: {
         cometProxy: cometProxy.address,
@@ -109,13 +103,12 @@ describe("configuration market admin", function() {
       cometProxy,
       users: [alice],
     } = await makeConfigurator();
-
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy.setMarketUpdateAdmin(alice.address);
     const currentMarketAdmin = await configuratorAsProxy.marketUpdateAdmin();
     expect(currentMarketAdmin).to.equal(alice.address);
-    await configuratorAsProxy.pause();
-    expect(await configuratorAsProxy.paused()).to.be.equal(true);
+    await configuratorAsProxy.pauseForMarketUpdateAdmin();
+    expect(await configuratorAsProxy.isMarkerUpdatesPaused()).to.be.equal(true);
     const newKink = 100n;
     await expect(
       configuratorAsProxy
@@ -133,21 +126,17 @@ describe("configuration market admin", function() {
       governor,
       users: [alice],
     } = await makeConfigurator();
-
     // Deploy the Timelock contract
     const TimelockFactory = (await ethers.getContractFactory(
       "SimpleTimelock"
     )) as SimpleTimelock__factory;
     const timelock = await TimelockFactory.deploy(governor.address);
     await timelock.deployed();
-
     // Transfer ownership of proxyAdmin to timelock
     await proxyAdmin.transferOwnership(timelock.address);
-
     // Set timelock as governor of Configurator
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy.transferGovernor(timelock.address);
-
     // Set Market Update Admin via Timelock
     const setMarketUpdateAdminCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address"],
@@ -159,23 +148,19 @@ describe("configuration market admin", function() {
       ["setMarketUpdateAdmin(address)"],
       [setMarketUpdateAdminCalldata]
     );
-
     const currentMarketAdmin = await configuratorAsProxy.marketUpdateAdmin();
     expect(currentMarketAdmin).to.equal(alice.address);
-
     const newKink = 100n;
     const setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "uint64"],
       [cometProxy.address, newKink]
     );
-
     await timelock.executeTransactions(
       [configuratorProxy.address],
       [0],
       ["setSupplyKink(address,uint64)"],
       [setSupplyKinkCalldata]
     );
-
     const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
       [configuratorProxy.address, cometProxy.address]
@@ -186,7 +171,6 @@ describe("configuration market admin", function() {
       ["deployAndUpgradeTo(address,address)"],
       [deployAndUpgradeToCalldata]
     );
-
     const cometAsProxy = comet.attach(cometProxy.address);
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address))
@@ -203,7 +187,6 @@ describe("configuration market admin", function() {
       cometProxy,
       users: [alice],
     } = await makeConfigurator();
-
     const cometAsProxy = comet.attach(cometProxy.address);
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy.setMarketUpdateAdmin(alice.address);
@@ -216,7 +199,6 @@ describe("configuration market admin", function() {
         .connect(alice)
         .setSupplyKink(cometProxy.address, newKink)
     );
-
     await proxyAdmin.setMarketUpdateAdmin(alice.address);
     const currentMarketAdminCP = await proxyAdmin.marketUpdateAdmin();
     expect(currentMarketAdminCP).to.equal(alice.address);
@@ -225,7 +207,6 @@ describe("configuration market admin", function() {
         .connect(alice)
         .deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)
     );
-
     expect(event(txn, 0)).to.be.deep.equal({
       SetSupplyKink: {
         cometProxy: cometProxy.address,
@@ -234,6 +215,103 @@ describe("configuration market admin", function() {
       },
     });
     expect(oldKink).to.be.not.equal(newKink);
+    expect(
+      (await configuratorAsProxy.getConfiguration(cometProxy.address))
+        .supplyKink
+    ).to.be.equal(newKink);
+    expect(await cometAsProxy.supplyKink()).to.be.equal(newKink);
+  });
+  it("check governor", async () => {
+    const signers = await ethers.getSigners();
+    const user = signers[2];
+    const {
+      configurator,
+      configuratorProxy,
+      proxyAdmin,
+      comet,
+      cometProxy,
+      governor,
+    } = await makeConfigurator({
+      governor: user,
+    });
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const oldAdmin = await configuratorAsProxy
+      .connect(governor)
+      .marketUpdateAdmin();
+    const newAdmin = user.address;
+    const txn = await wait(
+      configuratorAsProxy.connect(governor).setMarketUpdateAdmin(newAdmin)
+    );
+    await wait(
+      proxyAdmin.deployAndUpgradeTo(
+        configuratorProxy.address,
+        cometProxy.address
+      )
+    );
+    expect(event(txn, 0)).to.be.deep.equal({
+      SetMarketUpdateAdmin: {
+        oldAdmin,
+        newAdmin,
+      },
+    });
+    expect(oldAdmin).to.be.not.equal(newAdmin);
+    expect(
+      await configuratorAsProxy.connect(governor).marketUpdateAdmin()
+    ).to.be.equal(newAdmin);
+  });
+  it("set supplyKink through market update admin via timelock", async () => {
+    const {
+      configurator,
+      configuratorProxy,
+      proxyAdmin,
+      comet,
+      cometProxy,
+      governor,
+      users: [alice],
+    } = await makeConfigurator();
+
+    // Deploy the Timelock contract
+    const TimelockFactory = await ethers.getContractFactory("SimpleTimelock");
+    const timelock = await TimelockFactory.deploy(governor.address);
+    await timelock.deployed();
+
+    // Set the trustedCaller (Timelock) in the configurator
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    await configuratorAsProxy.setTimelock(timelock.address);
+
+    // Set Market Update Admin via Timelock
+    const setMarketUpdateAdminCalldata = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [alice.address]
+    );
+    await timelock.executeTransactions(
+      [configuratorProxy.address],
+      [0],
+      ["setMarketUpdateAdmin(address)"],
+      [setMarketUpdateAdminCalldata]
+    );
+
+    // Verify that alice is now the market update admin
+    const currentMarketAdmin = await configuratorAsProxy.marketUpdateAdmin();
+    expect(currentMarketAdmin).to.equal(alice.address);
+
+    // Prepare the calldata for setting the supply kink
+    const newKink = 100n;
+    const setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+      ["address", "uint64"],
+      [cometProxy.address, newKink]
+    );
+
+    // Call setSupplyKink via Timelock
+    await timelock.executeTransactions(
+      [configuratorProxy.address],
+      [0],
+      ["setSupplyKink(address,uint64)"],
+      [setSupplyKinkCalldata]
+    );
+
+    // Verify that the supply kink was updated
+    const cometAsProxy = comet.attach(cometProxy.address);
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address))
         .supplyKink

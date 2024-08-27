@@ -7,7 +7,7 @@ import "./ConfiguratorStorage.sol";
 
 contract Configurator is ConfiguratorStorage {
 
-    bool public isMarketAdminPaused = false; // pause flag to deal with any compromise from market update admin
+    bool public marketAdminPaused = false; // pause flag to deal with any compromise from market update admin
     address public marketAdmin;  // Address of the Market Update Admin
 
     /** Custom events **/
@@ -72,6 +72,7 @@ contract Configurator is ConfiguratorStorage {
 
     modifier governorOrMarketAdmin {
         require(msg.sender != governor || msg.sender != marketAdmin, "Unauthorized: caller is not governor or marketAdmin");
+        if(msg.sender = marketAdmin && marketAdminPaused) revert Unauthorized(); // Add required or If? Which is better?
         _;
     }
 
@@ -142,13 +143,13 @@ contract Configurator is ConfiguratorStorage {
 
     function pauseMarketAdmin() external {
         if (msg.sender != governor) revert Unauthorized();
-        isMarketAdminPaused = true;
+        marketAdminPaused = true;
         emit MarketUpdatesPaused(true);
     }
 
     function unpauseMarketAdmin() external {
         if (msg.sender != governor) revert Unauthorized();
-        isMarketAdminPaused = false;
+        marketAdminPaused = false;
         emit MarketUpdatesPaused(false);
     }
 

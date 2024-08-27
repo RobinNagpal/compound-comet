@@ -19,20 +19,6 @@ import "../utils/Context.sol";
  */
 abstract contract Ownable is Context {
     address private _owner;
-    address public marketUpdateAdmin;
-
-    /**
-     * @dev Throws if called by any account other than the owner and market update admin
-     */
-    modifier ownerAndMarketUpdateAdmin() {
-        require(owner() == _msgSender() || _msgSender() == marketUpdateAdmin, "Unauthorized: caller is not owner or market update admin");
-        _;
-    }
-
-    function setMarketUpdateAdmin(address newAdmin) public{
-        require(_msgSender() == owner(), "Unauthorized: caller is not the owner");
-        marketUpdateAdmin = newAdmin;
-    }
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 

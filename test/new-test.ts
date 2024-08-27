@@ -395,7 +395,8 @@ describe("configurator", function() {
       )
     );
   });
-  it("Add a test to create a proposal and execute it. This proposal should update something simple on Comet's asset", async () => {
+
+  it("Add a test to create a proposal and execute it(This proposal changes the governor of configurator and the deploys the comet through ProxyAdmin). This proposal should update something simple on Comet's asset", async () => {
     const {
       governor,
       configurator,
@@ -410,13 +411,25 @@ describe("configurator", function() {
     )) as SimpleTimelock__factory;
     const timelock = await TimelockFactory.deploy(governor.address);
     await timelock.deployed();
-    // await proxyAdmin.transferOwnership(timelock.address);
+
     const GovernorFactory = (await ethers.getContractFactory(
       "GovernorSimple"
     )) as GovernorSimple__factory;
     const governorBravo = await GovernorFactory.deploy();
     await governorBravo.deployed();
     governorBravo.initialize(timelock.address, [governor.address]);
+
+    // Setting GovernorBravo as the admin of timelock
+    timelock.setAdmin(governorBravo.address);
+
+    // Setting timelock as the admin of configurator
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    configuratorAsProxy.transferGovernor(timelock.address);
+
+    // Setting timelock as the admin of ProxyAdmin
+    proxyAdmin.transferOwnership(timelock.address);
+
+    const cometAsProxy = comet.attach(cometProxy.address);
 
     let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
@@ -427,17 +440,22 @@ describe("configurator", function() {
       [configuratorProxy.address, cometProxy.address]
     );
 
-    const proposal = await governorBravo.propose(
-      [configuratorProxy.address, proxyAdmin.address],
-      [0, 0],
-      ["setGovernor(address,address)", "deployAndUpgradeTo(address,address)"],
-      [setGovernorCalldata, deployAndUpgradeToCalldata],
-      "Proposal to update Comet's governor"
+    const proposeTx = await wait(
+      governorBravo.propose(
+        [configuratorProxy.address, proxyAdmin.address],
+        [0, 0],
+        ["setGovernor(address,address)", "deployAndUpgradeTo(address,address)"],
+        [setGovernorCalldata, deployAndUpgradeToCalldata],
+        "Proposal to update Comet's governor"
+      )
     );
 
-    governorBravo.queue(proposal);
+    const proposalId = proposeTx.receipt.events[0].args.id.toNumber();
 
-    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
+    const queueTx = await wait(governorBravo.queue(proposalId));
+
+    const executeTx = await wait(governorBravo.execute(proposalId));
+
+    expect(await cometAsProxy.governor()).to.be.equal(alice.address);
   });
 });

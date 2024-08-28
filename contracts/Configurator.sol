@@ -72,7 +72,10 @@ contract Configurator is ConfiguratorStorage {
 
     modifier governorOrMarketAdmin {
         require(msg.sender == governor || msg.sender == marketAdmin, "Unauthorized: caller is not governor or marketAdmin");
-        if(msg.sender == marketAdmin && marketAdminPaused) revert Unauthorized(); // Add required or If? Which is better?
+        // If the sender is the marketAdmin, check that the marketAdmin is not paused
+        if (msg.sender == marketAdmin) {
+            require(!marketAdminPaused, "Market admin is paused");
+        }
         _;
     }
 

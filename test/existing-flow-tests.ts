@@ -101,22 +101,26 @@ function expectAssetConfigsToMatch(
 
 describe("configurator", function() {
   it("Ensure - timelock's admin is set as Governor - Add two(access and not access) test for it.", async () => {
+    const signers = await ethers.getSigners();
+    const gov = signers[0];
+    const TimelockFactory = (await ethers.getContractFactory(
+      "SimpleTimelock"
+    )) as SimpleTimelock__factory;
+    const timelock = await TimelockFactory.deploy(gov.address);
+    await timelock.deployed();
+
     const {
       governor,
       configurator,
       configuratorProxy,
       proxyAdmin,
       cometProxy,
+      configuratorAsProxy,
       users: [alice],
-    } = await makeConfigurator();
-    const TimelockFactory = (await ethers.getContractFactory(
-      "SimpleTimelock"
-    )) as SimpleTimelock__factory;
-    const timelock = await TimelockFactory.deploy(governor.address);
-    await timelock.deployed();
+    } = await makeConfigurator({ governor: gov, timelock: timelock });
 
-    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
+    // const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    // await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
@@ -124,12 +128,14 @@ describe("configurator", function() {
     );
 
     // This works fine as governor is set as timelock's admin
-    await timelock.executeTransactions(
-      [configuratorProxy.address],
-      [0],
-      ["setPauseGuardian(address,address)"],
-      [setPauseGuardianCalldata]
-    );
+    await timelock
+      .connect(governor)
+      .executeTransactions(
+        [configuratorProxy.address],
+        [0],
+        ["setPauseGuardian(address,address)"],
+        [setPauseGuardianCalldata]
+      );
 
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address))
@@ -147,7 +153,7 @@ describe("configurator", function() {
     ).to.be.revertedWithCustomError(timelock, "Unauthorized");
   });
 
-  it("Ensure - Configurator's governor is set as timelock - Add two(access and not access) test for it", async () => {
+  it("Ensure - Configurator's governor is set as timelock - Test for access", async () => {
     const {
       governor,
       configurator,
@@ -311,7 +317,7 @@ describe("configurator", function() {
     ).to.be.revertedWith("failed to call");
   });
 
-  it("Ensure - Comet's Proxy's admin is set as CometProxyAdmin - Add two(access and not access) test for it.", async () => {
+  it("Ensure - Comet's Proxy's admin is set as CometProxyAdmin - Test for access.", async () => {
     const {
       configurator,
       configuratorProxy,
@@ -388,14 +394,15 @@ describe("configurator", function() {
     const txn = await wait(
       configuratorAsProxy.setGovernor(cometProxy.address, newGovernor)
     );
-    await wait(
+    await expect(
       proxyAdmin.deployAndUpgradeTo(
         configuratorProxy.address,
         cometProxy.address
       )
-    );
+    ).to.be.reverted;
   });
-  it("Add a test to create a proposal and execute it. This proposal should update something simple on Comet's asset", async () => {
+
+  it("Add a test to create a proposal and execute it(This proposal changes the governor of configurator and the deploys the comet through ProxyAdmin). This proposal should update something simple on Comet's asset", async () => {
     const {
       governor,
       configurator,
@@ -410,13 +417,25 @@ describe("configurator", function() {
     )) as SimpleTimelock__factory;
     const timelock = await TimelockFactory.deploy(governor.address);
     await timelock.deployed();
-    // await proxyAdmin.transferOwnership(timelock.address);
+
     const GovernorFactory = (await ethers.getContractFactory(
       "GovernorSimple"
     )) as GovernorSimple__factory;
     const governorBravo = await GovernorFactory.deploy();
     await governorBravo.deployed();
     governorBravo.initialize(timelock.address, [governor.address]);
+
+    // Setting GovernorBravo as the admin of timelock
+    timelock.setAdmin(governorBravo.address);
+
+    // Setting timelock as the admin of configurator
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    configuratorAsProxy.transferGovernor(timelock.address);
+
+    // Setting timelock as the admin of ProxyAdmin
+    proxyAdmin.transferOwnership(timelock.address);
+
+    const cometAsProxy = comet.attach(cometProxy.address);
 
     let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
@@ -427,17 +446,22 @@ describe("configurator", function() {
       [configuratorProxy.address, cometProxy.address]
     );
 
-    const proposal = await governorBravo.propose(
-      [configuratorProxy.address, proxyAdmin.address],
-      [0, 0],
-      ["setGovernor(address,address)", "deployAndUpgradeTo(address,address)"],
-      [setGovernorCalldata, deployAndUpgradeToCalldata],
-      "Proposal to update Comet's governor"
+    const proposeTx = await wait(
+      governorBravo.propose(
+        [configuratorProxy.address, proxyAdmin.address],
+        [0, 0],
+        ["setGovernor(address,address)", "deployAndUpgradeTo(address,address)"],
+        [setGovernorCalldata, deployAndUpgradeToCalldata],
+        "Proposal to update Comet's governor"
+      )
     );
 
-    governorBravo.queue(proposal);
+    const proposalId = proposeTx.receipt.events[0].args.id.toNumber();
 
-    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
+    const queueTx = await wait(governorBravo.queue(proposalId));
+
+    const executeTx = await wait(governorBravo.execute(proposalId));
+
+    expect(await cometAsProxy.governor()).to.be.equal(alice.address);
   });
 });

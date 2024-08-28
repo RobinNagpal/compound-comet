@@ -22,9 +22,6 @@ import {
   TransparentUpgradeableProxy__factory,
   CometProxyAdmin__factory,
 } from "../build/types";
-import { AssetInfoStructOutput } from "../build/types/CometHarnessInterface";
-import { ConfigurationStructOutput } from "../build/types/Configurator";
-import { BigNumber } from "ethers";
 
 type ConfiguratorAssetConfig = {
   asset: string;
@@ -35,70 +32,6 @@ type ConfiguratorAssetConfig = {
   liquidationFactor: Numeric;
   supplyCap: Numeric;
 };
-
-function convertToEventAssetConfig(assetConfig: ConfiguratorAssetConfig) {
-  return [
-    assetConfig.asset,
-    assetConfig.priceFeed,
-    assetConfig.decimals,
-    assetConfig.borrowCollateralFactor,
-    assetConfig.liquidateCollateralFactor,
-    assetConfig.liquidationFactor,
-    assetConfig.supplyCap,
-  ];
-}
-
-function convertToEventConfiguration(configuration: ConfigurationStructOutput) {
-  return [
-    configuration.governor,
-    configuration.pauseGuardian,
-    configuration.baseToken,
-    configuration.baseTokenPriceFeed,
-    configuration.extensionDelegate,
-    configuration.supplyKink.toBigInt(),
-    configuration.supplyPerYearInterestRateSlopeLow.toBigInt(),
-    configuration.supplyPerYearInterestRateSlopeHigh.toBigInt(),
-    configuration.supplyPerYearInterestRateBase.toBigInt(),
-    configuration.borrowKink.toBigInt(),
-    configuration.borrowPerYearInterestRateSlopeLow.toBigInt(),
-    configuration.borrowPerYearInterestRateSlopeHigh.toBigInt(),
-    configuration.borrowPerYearInterestRateBase.toBigInt(),
-    configuration.storeFrontPriceFactor.toBigInt(),
-    configuration.trackingIndexScale.toBigInt(),
-    configuration.baseTrackingSupplySpeed.toBigInt(),
-    configuration.baseTrackingBorrowSpeed.toBigInt(),
-    configuration.baseMinForRewards.toBigInt(),
-    configuration.baseBorrowMin.toBigInt(),
-    configuration.targetReserves.toBigInt(),
-    [], // leave asset configs empty for simplicity
-  ];
-}
-
-// Checks that the Configurator asset config matches the Comet asset info
-function expectAssetConfigsToMatch(
-  configuratorAssetConfigs: ConfiguratorAssetConfig,
-  cometAssetInfo: AssetInfoStructOutput
-) {
-  expect(configuratorAssetConfigs.asset).to.be.equal(cometAssetInfo.asset);
-  expect(configuratorAssetConfigs.priceFeed).to.be.equal(
-    cometAssetInfo.priceFeed
-  );
-  expect(exp(1, configuratorAssetConfigs.decimals)).to.be.equal(
-    cometAssetInfo.scale
-  );
-  expect(configuratorAssetConfigs.borrowCollateralFactor).to.be.equal(
-    cometAssetInfo.borrowCollateralFactor
-  );
-  expect(configuratorAssetConfigs.liquidateCollateralFactor).to.be.equal(
-    cometAssetInfo.liquidateCollateralFactor
-  );
-  expect(configuratorAssetConfigs.liquidationFactor).to.be.equal(
-    cometAssetInfo.liquidationFactor
-  );
-  expect(configuratorAssetConfigs.supplyCap).to.be.equal(
-    cometAssetInfo.supplyCap
-  );
-}
 
 describe("configurator", function() {
   it("Ensure - timelock's admin is set as Governor - Add two(access and not access) test for it.", async () => {
@@ -116,6 +49,12 @@ describe("configurator", function() {
       params: [timelockAddress.address],
     });
 
+    // Fund the impersonated account
+    await gov.sendTransaction({
+      to: timelock.address,
+      value: ethers.utils.parseEther("1.0"), // Sending 1 Ether to cover gas fees
+    });
+
     // Get the signer from the impersonated account
     const signer = await ethers.getSigner(timelockAddress.address);
 
@@ -126,10 +65,14 @@ describe("configurator", function() {
       proxyAdmin,
       cometProxy,
       users: [alice],
-    } = await makeConfigurator({ governor: signer });
+    } = await makeConfigurator({
+      governor: signer,
+    });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
+    await configuratorAsProxy
+      .connect(governor)
+      .transferGovernor(timelock.address); // set timelock as admin of Configurator
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
@@ -138,14 +81,12 @@ describe("configurator", function() {
 
     // This works fine as governor is set as timelock's admin
     await timelock
-      .connect(governor)
       .executeTransactions(
         [configuratorProxy.address],
         [0],
         ["setPauseGuardian(address,address)"],
         [setPauseGuardianCalldata]
       );
-
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address))
         .pauseGuardian

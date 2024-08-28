@@ -60,16 +60,6 @@ contract Configurator is ConfiguratorStorage {
         version = type(uint256).max;
     }
 
-  modifier onlyMarketUpdateAdminThroughTimelock {
-        require(msg.sender == marketAdmin, "Unauthorized: caller is not timelock");
-
-        // Extract the original sender from the calldata
-        (bool success, bytes memory returndata) = marketAdmin.call(abi.encodeWithSignature("isAdmin(address)", marketAdmin));
-        require(success, "Unauthorized: market admin did not initiate the call");
-
-        _;
-    }
-
     modifier governorOrMarketAdmin {
         require(msg.sender == governor || msg.sender == marketAdmin, "Unauthorized: caller is not governor or marketAdmin");
         // If the sender is the marketAdmin, check that the marketAdmin is not paused

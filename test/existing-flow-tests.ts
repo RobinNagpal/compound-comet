@@ -1,3 +1,4 @@
+import hre from "hardhat";
 import {
   annualize,
   defactor,
@@ -107,7 +108,16 @@ describe("configurator", function() {
       "SimpleTimelock"
     )) as SimpleTimelock__factory;
     const timelock = await TimelockFactory.deploy(gov.address);
-    await timelock.deployed();
+    const timelockAddress = await timelock.deployed();
+
+    // Impersonate the account
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [timelockAddress.address],
+    });
+
+    // Get the signer from the impersonated account
+    const signer = await ethers.getSigner(timelockAddress.address);
 
     const {
       governor,
@@ -115,12 +125,11 @@ describe("configurator", function() {
       configuratorProxy,
       proxyAdmin,
       cometProxy,
-      configuratorAsProxy,
       users: [alice],
-    } = await makeConfigurator({ governor: gov, timelock: timelock });
+    } = await makeConfigurator({ governor: signer });
 
-    // const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    // await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    await configuratorAsProxy.transferGovernor(timelock.address); // set timelock as admin of Configurator
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],

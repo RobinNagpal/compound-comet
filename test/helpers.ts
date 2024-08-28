@@ -32,10 +32,18 @@ import {
   CometInterface,
   NonStandardFaucetFeeToken,
   NonStandardFaucetFeeToken__factory,
-} from '../build/types';
-import { BigNumber } from 'ethers';
-import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
-import { TotalsBasicStructOutput, TotalsCollateralStructOutput } from '../build/types/CometHarness';
+  SimpleTimelock,
+  TimelockInterface__factory,
+} from "../build/types";
+import { BigNumber } from "ethers";
+import {
+  TransactionReceipt,
+  TransactionResponse,
+} from "@ethersproject/abstract-provider";
+import {
+  TotalsBasicStructOutput,
+  TotalsCollateralStructOutput,
+} from "../build/types/CometHarness";
 
 export { Comet, ethers, expect, hre };
 
@@ -87,6 +95,7 @@ export type ProtocolOpts = {
   baseBorrowMin?: Numeric;
   targetReserves?: Numeric;
   baseTokenBalance?: Numeric;
+  timelock?: SimpleTimelock;
 };
 
 export type Protocol = {
@@ -113,6 +122,7 @@ export type ConfiguratorAndProtocol = {
   proxyAdmin: CometProxyAdmin;
   cometFactory: CometFactory;
   cometProxy: TransparentUpgradeableProxy;
+  configuratorAsProxy: Configurator;
 } & Protocol;
 
 export type RewardsOpts = {
@@ -255,7 +265,10 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
   const baseBorrowMin = dfn(opts.baseBorrowMin, exp(1, assets[base].decimals));
   const targetReserves = dfn(opts.targetReserves, 0);
 
-  const FaucetFactory = (await ethers.getContractFactory('FaucetToken')) as FaucetToken__factory;
+  const FaucetFactory = (await ethers.getContractFactory(
+    "FaucetToken",
+    governor
+  )) as FaucetToken__factory;
   const tokens = {};
   for (const symbol in assets) {
     const config = assets[symbol];
@@ -272,12 +285,18 @@ export async function makeProtocol(opts: ProtocolOpts = {}): Promise<Protocol> {
 
   let extensionDelegate = opts.extensionDelegate;
   if (extensionDelegate === undefined) {
-    const CometExtFactory = (await ethers.getContractFactory('CometExt')) as CometExt__factory;
+    const CometExtFactory = (await ethers.getContractFactory(
+      "CometExt",
+      governor
+    )) as CometExt__factory;
     extensionDelegate = await CometExtFactory.deploy({ name32, symbol32 });
     await extensionDelegate.deployed();
   }
 
-  const CometFactory = (await ethers.getContractFactory('CometHarness')) as CometHarness__factory;
+  const CometFactory = (await ethers.getContractFactory(
+    "CometHarness",
+    governor
+  )) as CometHarness__factory;
   const comet = await CometFactory.deploy({
     governor: governor.address,
     pauseGuardian: pauseGuardian.address,
@@ -358,16 +377,22 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   } = await makeProtocol(opts);
 
   // Deploy ProxyAdmin
-  const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
+  const ProxyAdmin = (await ethers.getContractFactory(
+    "CometProxyAdmin",
+    governor
+  )) as CometProxyAdmin__factory;
   const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
   await proxyAdmin.deployed();
 
   // Deploy Comet proxy
-  const CometProxy = (await ethers.getContractFactory('TransparentUpgradeableProxy')) as TransparentUpgradeableProxy__factory;
+  const CometProxy = (await ethers.getContractFactory(
+    "TransparentUpgradeableProxy",
+    governor
+  )) as TransparentUpgradeableProxy__factory;
   const cometProxy = await CometProxy.deploy(
     comet.address,
     proxyAdmin.address,
-    (await comet.populateTransaction.initializeStorage()).data,
+    (await comet.populateTransaction.initializeStorage()).data
   );
   await cometProxy.deployed();
 
@@ -389,16 +414,22 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const targetReserves = await comet.targetReserves();
 
   // Deploy CometFactory
-  const CometFactoryFactory = (await ethers.getContractFactory('CometFactory')) as CometFactory__factory;
+  const CometFactoryFactory = (await ethers.getContractFactory(
+    "CometFactory",
+    governor
+  )) as CometFactory__factory;
   const cometFactory = await CometFactoryFactory.deploy();
   await cometFactory.deployed();
 
   // Deploy Configurator
-  const ConfiguratorFactory = (await ethers.getContractFactory('Configurator')) as Configurator__factory;
+  const ConfiguratorFactory = (await ethers.getContractFactory(
+    "Configurator",
+    governor
+  )) as Configurator__factory;
   const configurator = await ConfiguratorFactory.deploy();
   await configurator.deployed();
   const configuration = {
-    governor: governor.address,
+    governor: opts.timelock ? opts.timelock.address : governor.address,
     pauseGuardian: pauseGuardian.address,
     extensionDelegate: extensionDelegate.address,
     baseToken: tokens[base].address,
@@ -440,7 +471,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
     proxyAdmin.address,
-    initializeCalldata,
+    initializeCalldata
   );
   await configuratorProxy.deployed();
 
@@ -448,6 +479,10 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
   await configuratorAsProxy.setConfiguration(cometProxy.address, configuration);
   await configuratorAsProxy.setFactory(cometProxy.address, cometFactory.address);
+
+  if(opts.timelock){
+    await configuratorAsProxy.transferGovernor(opts.timelock.address);
+  }
 
   return {
     opts,
@@ -466,6 +501,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     tokens,
     unsupportedToken,
     priceFeeds,
+    configuratorAsProxy,
   };
 }
 

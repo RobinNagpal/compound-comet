@@ -318,11 +318,13 @@ describe("configurator", function() {
     const cometAsProxy = comet.attach(cometProxy.address);
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const ASSET_ADDRESS = (await cometAsProxy.getAssetInfo(1)).asset;
-    const ASSET_SUPPLY_CAP = ethers.BigNumber.from("500000000000000000000");
+    const NEW_ASSET_SUPPLY_CAP = ethers.BigNumber.from("500000000000000000000");
+
+    expect((await cometAsProxy.getAssetInfo(1)).supplyCap).to.be.not.equal(NEW_ASSET_SUPPLY_CAP);
 
     let updateAssetSupplyCapCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "uint128"],
-      [cometProxy.address, ASSET_ADDRESS, ASSET_SUPPLY_CAP]
+      [cometProxy.address, ASSET_ADDRESS, NEW_ASSET_SUPPLY_CAP]
     );
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
@@ -352,7 +354,7 @@ describe("configurator", function() {
 
     expect(
       (await cometAsProxy.getAssetInfoByAddress(ASSET_ADDRESS)).supplyCap
-    ).to.be.equal(ASSET_SUPPLY_CAP);
+    ).to.be.equal(NEW_ASSET_SUPPLY_CAP);
   });
 });
 async function initializeAndFundTimelock() {

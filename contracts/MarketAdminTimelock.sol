@@ -12,6 +12,7 @@ contract MarketAdminTimelock {
     event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
     event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
     event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
+    event MarketUpdateProposalExecuted(MarketUpdateProposal proposal);
 
     uint public constant GRACE_PERIOD = 14 days;
     uint public constant MINIMUM_DELAY = 0 days;
@@ -22,6 +23,25 @@ contract MarketAdminTimelock {
     uint public delay;
 
     mapping (bytes32 => bool) public queuedTransactions;
+
+    struct MarketUpdateProposal {
+        /// @notice Unique id for looking up a proposal
+        uint id;
+
+        /// @notice the ordered list of target addresses for calls to be made
+        address[] targets;
+
+        /// @notice The ordered list of values (i.e. msg.value) to be passed to the calls to be made
+        uint[] values;
+
+        /// @notice The ordered list of function signatures to be called
+        string[] signatures;
+
+        /// @notice The ordered list of calldata to be passed to each call
+        bytes[] calldatas;
+
+        string description;
+    }
 
 
     constructor(address admin_, uint delay_) public {
@@ -102,6 +122,14 @@ contract MarketAdminTimelock {
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 
         return returnData;
+    }
+
+    function executeProposal(MarketUpdateProposal memory proposal, uint eta) public payable adminOrMarketAdmin {
+        require(getBlockTimestamp() >= eta, "Timelock::executeProposal: Transaction hasn't surpassed time lock.");
+        for (uint i = 0; i < proposal.targets.length; i++) {
+            executeTransaction(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], eta);
+        }
+        emit MarketUpdateProposalExecuted(proposal);
     }
 
     function getBlockTimestamp() internal view returns (uint) {

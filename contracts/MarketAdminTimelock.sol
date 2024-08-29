@@ -7,8 +7,7 @@ import 'hardhat/console.sol';
 contract MarketAdminTimelock {
     using SafeMath for uint;
 
-    event NewAdmin(address indexed newAdmin);
-    event NewPendingAdmin(address indexed newPendingAdmin);
+    event NewAdmin(address indexed oldAdmin, address indexed newAdmin);
     event NewMarketAdmin(address indexed oldMarketAdmin, address indexed newMarketAdmin);
     event NewDelay(uint indexed newDelay);
     event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
@@ -21,7 +20,6 @@ contract MarketAdminTimelock {
 
     address public admin;
     address public marketAdmin;
-    address public pendingAdmin;
     uint public delay;
 
     mapping (bytes32 => bool) public queuedTransactions;
@@ -51,19 +49,11 @@ contract MarketAdminTimelock {
         emit NewDelay(delay);
     }
 
-    function acceptAdmin() public {
-        require(msg.sender == pendingAdmin, "Timelock::acceptAdmin: Call must come from pendingAdmin.");
-        admin = msg.sender;
-        pendingAdmin = address(0);
-        console.log("admin", admin);
-        emit NewAdmin(admin);
-    }
-
-    function setPendingAdmin(address pendingAdmin_) public {
-        require(msg.sender == address(this), "Timelock::setPendingAdmin: Call must come from Timelock.");
-        pendingAdmin = pendingAdmin_;
-
-        emit NewPendingAdmin(pendingAdmin);
+    function setAdmin(address newAdmin) public {
+        require(msg.sender == admin, "Timelock::setAdmin: Call must come from admin.");
+        address oldAdmin = admin;
+        admin = newAdmin;
+        emit NewAdmin(oldAdmin, newAdmin);
     }
 
     function setMarketAdmin(address newMarketAdmin) external {

@@ -3,46 +3,25 @@ pragma solidity ^0.8.10;
 
 import "./SafeMath.sol";
 
-contract MarketAdminTimelock {
+contract MarketUpdateTimelock {
     using SafeMath for uint;
 
     event NewAdmin(address indexed oldAdmin, address indexed newAdmin);
-    event NewMarketAdmin(address indexed oldMarketAdmin, address indexed newMarketAdmin);
+    event NewMarketUpdateProposer(address indexed oldMarketAdmin, address indexed newMarketAdmin);
     event NewDelay(uint indexed newDelay);
     event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
     event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
     event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
-    event MarketUpdateProposalExecuted(MarketUpdateProposal proposal);
 
     uint public constant GRACE_PERIOD = 14 days;
     uint public constant MINIMUM_DELAY = 0 days;
     uint public constant MAXIMUM_DELAY = 0 days;
 
     address public admin;
-    address public marketAdmin;
+    address public marketUpdateProposer;
     uint public delay;
 
     mapping (bytes32 => bool) public queuedTransactions;
-
-    struct MarketUpdateProposal {
-        /// @notice Unique id for looking up a proposal
-        uint id;
-
-        /// @notice the ordered list of target addresses for calls to be made
-        address[] targets;
-
-        /// @notice The ordered list of values (i.e. msg.value) to be passed to the calls to be made
-        uint[] values;
-
-        /// @notice The ordered list of function signatures to be called
-        string[] signatures;
-
-        /// @notice The ordered list of calldata to be passed to each call
-        bytes[] calldatas;
-
-        string description;
-    }
-
 
     constructor(address admin_, uint delay_) public {
         require(delay_ >= MINIMUM_DELAY, "Timelock::constructor: Delay must exceed minimum delay.");
@@ -54,8 +33,8 @@ contract MarketAdminTimelock {
 
     fallback() external payable { }
 
-    modifier adminOrMarketAdmin {
-        require(msg.sender == admin || msg.sender == marketAdmin, "Unauthorized: call must come from admin or marketAdmin");
+    modifier adminOrMarketUpdater {
+        require(msg.sender == admin || msg.sender == marketUpdateProposer, "Unauthorized: call must come from admin or marketAdmin");
         _;
     }
 
@@ -75,14 +54,14 @@ contract MarketAdminTimelock {
         emit NewAdmin(oldAdmin, newAdmin);
     }
 
-    function setMarketAdmin(address newMarketAdmin) external {
-        require(msg.sender == admin, "Timelock::setMarketAdmin: Call must come from admin.");
-        address oldMarketAdmin = marketAdmin;
-        marketAdmin = newMarketAdmin;
-        emit NewMarketAdmin(oldMarketAdmin, newMarketAdmin);
+    function setMarketUpdateProposer(address newMarketUpdateProposer) external {
+        require(msg.sender == admin, "Timelock::setMarketUpdateProposer: Call must come from admin.");
+        address oldMarketUpdateProposer = marketUpdateProposer;
+        marketUpdateProposer = newMarketUpdateProposer;
+        emit NewMarketUpdateProposer(oldMarketUpdateProposer, newMarketUpdateProposer);
     }
 
-    function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketAdmin returns (bytes32) {
+    function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketUpdater returns (bytes32) {
         require(eta >= getBlockTimestamp().add(delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
@@ -92,14 +71,14 @@ contract MarketAdminTimelock {
         return txHash;
     }
 
-    function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketAdmin{
+    function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketUpdater {
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
 
         emit CancelTransaction(txHash, target, value, signature, data, eta);
     }
 
-    function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable adminOrMarketAdmin returns (bytes memory) {
+    function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable adminOrMarketUpdater returns (bytes memory) {
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
         require(getBlockTimestamp() >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");
@@ -122,14 +101,6 @@ contract MarketAdminTimelock {
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 
         return returnData;
-    }
-
-    function executeProposal(MarketUpdateProposal memory proposal, uint eta) public payable adminOrMarketAdmin {
-        require(getBlockTimestamp() >= eta, "Timelock::executeProposal: Transaction hasn't surpassed time lock.");
-        for (uint i = 0; i < proposal.targets.length; i++) {
-            executeTransaction(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], eta);
-        }
-        emit MarketUpdateProposalExecuted(proposal);
     }
 
     function getBlockTimestamp() internal view returns (uint) {

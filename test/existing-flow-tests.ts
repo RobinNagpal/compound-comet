@@ -299,6 +299,7 @@ describe("configurator", function() {
     const {
       governor,
       configuratorProxy,
+      configurator,
       proxyAdmin,
       cometProxy,
       comet,
@@ -315,10 +316,13 @@ describe("configurator", function() {
     timelock.setAdmin(governorBravo.address);
 
     const cometAsProxy = comet.attach(cometProxy.address);
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const ASSET_ADDRESS = (await cometAsProxy.getAssetInfo(1)).asset;
+    const ASSET_SUPPLY_CAP = ethers.BigNumber.from("500000000000000000000");
 
-    let setGovernorCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
-      [cometProxy.address, alice.address]
+    let updateAssetSupplyCapCalldata = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "uint128"],
+      [cometProxy.address, ASSET_ADDRESS, ASSET_SUPPLY_CAP]
     );
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
       ["address", "address"],
@@ -332,10 +336,10 @@ describe("configurator", function() {
           [configuratorProxy.address, proxyAdmin.address],
           [0, 0],
           [
-            "setGovernor(address,address)",
+            "updateAssetSupplyCap(address,address,uint128)",
             "deployAndUpgradeTo(address,address)",
           ],
-          [setGovernorCalldata, deployAndUpgradeToCalldata],
+          [updateAssetSupplyCapCalldata, deployAndUpgradeToCalldata],
           "Proposal to update Comet's governor"
         )
     )) as any;
@@ -346,7 +350,9 @@ describe("configurator", function() {
 
     await wait(governorBravo.connect(governor).execute(proposalId));
 
-    expect(await cometAsProxy.governor()).to.be.equal(alice.address);
+    expect(
+      (await cometAsProxy.getAssetInfoByAddress(ASSET_ADDRESS)).supplyCap
+    ).to.be.equal(ASSET_SUPPLY_CAP);
   });
 });
 async function initializeAndFundTimelock() {

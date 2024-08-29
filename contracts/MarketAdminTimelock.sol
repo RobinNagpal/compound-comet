@@ -2,7 +2,6 @@
 pragma solidity ^0.8.10;
 
 import "./SafeMath.sol";
-import 'hardhat/console.sol';
 
 contract MarketAdminTimelock {
     using SafeMath for uint;
@@ -36,7 +35,7 @@ contract MarketAdminTimelock {
     fallback() external payable { }
 
     modifier adminOrMarketAdmin {
-        require(msg.sender == admin || msg.sender == marketAdmin, "Unauthorized: caller is not admin or marketAdmin");
+        require(msg.sender == admin || msg.sender == marketAdmin, "Unauthorized: call must come from admin or marketAdmin");
         _;
     }
 
@@ -64,7 +63,6 @@ contract MarketAdminTimelock {
     }
 
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketAdmin returns (bytes32) {
-        require(msg.sender == admin, "Timelock::queueTransaction: Call must come from admin.");
         require(eta >= getBlockTimestamp().add(delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
@@ -75,8 +73,6 @@ contract MarketAdminTimelock {
     }
 
     function cancelTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketAdmin{
-        require(msg.sender == admin, "Timelock::cancelTransaction: Call must come from admin.");
-
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = false;
 
@@ -84,8 +80,6 @@ contract MarketAdminTimelock {
     }
 
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable adminOrMarketAdmin returns (bytes memory) {
-        require(msg.sender == admin, "Timelock::executeTransaction: Call must come from admin.");
-
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
         require(getBlockTimestamp() >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");

@@ -4,6 +4,7 @@ pragma solidity 0.8.15;
 import "./CometFactory.sol";
 import "./CometConfiguration.sol";
 import "./ConfiguratorStorage.sol";
+import 'hardhat/console.sol';
 
 contract Configurator is ConfiguratorStorage {
 
@@ -61,6 +62,9 @@ contract Configurator is ConfiguratorStorage {
     }
 
     modifier governorOrMarketAdmin {
+        console.log('the govn', governor);
+        console.log('market admin', marketAdmin);
+        console.log('hitting with sender', msg.sender);
         require(msg.sender == governor || msg.sender == marketAdmin, "Unauthorized: caller is not governor or marketAdmin");
         // If the sender is the marketAdmin, check that the marketAdmin is not paused
         if (msg.sender == marketAdmin) {

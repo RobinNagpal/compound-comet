@@ -5,6 +5,7 @@ import {
   TransparentUpgradeableProxy__factory,
 } from "../build/types";
 import hre from "hardhat";
+import { network } from "hardhat";
 async function initializeAndFundGovernorTimelock() {
   const signers = await ethers.getSigners();
   const gov = signers[0];
@@ -30,6 +31,7 @@ async function initializeAndFundGovernorTimelock() {
   const signer = await ethers.getSigner(timelockAddress.address);
   return { signer, timelock };
 }
+
 async function initializeMarketAdminTimelock() {
   const {
     signer: governorSigner,
@@ -41,15 +43,11 @@ async function initializeMarketAdminTimelock() {
   const MarketAdminTimelockFactory = await ethers.getContractFactory(
     "MarketAdminTimelock"
   );
-
   const marketAdminTimelock = await MarketAdminTimelockFactory.deploy(
-    governorSigner.address,
+    governorTimelock.address,
     0
   );
   const marketAdminTimelockAddress = await marketAdminTimelock.deployed();
-  await marketAdminTimelock
-    .connect(governorSigner)
-    .setMarketAdmin(marketAdmin.address);
 
   // Impersonate the account
   await hre.network.provider.request({
@@ -67,13 +65,17 @@ async function initializeMarketAdminTimelock() {
   const marketAdminSigner = await ethers.getSigner(
     marketAdminTimelockAddress.address
   );
-  console.log("marketAdminSigner", marketAdminSigner);
+
+  await marketAdminTimelock
+    .connect(governorSigner)
+    .setMarketAdmin(marketAdminTimelock.address);
 
   return {
-    marketAdmin,
-    marketAdminTimelock,
     governorSigner,
+    governorTimelock,
+    marketAdmin,
     marketAdminSigner,
+    marketAdminTimelock,
   };
 }
 
@@ -161,7 +163,7 @@ describe.only("configuration market admin", function() {
       )
     ).to.be.reverted;
   });
-  it.only("New CometProxyAdmin's owner is governor-timelock - Test for access", async () => {
+  it("New CometProxyAdmin's owner is governor-timelock - Test for access", async () => {
     const {
       signer,
       timelock: governorTimelock,
@@ -187,24 +189,13 @@ describe.only("configuration market admin", function() {
       ["address", "address"],
       [configuratorProxy.address, cometProxy.address]
     );
-    const txn = await wait(governorTimelock.executeTransactions(
+
+    await governorTimelock.executeTransactions(
       [proxyAdmin.address],
       [0],
       ["deployAndUpgradeTo(address,address)"],
       [deployAndUpgradeToCalldata]
-    ))
-
-    console.log("txn", txn);
-    expect(event(txn, 0)).to.be.deep.equal({
-      CometDeployed: {
-        cometProxy: cometProxy.address,
-      },
-    });
-
-
-    // check CometDeployed(cometProxy, newComet); was emitted
-    // ERC1967Upgrade - Upgraded(newImplementation)  was emitted
-
+    );
   });
 
   it("New CometProxyAdmin's owner is governor-timelock - Test for non-access.", async () => {
@@ -749,71 +740,175 @@ describe.only("configuration market admin", function() {
       marketAdmin,
       marketAdminTimelock,
       governorSigner,
-      marketAdminSigner,
     } = await initializeMarketAdminTimelock();
     const {
-      configurator,
-      configuratorProxy,
-      cometProxy,
-      users: [alice],
+      users: [newAdmin],
     } = await makeConfigurator({
       governor: governorSigner,
     });
-    console.log("alice", alice.address);
-    // await marketAdminTimelock
-    //   .connect(marketAdminSigner)
-    //   .setPendingAdmin(alice.address);
-    const pendingAdmin = await marketAdminTimelock.pendingAdmin();
-    expect(pendingAdmin).to.be.equal(alice.address);
-    await marketAdminTimelock.connect(pendingAdmin).acceptAdmin();
-    expect(await marketAdminTimelock.admin()).to.be.equal(alice.address);
+    const oldAdmin = await marketAdminTimelock.admin();
+    const txn = await wait(
+      marketAdminTimelock.connect(governorSigner).setAdmin(newAdmin.address)
+    );
+
+    expect(event(txn, 0)).to.be.deep.equal({
+      NewAdmin: {
+        oldAdmin: oldAdmin,
+        newAdmin: newAdmin.address,
+      },
+    });
+
+    expect(await marketAdminTimelock.admin()).to.be.equal(newAdmin.address);
   });
   it("Ensure only governor's timelock can set a new admin for marketAdminTimelock - Test for non-access", async () => {
     const {
-      signer,
-      timelock: governorTimelock,
-    } = await initializeAndFundGovernorTimelock();
-    const {
       marketAdmin,
       marketAdminTimelock,
+      governorSigner,
     } = await initializeMarketAdminTimelock();
     const {
-      configurator,
-      configuratorProxy,
-      cometProxy,
-      users: [alice],
+      users: [nonAdmin],
     } = await makeConfigurator({
-      governor: signer,
+      governor: governorSigner,
     });
+    const oldAdmin = await marketAdminTimelock.admin();
 
     await expect(
-      marketAdminTimelock.connect(marketAdmin).setPendingAdmin(alice.address)
-    ).to.be.revertedWith(
-      "Timelock::setPendingAdmin: Call must come from Timelock."
-    );
+      marketAdminTimelock.connect(marketAdmin).setAdmin(nonAdmin.address)
+    ).to.be.revertedWith("Timelock::setAdmin: Call must come from admin.");
   });
   it("Ensure governor or market admin can call the queue, cancel or execure transaction on marketAdminTimelock - Test for access", async () => {
     const {
-      signer,
-      timelock: governorTimelock,
-    } = await initializeAndFundGovernorTimelock();
-    const {
       marketAdmin,
+      marketAdminSigner,
       marketAdminTimelock,
+      governorSigner,
     } = await initializeMarketAdminTimelock();
     const {
       configurator,
       configuratorProxy,
       cometProxy,
-      users: [alice],
     } = await makeConfigurator({
-      governor: signer,
+      governor: governorSigner,
     });
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    await configuratorAsProxy
+      .connect(governorSigner)
+      .setMarketAdmin(marketAdminTimelock.address);
 
-    await marketAdminTimelock.connect(signer).setAdmin(alice.address);
-    // const pendingAdmin = await marketAdminTimelock.pendingAdmin();
-    // expect(pendingAdmin).to.be.equal(alice.address);
-    // marketAdminTimelock.connect(pendingAdmin).acceptAdmin();
-    expect(await marketAdminTimelock.admin()).to.be.equal(alice.address);
+    const newKink = 100n;
+    let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+      ["address", "uint64"],
+      [cometProxy.address, newKink]
+    );
+
+    const eta = (await ethers.provider.getBlock("latest")).timestamp + 1000;
+
+    await marketAdminTimelock
+      .connect(governorSigner)
+      .queueTransaction(
+        configuratorProxy.address,
+        0,
+        "setSupplyKink(address,uint64)",
+        setSupplyKinkCalldata,
+        eta
+      );
+    await marketAdminTimelock
+      .connect(governorSigner)
+      .cancelTransaction(
+        configuratorProxy.address,
+        0,
+        "setSupplyKink(address,uint64)",
+        setSupplyKinkCalldata,
+        eta
+      );
+    await marketAdminTimelock
+      .connect(governorSigner)
+      .queueTransaction(
+        configuratorProxy.address,
+        0,
+        "setSupplyKink(address,uint64)",
+        setSupplyKinkCalldata,
+        eta
+      );
+    await network.provider.send("evm_increaseTime", [1000]);
+    await network.provider.send("evm_mine");
+
+    await marketAdminTimelock
+      .connect(governorSigner)
+      .executeTransaction(
+        configuratorProxy.address,
+        0,
+        "setSupplyKink(address,uint64)",
+        setSupplyKinkCalldata,
+        eta
+      );
+
+    expect(
+      (await configuratorAsProxy.getConfiguration(cometProxy.address))
+        .supplyKink
+    ).to.be.equal(newKink);
+  });
+  it("Ensure governor or market admin can call the queue, cancel or execute transaction on marketAdminTimelock - Test for non-access", async () => {
+    const {
+      marketAdmin,
+      marketAdminSigner,
+      marketAdminTimelock,
+      governorSigner,
+    } = await initializeMarketAdminTimelock();
+    const {
+      configurator,
+      configuratorProxy,
+      cometProxy,
+      users: [newPauseGuardian, nonAdmin],
+    } = await makeConfigurator({
+      governor: governorSigner,
+    });
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+
+    let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address"],
+      [cometProxy.address, newPauseGuardian.address]
+    );
+    const eta = Math.floor(Date.now() / 1000);
+    await expect(
+      marketAdminTimelock
+        .connect(nonAdmin)
+        .queueTransaction(
+          configuratorProxy.address,
+          0,
+          "setPauseGuardian(address,address)",
+          setPauseGuardianCalldata,
+          eta
+        )
+    ).to.be.revertedWith(
+      "Unauthorized: call must come from admin or marketAdmin"
+    );
+    await expect(
+      marketAdminTimelock
+        .connect(nonAdmin)
+        .cancelTransaction(
+          configuratorProxy.address,
+          0,
+          "setPauseGuardian(address,address)",
+          setPauseGuardianCalldata,
+          eta
+        )
+    ).to.be.revertedWith(
+      "Unauthorized: call must come from admin or marketAdmin"
+    );
+    await expect(
+      marketAdminTimelock
+        .connect(nonAdmin)
+        .executeTransaction(
+          configuratorProxy.address,
+          0,
+          "setPauseGuardian(address,address)",
+          setPauseGuardianCalldata,
+          eta
+        )
+    ).to.be.revertedWith(
+      "Unauthorized: call must come from admin or marketAdmin"
+    );
   });
 });

@@ -19,7 +19,7 @@ contract CometProxyAdmin is ProxyAdmin {
     }
 
     function setMarketAdmin(address newAdmin) public{
-        require(_msgSender() == owner(), "Unauthorized: caller is not the owner");
+        require(owner() == _msgSender() , "Unauthorized: caller is not the owner");
         marketAdmin = newAdmin;
     }
     /**
@@ -45,14 +45,14 @@ contract CometProxyAdmin is ProxyAdmin {
        /**
      * @dev Custom upgrade function that allows marketUpdateAdmin to call it
      */
-    function upgrade(TransparentUpgradeableProxy proxy, address implementation) public override ownerOrMarketAdmin {
+    function upgrade(TransparentUpgradeableProxy proxy, address implementation) public virtual override ownerOrMarketAdmin {
         proxy.upgradeTo(implementation);
     }
 
     /**
      * @dev Custom upgradeAndCall function that allows marketUpdateAdmin to call it
      */
-    function upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) public override payable ownerOrMarketAdmin {
+    function upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) public virtual override payable ownerOrMarketAdmin {
         proxy.upgradeToAndCall{value: msg.value}(implementation, data);
     }
 }

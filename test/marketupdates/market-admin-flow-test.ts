@@ -3,7 +3,7 @@ import {
   MarketUpdateProposer__factory,
   MarketUpdateTimelock__factory,
   SimpleTimelock__factory,
-} from '../build/types';
+} from '../../build/types';
 import hre from 'hardhat';
 import { network } from 'hardhat';
 
@@ -88,7 +88,154 @@ async function makeMarketAdmin() {
   };
 }
 
-describe('MarketUpdateProposer', function() {
+describe('MarketUpdates', function() {
+
+  describe('MarketUpdateMultisig', function() {
+    it('is the owner of MarketUpdateProposer', async () => {
+
+    });
+
+    it('can create the proposal', async () => {
+
+    });
+  });
+
+  describe('MarketUpdateProposer', function() {
+    // We are not checking market updates here. we are just checking interaction
+    // between MarketUpdateMultisig and MarketUpdateProposer or checking interactions
+    // on MarketUpdateProposer
+    it('is the initialized properly with timelock', async () => {
+
+    });
+
+    it('revert if timelock is not initialized', async () => {
+
+    });
+
+    it('MarketUpdateMultisig is set as the owner of MarketUpdateProposer', async () => {
+
+    });
+
+    it('MarketUpdateMultisig can set a new owner for MarketUpdateProposer', async () => {
+
+    });
+
+    it('only allows MarketUpdateMultisig to create proposal', async () => {
+
+    });
+
+    it('keeps track of all the proposals', async () => {
+
+    });
+
+    it('keeps track of all the proposals', async () => {
+
+    });
+
+    it('can cancel the proposal', async () => {
+      // Create a proposal
+      // Cancel the proposal
+      // Check if the proposal is cancelled
+    });
+
+    it('marks the proposal as expired after grace period', () => {
+
+    });
+
+  });
+
+  describe('MarketUpdateTimelock', function() {
+    it('is created properly with main-governor-timelock as admin', async () => {
+
+    });
+
+    it('only allows main-governor-timelock to set MarketUpdateProposer', async () => {
+
+    });
+
+    it('only MarketUpdateProposer or main-governor-timelock can queue transactions', async () => {
+
+    });
+
+    it('only MarketUpdateProposer or main-governor-timelock can execute transactions', async () => {
+
+    });
+
+    it('only MarketUpdateProposer or main-governor-timelock can cancel transactions', async () => {
+
+    });
+
+    it('only main-governor-timelock can set new admin', async () => {
+
+    });
+
+    it('MarketUpdateProposer cannot set or update MarketUpdateProposer', async () => {
+
+    });
+
+    it('MarketUpdateProposer cannot set or update main-governor-timelock', async () => {
+
+    });
+  });
+
+  describe('Configurator', function() {
+    it('is initialized properly with main-governor-timelock as admin', async () => {
+
+    });
+
+    it('only main-governor-timelock can set market admin', async () => {
+
+    });
+
+    it('market admin cannot set or update market admin', async () => {
+
+    });
+
+    it('only main-governor-timelock can set or update marketAdminPauseGuardian', async () => {
+
+    });
+
+    it('main-governor-timelock or marketAdminPauseGuardian can pause market admin', async () => {
+
+    });
+
+    it('main-governor-timelock can unpause market admin', async () => {
+
+    });
+
+    it('marketAdminPauseGuardian cannot unpause market admin', async () => {
+
+    });
+
+    it('only main-governor-timelock or market admain can call market update functions', async () => {
+    });
+
+    it('market admain cannot call NON market update functions', async () => {
+
+    });
+
+    it('market admain cannot call market update functions when marketAdminPaused', async () => {
+
+    });
+
+    it('main-governor-timelock can call market update functions when marketAdminPause', async () => {
+
+    });
+
+    it('governor cannot be updated by market admin', async () => {
+
+    });
+  });
+
+  ;
+
+
+
+
+
+
+
+
   // initialize market admin flow and cofiguration
   // governor sets marketUpdateTimelock as marketAdmin in CometProxyAdmin & Configurator via governorTimelock
   // marketUpdateMultisig creates proposal using marketUpdateProposer & sets supplykink and calls deployAndUpgradeTo via marketUpdateTimelock
@@ -214,6 +361,8 @@ describe('MarketUpdateProposer', function() {
     // checking if comet proxy has been updated with new value after proposal execution
     expect(await cometAsProxy.supplyKink()).to.be.equal(newKink);
   });
+
+
 
   it("Configurator's marketAdmin is set as marker-admin-timelock - Test for access", async () => {
     const {

@@ -3,6 +3,12 @@ pragma solidity ^0.8.10;
 
 import "./SafeMath.sol";
 
+/*
+
+Right now admin and marketUpdateProposer can cancel one another's transactions, but
+this is not a realistic scenario as admin is a main-governor-timelock which will not be
+queuing, executing, or cancelling transactions. So we are not handling or testing it.
+*/
 contract MarketUpdateTimelock {
     using SafeMath for uint;
 

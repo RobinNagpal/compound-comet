@@ -208,6 +208,8 @@ describe('MarketUpdateProposer', function() {
     expect(
       (await marketUpdateProposer.proposals(proposalId)).canceled
     ).to.be.equal(true);
+
+    // TODO: Try executing the cancelled proposal. It should fail
   });
 
   it('marks the proposal as expired after grace period', async () => {
@@ -247,5 +249,7 @@ describe('MarketUpdateProposer', function() {
     await ethers.provider.send('evm_mine', []); // Mine the next block to apply the time increase
 
     expect(await marketUpdateProposer.state(proposalId)).to.equal(3); // Proposal should be expired
+
+    // TODO: Try executing the Expired proposal. It should fail
   });
 });

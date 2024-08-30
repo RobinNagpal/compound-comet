@@ -24,8 +24,8 @@ contract MarketUpdateTimelock {
     mapping (bytes32 => bool) public queuedTransactions;
 
     constructor(address admin_, uint delay_) public {
-        require(delay_ >= MINIMUM_DELAY, "Timelock::constructor: Delay must exceed minimum delay.");
-        require(delay_ <= MAXIMUM_DELAY, "Timelock::setDelay: Delay must not exceed maximum delay.");
+        require(delay_ >= MINIMUM_DELAY, "MarketUpdateTimelock::constructor: Delay must exceed minimum delay.");
+        require(delay_ <= MAXIMUM_DELAY, "MarketUpdateTimelock::setDelay: Delay must not exceed maximum delay.");
 
         admin = admin_;
         delay = delay_;
@@ -34,35 +34,35 @@ contract MarketUpdateTimelock {
     fallback() external payable { }
 
     modifier adminOrMarketUpdater {
-        require(msg.sender == admin || msg.sender == marketUpdateProposer, "Unauthorized: call must come from admin or marketAdmin");
+        require(msg.sender == admin || msg.sender == marketUpdateProposer, "MarketUpdateTimelock::Unauthorized: call must come from admin or marketAdmin");
         _;
     }
 
     function setDelay(uint delay_) public {
-        require(msg.sender == address(this), "Timelock::setDelay: Call must come from Timelock.");
-        require(delay_ >= MINIMUM_DELAY, "Timelock::setDelay: Delay must exceed minimum delay.");
-        require(delay_ <= MAXIMUM_DELAY, "Timelock::setDelay: Delay must not exceed maximum delay.");
+        require(msg.sender == address(this), "MarketUpdateTimelock::setDelay: Call must come from Timelock.");
+        require(delay_ >= MINIMUM_DELAY, "MarketUpdateTimelock::setDelay: Delay must exceed minimum delay.");
+        require(delay_ <= MAXIMUM_DELAY, "MarketUpdateTimelock::setDelay: Delay must not exceed maximum delay.");
         delay = delay_;
 
         emit NewDelay(delay);
     }
 
     function setAdmin(address newAdmin) public {
-        require(msg.sender == admin, "Timelock::setAdmin: Call must come from admin.");
+        require(msg.sender == admin, "MarketUpdateTimelock::setAdmin: Call must come from admin.");
         address oldAdmin = admin;
         admin = newAdmin;
         emit NewAdmin(oldAdmin, newAdmin);
     }
 
     function setMarketUpdateProposer(address newMarketUpdateProposer) external {
-        require(msg.sender == admin, "Timelock::setMarketUpdateProposer: Call must come from admin.");
+        require(msg.sender == admin, "MarketUpdateTimelock::setMarketUpdateProposer: Call must come from admin.");
         address oldMarketUpdateProposer = marketUpdateProposer;
         marketUpdateProposer = newMarketUpdateProposer;
         emit NewMarketUpdateProposer(oldMarketUpdateProposer, newMarketUpdateProposer);
     }
 
     function queueTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public adminOrMarketUpdater returns (bytes32) {
-        require(eta >= getBlockTimestamp().add(delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
+        require(eta >= getBlockTimestamp().add(delay), "MarketUpdateTimelock::queueTransaction: Estimated execution block must satisfy delay.");
 
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
         queuedTransactions[txHash] = true;
@@ -80,9 +80,9 @@ contract MarketUpdateTimelock {
 
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) public payable adminOrMarketUpdater returns (bytes memory) {
         bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
-        require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
-        require(getBlockTimestamp() >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");
-        require(getBlockTimestamp() <= eta.add(GRACE_PERIOD), "Timelock::executeTransaction: Transaction is stale.");
+        require(queuedTransactions[txHash], "MarketUpdateTimelock::executeTransaction: Transaction hasn't been queued.");
+        require(getBlockTimestamp() >= eta, "MarketUpdateTimelock::executeTransaction: Transaction hasn't surpassed time lock.");
+        require(getBlockTimestamp() <= eta.add(GRACE_PERIOD), "MarketUpdateTimelock::executeTransaction: Transaction is stale.");
 
         queuedTransactions[txHash] = false;
 
@@ -96,7 +96,7 @@ contract MarketUpdateTimelock {
 
         // solium-disable-next-line security/no-call-value
         (bool success, bytes memory returnData) = target.call{value: value}(callData);
-        require(success, "Timelock::executeTransaction: Transaction execution reverted.");
+        require(success, "MarketUpdateTimelock::executeTransaction: Transaction execution reverted.");
 
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 

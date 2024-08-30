@@ -1,31 +1,31 @@
-import { ethers, event, expect, makeConfigurator, wait } from './helpers';
+import { ethers, event, expect, makeConfigurator, wait } from "./helpers";
 import {
   MarketUpdateProposer__factory,
   MarketUpdateTimelock__factory,
-  SimpleTimelock__factory
-} from '../build/types';
-import hre from 'hardhat';
-import { network } from 'hardhat';
+  SimpleTimelock__factory,
+} from "../build/types";
+import hre from "hardhat";
+import { network } from "hardhat";
 
 async function initializeAndFundGovernorTimelock() {
   const signers = await ethers.getSigners();
   const gov = signers[0];
   const TimelockFactory = (await ethers.getContractFactory(
-    'SimpleTimelock'
+    "SimpleTimelock"
   )) as SimpleTimelock__factory;
   const timelock = await TimelockFactory.deploy(gov.address);
   const timelockAddress = await timelock.deployed();
 
   // Impersonate the account
   await hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [timelockAddress.address]
+    method: "hardhat_impersonateAccount",
+    params: [timelockAddress.address],
   });
 
   // Fund the impersonated account
   await gov.sendTransaction({
     to: timelock.address,
-    value: ethers.utils.parseEther('1.0') // Sending 1 Ether to cover gas fees
+    value: ethers.utils.parseEther("1.0"), // Sending 1 Ether to cover gas fees
   });
 
   // Get the signer from the impersonated account
@@ -34,10 +34,9 @@ async function initializeAndFundGovernorTimelock() {
 }
 
 async function makeMarketAdmin() {
-
   const {
     signer: governorTimelockSigner,
-    timelock: governorTimelock
+    timelock: governorTimelock,
   } = await initializeAndFundGovernorTimelock();
 
   const signers = await ethers.getSigners();
@@ -45,23 +44,26 @@ async function makeMarketAdmin() {
   const marketUpdateMultiSig = signers[3];
 
   const markerUpdaterProposerFactory = (await ethers.getContractFactory(
-    'MarketUpdateProposer'
+    "MarketUpdateProposer"
   )) as MarketUpdateProposer__factory;
-
 
   // Fund the impersonated account
   await signers[0].sendTransaction({
     to: marketUpdateMultiSig.address,
-    value: ethers.utils.parseEther('1.0') // Sending 1 Ether to cover gas fees
+    value: ethers.utils.parseEther("1.0"), // Sending 1 Ether to cover gas fees
   });
 
   // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await markerUpdaterProposerFactory.connect(marketUpdateMultiSig).deploy();
+  const marketUpdateProposer = await markerUpdaterProposerFactory
+    .connect(marketUpdateMultiSig)
+    .deploy();
 
-  expect(await marketUpdateProposer.owner()).to.be.equal(marketUpdateMultiSig.address);
+  expect(await marketUpdateProposer.owner()).to.be.equal(
+    marketUpdateMultiSig.address
+  );
 
   const marketAdminTimelockFactory = (await ethers.getContractFactory(
-    'MarketUpdateTimelock'
+    "MarketUpdateTimelock"
   )) as MarketUpdateTimelock__factory;
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
@@ -69,7 +71,9 @@ async function makeMarketAdmin() {
     0
   );
 
-  marketUpdateProposer.connect(marketUpdateMultiSig).initialize(marketUpdateTimelock.address);
+  marketUpdateProposer
+    .connect(marketUpdateMultiSig)
+    .initialize(marketUpdateTimelock.address);
 
   await marketUpdateTimelock
     .connect(governorTimelockSigner)
@@ -80,18 +84,23 @@ async function makeMarketAdmin() {
     governorTimelock,
     marketUpdateMultiSig,
     marketUpdateTimelock,
-    marketUpdateProposer
+    marketUpdateProposer,
   };
 }
 
-describe('configuration market admin', function() {
-  it.only("New CometProxyAdmin's marketAdmin is market-admin-timelock - Test for access", async () => {
+describe("MarketUpdateProposer", function() {
+  // initialize market admin flow and cofiguration
+  // governor sets marketUpdateTimelock as marketAdmin in CometProxyAdmin & Configurator via governorTimelock
+  // marketUpdateMultisig creates proposal using marketUpdateProposer & sets supplykink and calls deployAndUpgradeTo via marketUpdateTimelock
+  // marketUpdateMultisig -> marketUpdateProposer -> marketUpdateTimelock -> configurator (setSupplyKink)
+  // marketUpdateMultisig -> marketUpdateProposer -> marketUpdateTimelock -> cometProxyAdmin (deployAndUpgradeTo)
+  it.only("can create and update market update proposal", async () => {
     const {
       governorTimelockSigner,
       governorTimelock,
       marketUpdateMultiSig,
       marketUpdateProposer,
-      marketUpdateTimelock
+      marketUpdateTimelock,
     } = await makeMarketAdmin();
 
     const {
@@ -100,99 +109,105 @@ describe('configuration market admin', function() {
       configuratorProxy,
       cometProxy,
       comet,
-      proxyAdmin
+      proxyAdmin,
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
+    // checking if configuration is initialized properly
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address)).governor
     ).to.be.equal(governor.address);
 
-
     const setMarketUpdateTimelockCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address'],
+      ["address"],
       [marketUpdateTimelock.address]
     );
     await governorTimelock.executeTransactions(
       [proxyAdmin.address, configuratorProxy.address],
       [0, 0],
-      ['setMarketAdmin(address)', 'setMarketAdmin(address)'],
+      ["setMarketAdmin(address)", "setMarketAdmin(address)"],
       [setMarketUpdateTimelockCalldata, setMarketUpdateTimelockCalldata]
     );
 
+    // checking if market admin has been set properly in CometProxyAdmin
     expect(await proxyAdmin.marketAdmin()).to.be.equal(
       marketUpdateTimelock.address
     );
+    // checking if market admin has been set properly in Configurator
     expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
       marketUpdateTimelock.address
     );
 
-
     const newKink = 100n;
     const setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint64'],
+      ["address", "uint64"],
       [cometProxy.address, newKink]
     );
     const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
+      ["address", "address"],
       [configuratorProxy.address, cometProxy.address]
     );
 
-    expect(await marketUpdateProposer.owner()).to.be.equal(marketUpdateMultiSig.address);
+    // expect(await marketUpdateProposer.owner()).to.be.equal(
+    //   marketUpdateMultiSig.address
+    // );
 
-    expect(await comet.supplyKink()).to.be.equal('800000000000000000');
+    expect(await comet.supplyKink()).to.be.equal("800000000000000000");
 
+    // marketUpdateMultisig create a proposal using marketUpdateProposer
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address, proxyAdmin.address],
         [0, 0],
         [
-          'setSupplyKink(address,uint64)',
-          'deployAndUpgradeTo(address,address)'
+          "setSupplyKink(address,uint64)",
+          "deployAndUpgradeTo(address,address)",
         ],
         [setSupplyKinkCalldata, deployAndUpgradeToCalldata],
-        'Test Proposal',
+        "Test Proposal"
       );
 
+    // marketUpdateMultisig invokes execution of proposal using marketUpdateProposer
     const txWithReceipt = await marketUpdateProposer
-      .connect(marketUpdateMultiSig).execute(1);
+      .connect(marketUpdateMultiSig)
+      .execute(1);
 
-    const tx = (await  wait(txWithReceipt)) as any;
+    const tx = (await wait(txWithReceipt)) as any;
 
-
-
-
+    //expected events to be emitted from the proposal execution
     const abi = [
-      'event CometDeployed(address indexed cometProxy, address indexed newComet)',
-      'event Upgraded(address indexed implementation)',
-      'event MarketUpdateProposalExecuted(uint id)',
-      'event SetSupplyKink(address indexed cometProxy,uint64 oldKink, uint64 newKink)',
-      'event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta)'
+      "event CometDeployed(address indexed cometProxy, address indexed newComet)",
+      "event Upgraded(address indexed implementation)",
+      "event MarketUpdateProposalExecuted(uint id)",
+      "event SetSupplyKink(address indexed cometProxy,uint64 oldKink, uint64 newKink)",
+      "event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta)",
     ];
 
     // Initialize the contract interface
     const iface = new ethers.utils.Interface(abi);
     const events = [];
 
-    tx.receipt.events.forEach(event => {
+    // parsing the transaction to get all the events
+    tx.receipt.events.forEach((event) => {
       try {
         const decodedEvent = iface.parseLog(event);
         events.push(decodedEvent);
       } catch (error) {
-        console.log('Failed to decode event:', event);
+        console.log("Failed to decode event:", event);
       }
     });
 
-    console.log('events', events);
+    console.log("events", events);
 
-    // verify the event names
+    // verify the expected event names in the parsed events
     // expect(events[0].name).to.be.equal('CometDeployed');
     // expect(events[1].name).to.be.equal('Upgraded');
 
+    // checking if configurator's configuration has been updated with new value after proposal execution
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address))
         .supplyKink
@@ -200,6 +215,7 @@ describe('configuration market admin', function() {
 
     const cometAsProxy = comet.attach(cometProxy.address);
 
+    // checking if comet proxy has been updated with new value after proposal execution
     expect(await cometAsProxy.supplyKink()).to.be.equal(newKink);
   });
 
@@ -209,29 +225,29 @@ describe('configuration market admin', function() {
       governorTimelock,
       marketUpdateMultiSig,
       marketUpdateTimelock,
-      marketUpdateProposer
+      marketUpdateProposer,
     } = await makeMarketAdmin();
     const {
       proxyAdmin,
       configurator,
       configuratorProxy,
       cometProxy,
-      comet
+      comet,
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     let setMarketAdminCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address'],
+      ["address"],
       [marketUpdateTimelock.address]
     );
 
     await governorTimelock.executeTransactions(
       [configuratorProxy.address, proxyAdmin.address],
       [0, 0],
-      ['setMarketAdmin(address)', 'setMarketAdmin(address)'],
+      ["setMarketAdmin(address)", "setMarketAdmin(address)"],
       [setMarketAdminCalldata, setMarketAdminCalldata]
     );
     expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
@@ -239,23 +255,20 @@ describe('configuration market admin', function() {
     );
     const newKink = 100n;
     let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint64'],
+      ["address", "uint64"],
       [cometProxy.address, newKink]
     );
 
     const deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
+      ["address", "address"],
       [configuratorProxy.address, cometProxy.address]
     );
     await marketUpdateProposer.connect(marketUpdateMultiSig).propose(
       [configuratorProxy.address, proxyAdmin.address],
       [0, 0], // no Ether to be sent
-      [
-        'setSupplyKink(address,uint64)',
-        'deployAndUpgradeTo(address,address)'
-      ],
+      ["setSupplyKink(address,uint64)", "deployAndUpgradeTo(address,address)"],
       [setSupplyKinkCalldata, deployAndUpgradeToCalldata],
-      'Test Proposal',
+      "Test Proposal"
     );
     const cometAsProxy = comet.attach(cometProxy.address);
     expect(
@@ -271,28 +284,28 @@ describe('configuration market admin', function() {
       marketUpdateTimelock,
       marketUpdateProposer,
       governorTimelockSigner,
-      governorTimelock
+      governorTimelock,
     } = await makeMarketAdmin();
     const {
       configurator,
       configuratorProxy,
       cometProxy,
-      users: [alice]
+      users: [alice],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     let setMarketAdminCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address'],
+      ["address"],
       [marketUpdateMultiSig.address]
     );
 
     await governorTimelock.executeTransactions(
       [configuratorProxy.address],
       [0],
-      ['setMarketAdmin(address)'],
+      ["setMarketAdmin(address)"],
       [setMarketAdminCalldata]
     );
     expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
@@ -300,7 +313,7 @@ describe('configuration market admin', function() {
     );
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
+      ["address", "address"],
       [cometProxy.address, alice.address]
     );
 
@@ -309,30 +322,30 @@ describe('configuration market admin', function() {
       marketUpdateProposer.propose(
         [configuratorProxy.address],
         [0], // no Ether to be sent
-        ['setPauseGuardian(address,address)'],
+        ["setPauseGuardian(address,address)"],
         [setPauseGuardianCalldata],
-        'Test Proposal',
+        "Test Proposal"
       )
-    ).to.be.revertedWithCustomError(marketUpdateTimelock, 'Unauthorized');
+    ).to.be.revertedWithCustomError(marketUpdateTimelock, "Unauthorized");
   });
   it("governor-timelock's admin is set as Governor - Test for access", async () => {
     const {
       governorTimelockSigner,
-      governorTimelock
+      governorTimelock,
     } = await makeMarketAdmin();
     const {
       configurator,
       configuratorProxy,
       cometProxy,
-      users: [alice]
+      users: [alice],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
+      ["address", "address"],
       [cometProxy.address, alice.address]
     );
 
@@ -340,7 +353,7 @@ describe('configuration market admin', function() {
     await governorTimelock.executeTransactions(
       [configuratorProxy.address],
       [0],
-      ['setPauseGuardian(address,address)'],
+      ["setPauseGuardian(address,address)"],
       [setPauseGuardianCalldata]
     );
 
@@ -352,18 +365,18 @@ describe('configuration market admin', function() {
   it("governor-timelock's admin is set as Governor - Test for non-access.", async () => {
     const {
       governorTimelockSigner,
-      governorTimelock
+      governorTimelock,
     } = await makeMarketAdmin();
     const {
       configuratorProxy,
       cometProxy,
-      users: [alice]
+      users: [alice],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
+      ["address", "address"],
       [cometProxy.address, alice.address]
     );
 
@@ -372,10 +385,10 @@ describe('configuration market admin', function() {
       governorTimelock.connect(alice).executeTransactions(
         [configuratorProxy.address],
         [0], // no Ether to be sent
-        ['setPauseGuardian(address,address)'],
+        ["setPauseGuardian(address,address)"],
         [setPauseGuardianCalldata]
       )
-    ).to.be.revertedWithCustomError(governorTimelock, 'Unauthorized');
+    ).to.be.revertedWithCustomError(governorTimelock, "Unauthorized");
   });
   it("MarketAdmin's timelock is main governor timelock and only it can setAdmin", async () => {
     const {
@@ -383,12 +396,12 @@ describe('configuration market admin', function() {
       governorTimelock,
 
       marketUpdateMultiSig,
-      marketUpdateTimelock
+      marketUpdateTimelock,
     } = await makeMarketAdmin();
     const {
-      users: [alice]
+      users: [alice],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     expect(await marketUpdateTimelock.admin()).to.be.equal(
@@ -400,7 +413,7 @@ describe('configuration market admin', function() {
     );
 
     const setMarketAdminCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address'],
+      ["address"],
       [alice.address]
     );
 
@@ -410,21 +423,23 @@ describe('configuration market admin', function() {
       .executeTransactions(
         [marketUpdateTimelock.address],
         [0],
-        ['setMarketAdmin(address)'],
+        ["setMarketAdmin(address)"],
         [setMarketAdminCalldata]
       );
-    expect(await marketUpdateTimelock.marketUpdateProposer()).to.be.equal(alice.address);
+    expect(await marketUpdateTimelock.marketUpdateProposer()).to.be.equal(
+      alice.address
+    );
   });
 
   it("Ensure only governor's timelock can set a new admin for marketAdminTimelock - Test for access", async () => {
     const {
       marketUpdateTimelock,
-      governorTimelockSigner
+      governorTimelockSigner,
     } = await makeMarketAdmin();
     const {
-      users: [newAdmin]
+      users: [newAdmin],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
     const oldAdmin = await marketUpdateTimelock.admin();
     const txn = await wait(
@@ -436,8 +451,8 @@ describe('configuration market admin', function() {
     expect(event(txn, 0)).to.be.deep.equal({
       NewAdmin: {
         oldAdmin: oldAdmin,
-        newAdmin: newAdmin.address
-      }
+        newAdmin: newAdmin.address,
+      },
     });
 
     expect(await marketUpdateTimelock.admin()).to.be.equal(newAdmin.address);
@@ -446,29 +461,31 @@ describe('configuration market admin', function() {
     const {
       marketUpdateMultiSig,
       marketUpdateTimelock,
-      governorTimelockSigner
+      governorTimelockSigner,
     } = await makeMarketAdmin();
     const {
-      users: [nonAdmin]
+      users: [nonAdmin],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     await expect(
-      marketUpdateTimelock.connect(marketUpdateMultiSig).setAdmin(nonAdmin.address)
-    ).to.be.revertedWith('Timelock::setAdmin: Call must come from admin.');
+      marketUpdateTimelock
+        .connect(marketUpdateMultiSig)
+        .setAdmin(nonAdmin.address)
+    ).to.be.revertedWith("Timelock::setAdmin: Call must come from admin.");
   });
-  it('Ensure governor or market admin can call the queue, cancel or execute transaction on marketAdminTimelock - Test for access', async () => {
+  it("Ensure governor or market admin can call the queue, cancel or execute transaction on marketAdminTimelock - Test for access", async () => {
     const {
       marketUpdateTimelock,
-      governorTimelockSigner
+      governorTimelockSigner,
     } = await makeMarketAdmin();
     const {
       configurator,
       configuratorProxy,
-      cometProxy
+      cometProxy,
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy
@@ -477,18 +494,18 @@ describe('configuration market admin', function() {
 
     const newKink = 100n;
     let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint64'],
+      ["address", "uint64"],
       [cometProxy.address, newKink]
     );
 
-    const eta = (await ethers.provider.getBlock('latest')).timestamp + 1000;
+    const eta = (await ethers.provider.getBlock("latest")).timestamp + 1000;
 
     await marketUpdateTimelock
       .connect(governorTimelockSigner)
       .queueTransaction(
         configuratorProxy.address,
         0,
-        'setSupplyKink(address,uint64)',
+        "setSupplyKink(address,uint64)",
         setSupplyKinkCalldata,
         eta
       );
@@ -497,7 +514,7 @@ describe('configuration market admin', function() {
       .cancelTransaction(
         configuratorProxy.address,
         0,
-        'setSupplyKink(address,uint64)',
+        "setSupplyKink(address,uint64)",
         setSupplyKinkCalldata,
         eta
       );
@@ -506,19 +523,19 @@ describe('configuration market admin', function() {
       .queueTransaction(
         configuratorProxy.address,
         0,
-        'setSupplyKink(address,uint64)',
+        "setSupplyKink(address,uint64)",
         setSupplyKinkCalldata,
         eta
       );
-    await network.provider.send('evm_increaseTime', [1000]);
-    await network.provider.send('evm_mine');
+    await network.provider.send("evm_increaseTime", [1000]);
+    await network.provider.send("evm_mine");
 
     await marketUpdateTimelock
       .connect(governorTimelockSigner)
       .executeTransaction(
         configuratorProxy.address,
         0,
-        'setSupplyKink(address,uint64)',
+        "setSupplyKink(address,uint64)",
         setSupplyKinkCalldata,
         eta
       );
@@ -528,21 +545,21 @@ describe('configuration market admin', function() {
         .supplyKink
     ).to.be.equal(newKink);
   });
-  it('Ensure governor or market admin can call the queue, cancel or execute transaction on marketAdminTimelock - Test for non-access', async () => {
+  it("Ensure governor or market admin can call the queue, cancel or execute transaction on marketAdminTimelock - Test for non-access", async () => {
     const {
       marketUpdateTimelock,
-      governorTimelockSigner
+      governorTimelockSigner,
     } = await makeMarketAdmin();
     const {
       configuratorProxy,
       cometProxy,
-      users: [newPauseGuardian, nonAdmin]
+      users: [newPauseGuardian, nonAdmin],
     } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
+      ["address", "address"],
       [cometProxy.address, newPauseGuardian.address]
     );
     const eta = Math.floor(Date.now() / 1000);
@@ -552,12 +569,12 @@ describe('configuration market admin', function() {
         .queueTransaction(
           configuratorProxy.address,
           0,
-          'setPauseGuardian(address,address)',
+          "setPauseGuardian(address,address)",
           setPauseGuardianCalldata,
           eta
         )
     ).to.be.revertedWith(
-      'Unauthorized: call must come from admin or marketAdmin'
+      "Unauthorized: call must come from admin or marketAdmin"
     );
     await expect(
       marketUpdateTimelock
@@ -565,12 +582,12 @@ describe('configuration market admin', function() {
         .cancelTransaction(
           configuratorProxy.address,
           0,
-          'setPauseGuardian(address,address)',
+          "setPauseGuardian(address,address)",
           setPauseGuardianCalldata,
           eta
         )
     ).to.be.revertedWith(
-      'Unauthorized: call must come from admin or marketAdmin'
+      "Unauthorized: call must come from admin or marketAdmin"
     );
     await expect(
       marketUpdateTimelock
@@ -578,12 +595,12 @@ describe('configuration market admin', function() {
         .executeTransaction(
           configuratorProxy.address,
           0,
-          'setPauseGuardian(address,address)',
+          "setPauseGuardian(address,address)",
           setPauseGuardianCalldata,
           eta
         )
     ).to.be.revertedWith(
-      'Unauthorized: call must come from admin or marketAdmin'
+      "Unauthorized: call must come from admin or marketAdmin"
     );
   });
 });

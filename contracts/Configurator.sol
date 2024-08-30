@@ -4,15 +4,21 @@ pragma solidity 0.8.15;
 import "./CometFactory.sol";
 import "./CometConfiguration.sol";
 import "./ConfiguratorStorage.sol";
+import 'hardhat/console.sol';
 
 contract Configurator is ConfiguratorStorage {
 
-    /** Custom events **/
+    bool public marketAdminPaused = false; // pause flag to deal with any compromise from market update admin
+    address public marketAdmin;  // Address of the Market Update Admin
 
+    /** Custom events **/
+    
+    event MarketAdminPaused(bool isMarketAdminPaused);
     event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
     event CometDeployed(address indexed cometProxy, address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
     event SetFactory(address indexed cometProxy, address indexed oldFactory, address indexed newFactory);
+    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event SetGovernor(address indexed cometProxy, address indexed oldGovernor, address indexed newGovernor);
     event SetConfiguration(address indexed cometProxy, Configuration oldConfiguration, Configuration newConfiguration);
     event SetPauseGuardian(address indexed cometProxy, address indexed oldPauseGuardian, address indexed newPauseGuardian);
@@ -53,6 +59,25 @@ contract Configurator is ConfiguratorStorage {
     constructor() {
         // Set a high version to prevent the implementation contract from being initialized
         version = type(uint256).max;
+    }
+
+    modifier governorOrMarketAdmin {
+        console.log('the govn', governor);
+        console.log('market admin', marketAdmin);
+        console.log('hitting with sender', msg.sender);
+        require(msg.sender == governor || msg.sender == marketAdmin, "Unauthorized: caller is not governor or marketAdmin");
+        // If the sender is the marketAdmin, check that the marketAdmin is not paused
+        if (msg.sender == marketAdmin) {
+            require(!marketAdminPaused, "Market admin is paused");
+        }
+        _;
+    }
+
+    function setMarketAdmin(address newMarketAdmin) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldMarketAdmin = marketAdmin;
+        marketAdmin = newMarketAdmin;
+        emit SetMarketAdmin(oldMarketAdmin, newMarketAdmin);
     }
 
     /**
@@ -113,6 +138,18 @@ contract Configurator is ConfiguratorStorage {
         emit SetPauseGuardian(cometProxy, oldPauseGuardian, newPauseGuardian);
     }
 
+    function pauseMarketAdmin() external {
+        if (msg.sender != governor) revert Unauthorized();
+        marketAdminPaused = true;
+        emit MarketAdminPaused(true);
+    }
+
+    function unpauseMarketAdmin() external {
+        if (msg.sender != governor) revert Unauthorized();
+        marketAdminPaused = false;
+        emit MarketAdminPaused(false);
+    }
+
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {
         if (msg.sender != governor) revert Unauthorized();
 
@@ -129,113 +166,85 @@ contract Configurator is ConfiguratorStorage {
         emit SetExtensionDelegate(cometProxy, oldExtensionDelegate, newExtensionDelegate);
     }
 
-    function setSupplyKink(address cometProxy, uint64 newSupplyKink) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setSupplyKink(address cometProxy, uint64 newSupplyKink) external governorOrMarketAdmin {
         uint64 oldSupplyKink = configuratorParams[cometProxy].supplyKink;
         configuratorParams[cometProxy].supplyKink = newSupplyKink;
         emit SetSupplyKink(cometProxy, oldSupplyKink, newSupplyKink);
     }
 
-    function setSupplyPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setSupplyPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external governorOrMarketAdmin {
         uint64 oldSlope = configuratorParams[cometProxy].supplyPerYearInterestRateSlopeLow;
         configuratorParams[cometProxy].supplyPerYearInterestRateSlopeLow = newSlope;
         emit SetSupplyPerYearInterestRateSlopeLow(cometProxy, oldSlope, newSlope);
     }
 
-    function setSupplyPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setSupplyPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external governorOrMarketAdmin {
         uint64 oldSlope = configuratorParams[cometProxy].supplyPerYearInterestRateSlopeHigh;
         configuratorParams[cometProxy].supplyPerYearInterestRateSlopeHigh = newSlope;
         emit SetSupplyPerYearInterestRateSlopeHigh(cometProxy, oldSlope, newSlope);
     }
 
-    function setSupplyPerYearInterestRateBase(address cometProxy, uint64 newBase) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setSupplyPerYearInterestRateBase(address cometProxy, uint64 newBase) external governorOrMarketAdmin {
         uint64 oldBase = configuratorParams[cometProxy].supplyPerYearInterestRateBase;
         configuratorParams[cometProxy].supplyPerYearInterestRateBase = newBase;
         emit SetSupplyPerYearInterestRateBase(cometProxy, oldBase, newBase);
     }
 
-    function setBorrowKink(address cometProxy, uint64 newBorrowKink) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBorrowKink(address cometProxy, uint64 newBorrowKink) external governorOrMarketAdmin {
         uint64 oldBorrowKink = configuratorParams[cometProxy].borrowKink;
         configuratorParams[cometProxy].borrowKink = newBorrowKink;
         emit SetBorrowKink(cometProxy, oldBorrowKink, newBorrowKink);
     }
 
-    function setBorrowPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBorrowPerYearInterestRateSlopeLow(address cometProxy, uint64 newSlope) external governorOrMarketAdmin {
         uint64 oldSlope = configuratorParams[cometProxy].borrowPerYearInterestRateSlopeLow;
         configuratorParams[cometProxy].borrowPerYearInterestRateSlopeLow = newSlope;
         emit SetBorrowPerYearInterestRateSlopeLow(cometProxy, oldSlope, newSlope);
     }
 
-    function setBorrowPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBorrowPerYearInterestRateSlopeHigh(address cometProxy, uint64 newSlope) external governorOrMarketAdmin {
         uint64 oldSlope = configuratorParams[cometProxy].borrowPerYearInterestRateSlopeHigh;
         configuratorParams[cometProxy].borrowPerYearInterestRateSlopeHigh = newSlope;
         emit SetBorrowPerYearInterestRateSlopeHigh(cometProxy, oldSlope, newSlope);
     }
 
-    function setBorrowPerYearInterestRateBase(address cometProxy, uint64 newBase) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBorrowPerYearInterestRateBase(address cometProxy, uint64 newBase) external governorOrMarketAdmin {
         uint64 oldBase = configuratorParams[cometProxy].borrowPerYearInterestRateBase;
         configuratorParams[cometProxy].borrowPerYearInterestRateBase = newBase;
         emit SetBorrowPerYearInterestRateBase(cometProxy, oldBase, newBase);
     }
 
-    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external governorOrMarketAdmin {
         uint64 oldStoreFrontPriceFactor = configuratorParams[cometProxy].storeFrontPriceFactor;
         configuratorParams[cometProxy].storeFrontPriceFactor = newStoreFrontPriceFactor;
         emit SetStoreFrontPriceFactor(cometProxy, oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
     }
 
-    function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBaseTrackingSupplySpeed(address cometProxy, uint64 newBaseTrackingSupplySpeed) external governorOrMarketAdmin {
         uint64 oldBaseTrackingSupplySpeed = configuratorParams[cometProxy].baseTrackingSupplySpeed;
         configuratorParams[cometProxy].baseTrackingSupplySpeed = newBaseTrackingSupplySpeed;
         emit SetBaseTrackingSupplySpeed(cometProxy, oldBaseTrackingSupplySpeed, newBaseTrackingSupplySpeed);
     }
 
-    function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBaseTrackingBorrowSpeed(address cometProxy, uint64 newBaseTrackingBorrowSpeed) external governorOrMarketAdmin {
         uint64 oldBaseTrackingBorrowSpeed = configuratorParams[cometProxy].baseTrackingBorrowSpeed;
         configuratorParams[cometProxy].baseTrackingBorrowSpeed = newBaseTrackingBorrowSpeed;
         emit SetBaseTrackingBorrowSpeed(cometProxy, oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
     }
 
-    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external governorOrMarketAdmin {
         uint104 oldBaseMinForRewards = configuratorParams[cometProxy].baseMinForRewards;
         configuratorParams[cometProxy].baseMinForRewards = newBaseMinForRewards;
         emit SetBaseMinForRewards(cometProxy, oldBaseMinForRewards, newBaseMinForRewards);
     }
 
-    function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setBaseBorrowMin(address cometProxy, uint104 newBaseBorrowMin) external governorOrMarketAdmin {
         uint104 oldBaseBorrowMin = configuratorParams[cometProxy].baseBorrowMin;
         configuratorParams[cometProxy].baseBorrowMin = newBaseBorrowMin;
         emit SetBaseBorrowMin(cometProxy, oldBaseBorrowMin, newBaseBorrowMin);
     }
 
-    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external governorOrMarketAdmin {
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
         configuratorParams[cometProxy].targetReserves = newTargetReserves;
         emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);
@@ -266,36 +275,28 @@ contract Configurator is ConfiguratorStorage {
         emit UpdateAssetPriceFeed(cometProxy, asset, oldPriceFeed, newPriceFeed);
     }
 
-    function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function updateAssetBorrowCollateralFactor(address cometProxy, address asset, uint64 newBorrowCF) external governorOrMarketAdmin {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint64 oldBorrowCF = configuratorParams[cometProxy].assetConfigs[assetIndex].borrowCollateralFactor;
         configuratorParams[cometProxy].assetConfigs[assetIndex].borrowCollateralFactor = newBorrowCF;
         emit UpdateAssetBorrowCollateralFactor(cometProxy, asset, oldBorrowCF, newBorrowCF);
     }
 
-    function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function updateAssetLiquidateCollateralFactor(address cometProxy, address asset, uint64 newLiquidateCF) external governorOrMarketAdmin {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint64 oldLiquidateCF = configuratorParams[cometProxy].assetConfigs[assetIndex].liquidateCollateralFactor;
         configuratorParams[cometProxy].assetConfigs[assetIndex].liquidateCollateralFactor = newLiquidateCF;
         emit UpdateAssetLiquidateCollateralFactor(cometProxy, asset, oldLiquidateCF, newLiquidateCF);
     }
 
-    function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function updateAssetLiquidationFactor(address cometProxy, address asset, uint64 newLiquidationFactor) external governorOrMarketAdmin {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint64 oldLiquidationFactor = configuratorParams[cometProxy].assetConfigs[assetIndex].liquidationFactor;
         configuratorParams[cometProxy].assetConfigs[assetIndex].liquidationFactor = newLiquidationFactor;
         emit UpdateAssetLiquidationFactor(cometProxy, asset, oldLiquidationFactor, newLiquidationFactor);
     }
 
-    function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external {
-        if (msg.sender != governor) revert Unauthorized();
-
+    function updateAssetSupplyCap(address cometProxy, address asset, uint128 newSupplyCap) external governorOrMarketAdmin {
         uint assetIndex = getAssetIndex(cometProxy, asset);
         uint128 oldSupplyCap = configuratorParams[cometProxy].assetConfigs[assetIndex].supplyCap;
         configuratorParams[cometProxy].assetConfigs[assetIndex].supplyCap = newSupplyCap;

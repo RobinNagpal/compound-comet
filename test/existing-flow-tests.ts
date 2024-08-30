@@ -1,52 +1,29 @@
-import hre from "hardhat";
+import hre from 'hardhat';
 import {
-  ethers,
-  event,
-  exp,
-  expect,
-  factor,
-  makeConfigurator,
-  Numeric,
-  truncateDecimals,
-  wait,
-} from "./helpers";
-import {
-  SimpleTimelock__factory,
-  GovernorSimple__factory,
-  SimpleTimelock,
-  TransparentUpgradeableProxy__factory,
   CometProxyAdmin__factory,
-} from "../build/types";
+  GovernorSimple__factory,
+  SimpleTimelock__factory,
+  TransparentUpgradeableProxy__factory
+} from '../build/types';
+import { ethers, event, expect, makeConfigurator, wait } from './helpers';
 
-type ConfiguratorAssetConfig = {
-  asset: string;
-  priceFeed: string;
-  decimals: Numeric;
-  borrowCollateralFactor: Numeric;
-  liquidateCollateralFactor: Numeric;
-  liquidationFactor: Numeric;
-  supplyCap: Numeric;
-};
-
-describe("configurator", function() {
+describe('configurator', function() {
   it("Ensure - timelock's admin is set as Governor - Add two(access and not access) test for it.", async () => {
     const { signer, timelock } = await initializeAndFundTimelock();
 
     const {
-      governor,
       configurator,
       configuratorProxy,
-      proxyAdmin,
       cometProxy,
-      users: [alice],
+      users: [alice]
     } = await makeConfigurator({
-      governor: signer,
+      governor: signer
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [cometProxy.address, alice.address]
     );
 
@@ -54,7 +31,7 @@ describe("configurator", function() {
     await timelock.executeTransactions(
       [configuratorProxy.address],
       [0],
-      ["setPauseGuardian(address,address)"],
+      ['setPauseGuardian(address,address)'],
       [setPauseGuardianCalldata]
     );
     expect(
@@ -67,27 +44,25 @@ describe("configurator", function() {
       timelock.connect(alice).executeTransactions(
         [configuratorProxy.address],
         [0], // no Ether to be sent
-        ["setPauseGuardian(address,address)"],
+        ['setPauseGuardian(address,address)'],
         [setPauseGuardianCalldata]
       )
-    ).to.be.revertedWithCustomError(timelock, "Unauthorized");
+    ).to.be.revertedWithCustomError(timelock, 'Unauthorized');
   });
 
   it("Ensure - Configurator's governor is set as timelock - Test for access", async () => {
     const { signer, timelock } = await initializeAndFundTimelock();
     const {
-      governor,
       configurator,
       configuratorProxy,
-      proxyAdmin,
       cometProxy,
-      users: [alice],
+      users: [alice]
     } = await makeConfigurator({ governor: signer });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [cometProxy.address, alice.address]
     );
 
@@ -95,7 +70,7 @@ describe("configurator", function() {
     await timelock.executeTransactions(
       [configuratorProxy.address],
       [0],
-      ["setPauseGuardian(address,address)"],
+      ['setPauseGuardian(address,address)'],
       [setPauseGuardianCalldata]
     );
 
@@ -111,16 +86,15 @@ describe("configurator", function() {
       governor,
       configurator,
       configuratorProxy,
-      proxyAdmin,
       cometProxy,
-      users: [alice],
+      users: [alice]
     } = await makeConfigurator({ governor: signer });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     await configuratorAsProxy.connect(governor).transferGovernor(alice.address); // set alice as governor of Configurator
 
     let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [cometProxy.address, alice.address]
     );
 
@@ -129,27 +103,22 @@ describe("configurator", function() {
       timelock.executeTransactions(
         [configuratorProxy.address],
         [0], // no Ether to be sent
-        ["setPauseGuardian(address,address)"],
+        ['setPauseGuardian(address,address)'],
         [setPauseGuardianCalldata]
       )
-    ).to.be.revertedWith("failed to call");
+    ).to.be.revertedWith('failed to call');
   });
 
   it("Ensure - CometProxyAdmin's owner is timelock - Test for access", async () => {
     const { signer, timelock } = await initializeAndFundTimelock();
     const {
-      governor,
-      configurator,
       configuratorProxy,
       proxyAdmin,
-      cometProxy,
-      users: [alice],
+      cometProxy
     } = await makeConfigurator({ governor: signer });
 
-    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [configuratorProxy.address, cometProxy.address]
     );
 
@@ -157,32 +126,32 @@ describe("configurator", function() {
       timelock.executeTransactions(
         [proxyAdmin.address],
         [0],
-        ["deployAndUpgradeTo(address,address)"],
+        ['deployAndUpgradeTo(address,address)'],
         [deployAndUpgradeToCalldata]
       )
     )) as any;
 
     const abi = [
-      "event CometDeployed(address indexed cometProxy, address indexed newComet)",
-      "event Upgraded(address indexed implementation)",
+      'event CometDeployed(address indexed cometProxy, address indexed newComet)',
+      'event Upgraded(address indexed implementation)'
     ];
 
     // Initialize the contract interface
     const iface = new ethers.utils.Interface(abi);
     const events = [];
 
-    txn.receipt.events.forEach((event) => {
+    txn.receipt.events.forEach(event => {
       try {
         const decodedEvent = iface.parseLog(event);
         events.push(decodedEvent);
       } catch (error) {
-        console.log("Failed to decode event:", error);
+        console.log('Failed to decode event:', error);
       }
     });
 
     // verify the event names
-    expect(events[0].name).to.be.equal("CometDeployed");
-    expect(events[1].name).to.be.equal("Upgraded");
+    expect(events[0].name).to.be.equal('CometDeployed');
+    expect(events[1].name).to.be.equal('Upgraded');
 
     const oldCometProxyAddress = cometProxy.address;
     const oldCometProxyAddressFromEvent = events[0].args.cometProxy;
@@ -198,13 +167,13 @@ describe("configurator", function() {
       configuratorProxy,
       proxyAdmin,
       cometProxy,
-      users: [alice],
+      users: [alice]
     } = await makeConfigurator({ governor: signer });
 
     await proxyAdmin.transferOwnership(alice.address); // Transferred ownership to alice instead of timelock
 
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [configuratorProxy.address, cometProxy.address]
     );
 
@@ -212,10 +181,10 @@ describe("configurator", function() {
       timelock.executeTransactions(
         [proxyAdmin.address],
         [0],
-        ["deployAndUpgradeTo(address,address)"],
+        ['deployAndUpgradeTo(address,address)'],
         [deployAndUpgradeToCalldata]
       )
-    ).to.be.revertedWith("failed to call");
+    ).to.be.revertedWith('failed to call');
   });
 
   it("Ensure - Comet's Proxy's admin is set as CometProxyAdmin - Test for access.", async () => {
@@ -225,7 +194,7 @@ describe("configurator", function() {
       proxyAdmin,
       comet,
       cometProxy,
-      users: [alice],
+      users: [alice]
     } = await makeConfigurator();
 
     const cometAsProxy = comet.attach(cometProxy.address);
@@ -250,8 +219,8 @@ describe("configurator", function() {
       SetGovernor: {
         cometProxy: cometProxy.address,
         oldGovernor,
-        newGovernor,
-      },
+        newGovernor
+      }
     });
     expect(oldGovernor).to.be.not.equal(newGovernor);
     expect(
@@ -265,19 +234,19 @@ describe("configurator", function() {
       configuratorProxy,
       proxyAdmin,
       comet,
-      users: [alice, bob],
+      users: [_alice, bob]
     } = await makeConfigurator();
 
     // Deploy ProxyAdmin
     const ProxyAdmin = (await ethers.getContractFactory(
-      "CometProxyAdmin"
+      'CometProxyAdmin'
     )) as CometProxyAdmin__factory;
     const proxyAdminTemp = await ProxyAdmin.connect(bob).deploy();
     await proxyAdminTemp.deployed();
 
     // Deploy Comet proxy
     const CometProxy = (await ethers.getContractFactory(
-      "TransparentUpgradeableProxy"
+      'TransparentUpgradeableProxy'
     )) as TransparentUpgradeableProxy__factory;
     const cometProxy = await CometProxy.deploy(
       comet.address,
@@ -299,14 +268,13 @@ describe("configurator", function() {
     const {
       governor,
       configuratorProxy,
-      configurator,
       proxyAdmin,
       cometProxy,
       comet,
-      users: [alice],
+      users: [_alice]
     } = await makeConfigurator({ governor: signer });
     const GovernorFactory = (await ethers.getContractFactory(
-      "GovernorSimple"
+      'GovernorSimple'
     )) as GovernorSimple__factory;
     const governorBravo = await GovernorFactory.deploy();
     await governorBravo.deployed();
@@ -316,18 +284,19 @@ describe("configurator", function() {
     timelock.setAdmin(governorBravo.address);
 
     const cometAsProxy = comet.attach(cometProxy.address);
-    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const ASSET_ADDRESS = (await cometAsProxy.getAssetInfo(1)).asset;
-    const NEW_ASSET_SUPPLY_CAP = ethers.BigNumber.from("500000000000000000000");
+    const NEW_ASSET_SUPPLY_CAP = ethers.BigNumber.from('500000000000000000000');
 
-    expect((await cometAsProxy.getAssetInfo(1)).supplyCap).to.be.not.equal(NEW_ASSET_SUPPLY_CAP);
+    expect((await cometAsProxy.getAssetInfo(1)).supplyCap).to.be.not.equal(
+      NEW_ASSET_SUPPLY_CAP
+    );
 
     let updateAssetSupplyCapCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint128"],
+      ['address', 'address', 'uint128'],
       [cometProxy.address, ASSET_ADDRESS, NEW_ASSET_SUPPLY_CAP]
     );
     let deployAndUpgradeToCalldata = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address"],
+      ['address', 'address'],
       [configuratorProxy.address, cometProxy.address]
     );
 
@@ -338,8 +307,8 @@ describe("configurator", function() {
           [configuratorProxy.address, proxyAdmin.address],
           [0, 0],
           [
-            "updateAssetSupplyCap(address,address,uint128)",
-            "deployAndUpgradeTo(address,address)",
+            'updateAssetSupplyCap(address,address,uint128)',
+            'deployAndUpgradeTo(address,address)'
           ],
           [updateAssetSupplyCapCalldata, deployAndUpgradeToCalldata],
           "Proposal to update Comet's governor"
@@ -361,21 +330,21 @@ async function initializeAndFundTimelock() {
   const signers = await ethers.getSigners();
   const gov = signers[0];
   const TimelockFactory = (await ethers.getContractFactory(
-    "SimpleTimelock"
+    'SimpleTimelock'
   )) as SimpleTimelock__factory;
   const timelock = await TimelockFactory.deploy(gov.address);
   const timelockAddress = await timelock.deployed();
 
   // Impersonate the account
   await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [timelockAddress.address],
+    method: 'hardhat_impersonateAccount',
+    params: [timelockAddress.address]
   });
 
   // Fund the impersonated account
   await gov.sendTransaction({
     to: timelock.address,
-    value: ethers.utils.parseEther("1.0"), // Sending 1 Ether to cover gas fees
+    value: ethers.utils.parseEther('1.0') // Sending 1 Ether to cover gas fees
   });
 
   // Get the signer from the impersonated account

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./ITimelock.sol";
-import "./vendor/access/Ownable.sol";
+import "./../ITimelock.sol";
+import "./../vendor/access/Ownable.sol";
 
 /**
 * @title MarketUpdateProposer
@@ -20,9 +20,6 @@ contract MarketUpdateProposer is Ownable {
 
     ITimelock public timelock;
 
-    function initialize(ITimelock timelock_) public {
-        timelock = timelock_;
-    }
     /// @notice The official record of all proposals ever proposed
     mapping(uint => MarketUpdateProposal) public proposals;
     /// @notice The total number of proposals
@@ -35,6 +32,9 @@ contract MarketUpdateProposer is Ownable {
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
     event MarketUpdateProposalExecuted(uint id);
     event MarketUpdateProposalCancelled(uint id);
+
+    error AlreadyInitialized();
+    error InvalidAddress();
 
     struct MarketUpdateProposal {
         /// @notice Unique id for looking up a proposal
@@ -72,6 +72,13 @@ contract MarketUpdateProposer is Ownable {
         Queued,
         Executed,
         Expired
+    }
+
+    function initialize(ITimelock timelock_) public onlyOwner {
+        if (address(timelock_) == address(0)) revert InvalidAddress();
+        if (address(timelock) != address(0)) revert AlreadyInitialized();
+
+        timelock = timelock_;
     }
 
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public onlyOwner returns (uint) {

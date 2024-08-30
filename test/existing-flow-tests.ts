@@ -7,7 +7,7 @@ import {
 } from "../build/types";
 import { ethers, event, expect, makeConfigurator, wait } from "./helpers";
 
-describe("configurator", function() {
+describe("test existing workflow", function() {
   it("should allow the governor (timelock's admin) to execute transactions, but prevent unauthorized users from doing so", async () => {
     const { signer, timelock } = await initializeAndFundTimelock();
 

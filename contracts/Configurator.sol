@@ -11,7 +11,7 @@ contract Configurator is ConfiguratorStorage {
     address public marketAdmin;  // Address of the Market Update Admin
 
     /** Custom events **/
-    
+
     event MarketAdminPaused(bool isMarketAdminPaused);
     event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
     event CometDeployed(address indexed cometProxy, address indexed newComet);

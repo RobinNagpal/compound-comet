@@ -57,7 +57,7 @@ export async function makeMarketAdmin() {
   };
 }
 
-async function initializeAndFundGovernorTimelock() {
+export async function initializeAndFundGovernorTimelock() {
   const signers = await ethers.getSigners();
   const gov = signers[0];
   const TimelockFactory = (await ethers.getContractFactory(

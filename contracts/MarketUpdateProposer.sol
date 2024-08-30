@@ -4,7 +4,19 @@ pragma solidity 0.8.15;
 import "./ITimelock.sol";
 import "./vendor/access/Ownable.sol";
 
-contract MarketUpdateProposer is Ownable{
+/**
+* @title MarketUpdateProposer
+* @notice This contract allows for the creation of proposals that can be executed by the timelock
+* @dev This contract is used to propose market updates
+* Here owner will be the market update multi-sig. The owner can set the new owner by calling `transferOwnership`.
+* If multi-sig is compromised, the new owner will only be able to call timelock. marketUpdatePauseGuardian in
+* Configurator or CometProxyAdmin can pause these updated.
+*
+* Other logic can be that only main-governor-timelock can update the owner of this contract, but that logic can be an
+* overkill
+*
+*/
+contract MarketUpdateProposer is Ownable {
 
     ITimelock public timelock;
 
@@ -12,7 +24,7 @@ contract MarketUpdateProposer is Ownable{
         timelock = timelock_;
     }
     /// @notice The official record of all proposals ever proposed
-    mapping (uint => MarketUpdateProposal) public proposals;
+    mapping(uint => MarketUpdateProposal) public proposals;
     /// @notice The total number of proposals
     uint public proposalCount;
 
@@ -33,7 +45,6 @@ contract MarketUpdateProposer is Ownable{
 
         /// @notice The timestamp that the proposal will be available for execution, set once the vote succeeds
         uint eta;
-
 
         /// @notice the ordered list of target addresses for calls to be made
         address[] targets;
@@ -149,7 +160,6 @@ contract MarketUpdateProposer is Ownable{
         require(c >= a, "addition overflow");
         return c;
     }
-
 
 
 }

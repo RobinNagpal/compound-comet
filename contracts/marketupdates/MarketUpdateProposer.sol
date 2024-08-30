@@ -92,11 +92,13 @@ contract MarketUpdateProposer is Ownable {
         require(newProposal.id == 0, "MarketUpdateProposer::propose: ProposalID collision");
         uint eta = add256(block.timestamp, timelock.delay());
         newProposal.id = newProposalID;
+        newProposal.proposer = msg.sender;
         newProposal.eta = eta;
         newProposal.targets = targets;
         newProposal.values = values;
         newProposal.signatures = signatures;
         newProposal.calldatas = calldatas;
+        newProposal.description = description;
         newProposal.canceled = false;
         newProposal.executed = false;
 
@@ -167,6 +169,35 @@ contract MarketUpdateProposer is Ownable {
         require(c >= a, "addition overflow");
         return c;
     }
+
+    function getProposal(uint proposalId) public view
+    returns (
+        uint id,
+        address proposer,
+        uint eta,
+        address[] memory targets,
+        uint[] memory values,
+        string[] memory signatures,
+        bytes[] memory calldatas,
+        string memory description,
+        bool canceled,
+        bool executed
+            )
+        {
+            MarketUpdateProposal storage proposal = proposals[proposalId];
+            return (
+                proposal.id,
+                proposal.proposer,
+                proposal.eta,
+                proposal.targets,
+                proposal.values,
+                proposal.signatures,
+                proposal.calldatas,
+                proposal.description,
+                proposal.canceled,
+                proposal.executed
+            );
+        }
 
 
 }

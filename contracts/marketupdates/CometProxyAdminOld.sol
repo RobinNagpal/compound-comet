@@ -7,6 +7,9 @@ interface Deployable {
     function deploy(address cometProxy) external returns (address);
 }
 
+/**
+ * @dev This contract is just to simulate the full deployment process of market updates. Should be deleted after the market updates are deployed.
+ */
 contract CometProxyAdminOld is ProxyAdmin {
     /**
      * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy

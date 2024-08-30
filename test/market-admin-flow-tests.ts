@@ -151,10 +151,6 @@ describe("MarketUpdateProposer", function() {
       [configuratorProxy.address, cometProxy.address]
     );
 
-    // expect(await marketUpdateProposer.owner()).to.be.equal(
-    //   marketUpdateMultiSig.address
-    // );
-
     expect(await comet.supplyKink()).to.be.equal("800000000000000000");
 
     // marketUpdateMultisig create a proposal using marketUpdateProposer

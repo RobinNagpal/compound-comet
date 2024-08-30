@@ -6,18 +6,12 @@ import "./CometConfiguration.sol";
 import "./ConfiguratorStorage.sol";
 
 contract Configurator is ConfiguratorStorage {
-
-    bool public marketAdminPaused = false; // pause flag to deal with any compromise from market update admin
-    address public marketAdmin;  // Address of the Market Update Admin
-
     /** Custom events **/
 
-    event MarketAdminPaused(bool isMarketAdminPaused);
     event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
     event CometDeployed(address indexed cometProxy, address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
     event SetFactory(address indexed cometProxy, address indexed oldFactory, address indexed newFactory);
-    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event SetGovernor(address indexed cometProxy, address indexed oldGovernor, address indexed newGovernor);
     event SetConfiguration(address indexed cometProxy, Configuration oldConfiguration, Configuration newConfiguration);
     event SetPauseGuardian(address indexed cometProxy, address indexed oldPauseGuardian, address indexed newPauseGuardian);
@@ -44,6 +38,9 @@ contract Configurator is ConfiguratorStorage {
     event UpdateAssetLiquidationFactor(address indexed cometProxy, address indexed asset, uint64 oldLiquidationFactor, uint64 newLiquidationFactor);
     event UpdateAssetSupplyCap(address indexed cometProxy, address indexed asset, uint128 oldSupplyCap, uint128 newSupplyCap);
 
+    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
+    event MarketAdminPaused(bool isMarketAdminPaused);
+    event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
     /** Custom errors **/
 
     error AlreadyInitialized();
@@ -135,7 +132,7 @@ contract Configurator is ConfiguratorStorage {
     }
 
     function pauseMarketAdmin() external {
-        if (msg.sender != governor) revert Unauthorized();
+        if (msg.sender != governor || msg.sender == marketAdminPauseGuardian) revert Unauthorized();
         marketAdminPaused = true;
         emit MarketAdminPaused(true);
     }
@@ -144,6 +141,13 @@ contract Configurator is ConfiguratorStorage {
         if (msg.sender != governor) revert Unauthorized();
         marketAdminPaused = false;
         emit MarketAdminPaused(false);
+    }
+
+    function setMarketAdminPauseGuardian(address newPauseGuardian) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldPauseGuardian = marketAdminPauseGuardian;
+        marketAdminPauseGuardian = newPauseGuardian;
+        emit SetMarketAdminPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
 
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {

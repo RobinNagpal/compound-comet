@@ -8,9 +8,13 @@ contract MarketUpdateProposer is Ownable{
 
     ITimelock public timelock;
 
+    error InvalidAddress();
+
     function initialize(ITimelock timelock_) public {
+        if (timelock == address(0)) revert InvalidAddress();
         timelock = timelock_;
     }
+
     /// @notice The official record of all proposals ever proposed
     mapping (uint => MarketUpdateProposal) public proposals;
     /// @notice The total number of proposals

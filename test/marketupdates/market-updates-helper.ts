@@ -5,7 +5,7 @@ import { ethers, expect } from './../helpers';
 export async function makeMarketAdmin() {
   const {
     signer: governorTimelockSigner,
-    timelock: governorTimelock
+    timelock: governorTimelock,
   } = await initializeAndFundGovernorTimelock();
 
   const signers = await ethers.getSigners();
@@ -19,7 +19,7 @@ export async function makeMarketAdmin() {
   // Fund the impersonated account
   await signers[0].sendTransaction({
     to: marketUpdateMultiSig.address,
-    value: ethers.utils.parseEther('1.0') // Sending 1 Ether to cover gas fees
+    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
   });
 
   // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
@@ -39,6 +39,24 @@ export async function makeMarketAdmin() {
     governorTimelock.address,
     0
   );
+  const marketUpdateTimelockAddress = await marketUpdateTimelock.deployed();
+
+  // Impersonate the account
+  await hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [marketUpdateTimelockAddress.address],
+  });
+
+  // Fund the impersonated account
+  await signers[0].sendTransaction({
+    to: marketUpdateTimelock.address,
+    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
+  });
+
+  // Get the signer from the impersonated account
+  const marketUpdateTimelockSigner = await ethers.getSigner(
+    marketUpdateTimelockAddress.address
+  );
 
   marketUpdateProposer
     .connect(marketUpdateMultiSig)
@@ -53,7 +71,8 @@ export async function makeMarketAdmin() {
     governorTimelock,
     marketUpdateMultiSig,
     marketUpdateTimelock,
-    marketUpdateProposer
+    marketUpdateTimelockSigner,
+    marketUpdateProposer,
   };
 }
 
@@ -69,13 +88,13 @@ export async function initializeAndFundGovernorTimelock() {
   // Impersonate the account
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
-    params: [timelockAddress.address]
+    params: [timelockAddress.address],
   });
 
   // Fund the impersonated account
   await gov.sendTransaction({
     to: timelock.address,
-    value: ethers.utils.parseEther('1.0') // Sending 1 Ether to cover gas fees
+    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
   });
 
   // Get the signer from the impersonated account

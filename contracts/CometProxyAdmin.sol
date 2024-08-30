@@ -87,7 +87,7 @@ contract CometProxyAdmin is ProxyAdmin {
     /**
      * @dev Custom upgradeAndCall function that allows marketUpdateAdmin to call it
      */
-    function _upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) private payable ownerOrMarketAdmin {
+    function _upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) private ownerOrMarketAdmin {
         proxy.upgradeToAndCall{value: msg.value}(implementation, data);
     }
 }

@@ -141,17 +141,15 @@ describe('MarketUpdateProposer', function() {
     const proposalDescription = 'Test Proposal';
 
     // Creates a proposal successfully as the signer is the multisig
-    await wait(
-      marketUpdateProposer
-        .connect(marketUpdateMultiSig)
-        .propose(
-          [configuratorProxy.address],
-          [0],
-          ['setPauseGuardian(address,address)'],
-          [setPauseGuardianCalldata],
-          proposalDescription
-        )
-    );
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setPauseGuardian(address,address)'],
+        [setPauseGuardianCalldata],
+        proposalDescription
+      );
 
     // Checks the proposal
     const proposal = await marketUpdateProposer.getProposal(proposalId);
@@ -190,26 +188,22 @@ describe('MarketUpdateProposer', function() {
     const proposalDescription = 'Test Proposal';
 
     // Creates a proposal successfully as the signer is the multisig
-    await wait(
-      marketUpdateProposer
-        .connect(marketUpdateMultiSig)
-        .propose(
-          [configuratorProxy.address],
-          [0],
-          ['setPauseGuardian(address,address)'],
-          [setPauseGuardianCalldata],
-          proposalDescription
-        )
-    );
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setPauseGuardian(address,address)'],
+        [setPauseGuardianCalldata],
+        proposalDescription
+      );
 
     expect(
       (await marketUpdateProposer.proposals(proposalId)).canceled
     ).to.be.equal(false);
 
     // Cancel the proposal
-    await wait(
-      marketUpdateProposer.connect(marketUpdateMultiSig).cancel(proposalId)
-    );
+    await marketUpdateProposer.connect(marketUpdateMultiSig).cancel(proposalId);
 
     expect(
       (await marketUpdateProposer.proposals(proposalId)).canceled
@@ -237,17 +231,15 @@ describe('MarketUpdateProposer', function() {
     const proposalDescription = 'Test Proposal';
 
     // Creates a proposal successfully as the signer is the multisig
-    await wait(
-      marketUpdateProposer
-        .connect(marketUpdateMultiSig)
-        .propose(
-          [configuratorProxy.address],
-          [0],
-          ['setPauseGuardian(address,address)'],
-          [setPauseGuardianCalldata],
-          proposalDescription
-        )
-    );
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setPauseGuardian(address,address)'],
+        [setPauseGuardianCalldata],
+        proposalDescription
+      );
 
     // Fast forward time by more than the GRACE_PERIOD
     const GRACE_PERIOD = 14 * 24 * 60 * 60; // 14 days in seconds

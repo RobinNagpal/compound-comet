@@ -8,13 +8,29 @@ interface Deployable {
 }
 
 contract CometProxyAdmin is ProxyAdmin {
+    /// @notice Pause flag for the market update admin
+    bool public marketAdminPaused = false;
+
+    /// @notice The address of the market update admin. This will be the address of a timelock contract.
     address public marketAdmin;
 
+    /// @notice address of the market admin pause guardian. We don't use `pauseGuardian` because we have `setPauseGuardian` which sets the pauseGuardian on comet.
+    address public marketAdminPauseGuardian;
+
+    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
+    event MarketAdminPaused(bool isMarketAdminPaused);
+    event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+
+    error Unauthorized();
     /**
      * @dev Throws if called by any account other than the owner and market update admin
      */
     modifier ownerOrMarketAdmin() {
         require(owner() == _msgSender() || _msgSender() == marketAdmin, "Unauthorized: caller is not owner or market update admin");
+        // If the sender is the marketAdmin, check that the marketAdmin is not paused
+        if (msg.sender == marketAdmin) {
+            require(!marketAdminPaused, "Market admin is paused");
+        }
         _;
     }
 
@@ -29,7 +45,7 @@ contract CometProxyAdmin is ProxyAdmin {
      */
     function deployAndUpgradeTo(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy) public virtual ownerOrMarketAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
-        upgrade(cometProxy, newCometImpl);
+        _upgrade(cometProxy, newCometImpl);
     }
 
     /**
@@ -39,20 +55,39 @@ contract CometProxyAdmin is ProxyAdmin {
      */
     function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual ownerOrMarketAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
-        upgradeAndCall(cometProxy, newCometImpl, data);
+        _upgradeAndCall(cometProxy, newCometImpl, data);
     }
 
-       /**
-     * @dev Custom upgrade function that allows marketUpdateAdmin to call it
+    function pauseMarketAdmin() external {
+        if (msg.sender != owner() || msg.sender == marketAdminPauseGuardian) revert Unauthorized();
+        marketAdminPaused = true;
+        emit MarketAdminPaused(true);
+    }
+
+    function unpauseMarketAdmin() external {
+        if (msg.sender != owner()) revert Unauthorized();
+        marketAdminPaused = false;
+        emit MarketAdminPaused(false);
+    }
+
+    function setMarketAdminPauseGuardian(address newPauseGuardian) external {
+        if (msg.sender != owner()) revert Unauthorized();
+        address oldPauseGuardian = marketAdminPauseGuardian;
+        marketAdminPauseGuardian = newPauseGuardian;
+        emit SetMarketAdminPauseGuardian(oldPauseGuardian, newPauseGuardian);
+    }
+
+    /**
+  * @dev Custom upgrade function that allows marketUpdateAdmin to call it
      */
-    function upgrade(TransparentUpgradeableProxy proxy, address implementation) public virtual override ownerOrMarketAdmin {
+    function _upgrade(TransparentUpgradeableProxy proxy, address implementation) private ownerOrMarketAdmin {
         proxy.upgradeTo(implementation);
     }
 
     /**
      * @dev Custom upgradeAndCall function that allows marketUpdateAdmin to call it
      */
-    function upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) public virtual override payable ownerOrMarketAdmin {
+    function _upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) private payable ownerOrMarketAdmin {
         proxy.upgradeToAndCall{value: msg.value}(implementation, data);
     }
 }

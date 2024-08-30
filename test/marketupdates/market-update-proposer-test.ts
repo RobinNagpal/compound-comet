@@ -1,5 +1,5 @@
 import { makeMarketAdmin } from './market-updates-helper';
-import { expect } from '../helpers';
+import { expect, makeConfigurator } from '../helpers';
 
 describe('MarketUpdateProposer', function() {
   // We are not checking market updates here. we are just checking interaction
@@ -8,7 +8,7 @@ describe('MarketUpdateProposer', function() {
   it('is initialized properly with timelock', async () => {
     const {
       marketUpdateProposer,
-      marketUpdateTimelock
+      marketUpdateTimelock,
     } = await makeMarketAdmin();
 
     expect(await marketUpdateProposer.timelock()).to.equal(
@@ -16,11 +16,46 @@ describe('MarketUpdateProposer', function() {
     );
   });
 
-  it('revert if timelock is not initialized', async () => {});
+  it('revert if timelock is not initialized', async () => {}); // Skipped for now
 
-  it('MarketUpdateMultisig is set as the owner of MarketUpdateProposer', async () => {});
+  it('throw error if MarketUpdateProposer is initialized twice', async () => {
+    const {
+      marketUpdateProposer,
+      marketUpdateTimelock,
+    } = await makeMarketAdmin();
 
-  it('MarketUpdateMultisig can set a new owner for MarketUpdateProposer', async () => {});
+    await expect(
+      marketUpdateProposer.initialize(marketUpdateTimelock.address)
+    ).to.be.revertedWithCustomError(marketUpdateProposer, 'AlreadyInitialized');
+  });
+
+  it('MarketUpdateMultisig is set as the owner of MarketUpdateProposer', async () => {
+    const {
+      marketUpdateProposer,
+      marketUpdateMultiSig,
+    } = await makeMarketAdmin();
+
+    expect(await marketUpdateProposer.owner()).to.equal(
+      marketUpdateMultiSig.address
+    );
+  });
+
+  it('MarketUpdateMultisig can set a new owner for MarketUpdateProposer', async () => {
+    const {
+      marketUpdateProposer,
+      marketUpdateMultiSig,
+    } = await makeMarketAdmin();
+
+    const {
+      users: [alice],
+    } = await makeConfigurator();
+
+    expect(await marketUpdateProposer.owner()).to.equal(marketUpdateMultiSig.address);
+
+    await marketUpdateProposer.connect(marketUpdateMultiSig).transferOwnership(alice.address);
+
+    expect(await marketUpdateProposer.owner()).to.equal(alice.address);
+  });
 
   it('only allows MarketUpdateMultisig to create proposal', async () => {});
 
@@ -36,4 +71,3 @@ describe('MarketUpdateProposer', function() {
 
   it('marks the proposal as expired after grace period', () => {});
 });
-

@@ -1,4 +1,5 @@
 import { expect, makeConfigurator, event, wait } from './../helpers';
+import { expect, makeConfigurator, event, wait } from './../helpers';
 import { makeMarketAdmin } from './market-updates-helper';
 
 describe('Configurator', function() {
@@ -6,9 +7,11 @@ describe('Configurator', function() {
     const {
       governorTimelockSigner,
       governorTimelock,
+      governorTimelock,
     } = await makeMarketAdmin();
 
     const { configurator, configuratorProxy } = await makeConfigurator({
+      governor: governorTimelockSigner,
       governor: governorTimelockSigner,
     });
 
@@ -16,6 +19,9 @@ describe('Configurator', function() {
 
     // check already initialized properly
     expect(await configuratorAsProxy.version()).to.be.equal(1);
+    expect(await configuratorAsProxy.governor()).to.be.equal(
+      governorTimelock.address
+    );
     expect(await configuratorAsProxy.governor()).to.be.equal(
       governorTimelock.address
     );
@@ -40,6 +46,9 @@ describe('Configurator', function() {
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     const oldMarketAdmin = await configuratorAsProxy.marketAdmin();
+
+    // Add a check to make sure its set as address(0) initially. So here oldMarketAdmin should be (0)
+
     const txn = await wait(
       configuratorAsProxy
         .connect(governorTimelockSigner)
@@ -54,32 +63,13 @@ describe('Configurator', function() {
     const newMarketAdmin = await configuratorAsProxy.marketAdmin();
     expect(newMarketAdmin).to.be.equal(marketUpdateTimelock.address);
     expect(newMarketAdmin).to.be.not.equal(oldMarketAdmin);
+
     await expect(
       configuratorAsProxy
         .connect(marketUpdateMultiSig)
         .setMarketAdmin(marketUpdateTimelock.address)
     ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
-  });
 
-  it('market admin cannot set or update market admin', async () => {
-    const {
-      governorTimelockSigner,
-      marketUpdateTimelock,
-    } = await makeMarketAdmin();
-
-    const { configurator, configuratorProxy } = await makeConfigurator({
-      governor: governorTimelockSigner,
-    });
-
-    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-
-    await configuratorAsProxy
-      .connect(governorTimelockSigner)
-      .setMarketAdmin(marketUpdateTimelock.address);
-
-    expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
     await expect(
       configuratorAsProxy
         .connect(marketUpdateTimelock.signer)
@@ -124,6 +114,12 @@ describe('Configurator', function() {
     await expect(
       configuratorAsProxy
         .connect(marketUpdateMultiSig)
+        .setMarketAdminPauseGuardian(marketUpdateTimelock.address)
+    ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
+
+    await expect(
+      configuratorAsProxy
+        .connect(marketUpdateTimelock.signer)
         .setMarketAdminPauseGuardian(marketUpdateTimelock.address)
     ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
   });

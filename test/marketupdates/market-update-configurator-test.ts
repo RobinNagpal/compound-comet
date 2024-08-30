@@ -1,110 +1,25 @@
-import { ethers, event, expect, makeConfigurator, wait } from './../helpers';
-import {
-  MarketUpdateProposer__factory,
-  MarketUpdateTimelock__factory,
-  SimpleTimelock__factory,
-} from '../../build/types';
-import hre from 'hardhat';
-import { network } from 'hardhat';
-
-async function initializeAndFundGovernorTimelock() {
-  const signers = await ethers.getSigners();
-  const gov = signers[0];
-  const TimelockFactory = (await ethers.getContractFactory(
-    'SimpleTimelock'
-  )) as SimpleTimelock__factory;
-  const timelock = await TimelockFactory.deploy(gov.address);
-  const timelockAddress = await timelock.deployed();
-
-  // Impersonate the account
-  await hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [timelockAddress.address],
-  });
-
-  // Fund the impersonated account
-  await gov.sendTransaction({
-    to: timelock.address,
-    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
-  });
-
-  // Get the signer from the impersonated account
-  const signer = await ethers.getSigner(timelockAddress.address);
-  return { signer, timelock };
-}
-
-async function makeMarketAdmin() {
-  const {
-    signer: governorTimelockSigner,
-    timelock: governorTimelock,
-  } = await initializeAndFundGovernorTimelock();
-
-  const signers = await ethers.getSigners();
-
-  const marketUpdateMultiSig = signers[3];
-
-  const markerUpdaterProposerFactory = (await ethers.getContractFactory(
-    'MarketUpdateProposer'
-  )) as MarketUpdateProposer__factory;
-
-  // Fund the impersonated account
-  await signers[0].sendTransaction({
-    to: marketUpdateMultiSig.address,
-    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
-  });
-
-  // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await markerUpdaterProposerFactory
-    .connect(marketUpdateMultiSig)
-    .deploy();
-
-  expect(await marketUpdateProposer.owner()).to.be.equal(
-    marketUpdateMultiSig.address
-  );
-
-  const marketAdminTimelockFactory = (await ethers.getContractFactory(
-    'MarketUpdateTimelock'
-  )) as MarketUpdateTimelock__factory;
-
-  const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
-    governorTimelock.address,
-    0
-  );
-
-  marketUpdateProposer
-    .connect(marketUpdateMultiSig)
-    .initialize(marketUpdateTimelock.address);
-
-  await marketUpdateTimelock
-    .connect(governorTimelockSigner)
-    .setMarketUpdateProposer(marketUpdateProposer.address);
-
-  return {
-    governorTimelockSigner,
-    governorTimelock,
-    marketUpdateMultiSig,
-    marketUpdateTimelock,
-    marketUpdateProposer,
-  };
-}
+import { expect, makeConfigurator } from './../helpers';
+import { makeMarketAdmin } from './market-updates-helper';
 
 describe('Configurator', function() {
-  it.only('is initialized properly with main-governor-timelock as admin', async () => {
-    // initialize configurator with main-governor-timelock
-    // attach the configurator proxy
-    // check configurator admin
+
+  it('already initialized and is not able to initialize again with main-governor-timelock as admin', async () => {
     const {
       governorTimelockSigner,
-      governorTimelock,
+      governorTimelock
     } = await makeMarketAdmin();
 
     const { configurator, configuratorProxy } = await makeConfigurator({
-      governor: governorTimelockSigner,
+      governor: governorTimelockSigner
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    const configuratorAdmin = await configuratorAsProxy.governor();
-    expect(configuratorAdmin).to.be.equal(governorTimelock.address);
+
+    // check already initialized properly
+    expect(await configuratorAsProxy.version()).to.be.equal(1);
+    expect(await configuratorAsProxy.governor()).to.be.equal(governorTimelock.address);
+
+    // check is not able to initialize again
     await expect(
       configuratorAsProxy.initialize(governorTimelock.address)
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");

@@ -1,23 +1,24 @@
-import { expect, makeConfigurator } from './../helpers';
+import { expect, makeConfigurator, event, wait } from './../helpers';
 import { makeMarketAdmin } from './market-updates-helper';
 
 describe('Configurator', function() {
-
   it('already initialized and is not able to initialize again with main-governor-timelock as admin', async () => {
     const {
       governorTimelockSigner,
-      governorTimelock
+      governorTimelock,
     } = await makeMarketAdmin();
 
     const { configurator, configuratorProxy } = await makeConfigurator({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     // check already initialized properly
     expect(await configuratorAsProxy.version()).to.be.equal(1);
-    expect(await configuratorAsProxy.governor()).to.be.equal(governorTimelock.address);
+    expect(await configuratorAsProxy.governor()).to.be.equal(
+      governorTimelock.address
+    );
 
     // check is not able to initialize again
     await expect(
@@ -25,11 +26,107 @@ describe('Configurator', function() {
     ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
-  it('only main-governor-timelock can set market admin', async () => {});
+  it('only main-governor-timelock can set market admin', async () => {
+    const {
+      governorTimelockSigner,
+      marketUpdateTimelock,
+      marketUpdateMultiSig,
+    } = await makeMarketAdmin();
 
-  it('market admin cannot set or update market admin', async () => {});
+    const { configurator, configuratorProxy } = await makeConfigurator({
+      governor: governorTimelockSigner,
+    });
 
-  it('only main-governor-timelock can set or update marketAdminPauseGuardian', async () => {});
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+
+    const oldMarketAdmin = await configuratorAsProxy.marketAdmin();
+    const txn = await wait(
+      configuratorAsProxy
+        .connect(governorTimelockSigner)
+        .setMarketAdmin(marketUpdateTimelock.address)
+    );
+    expect(event(txn, 0)).to.be.deep.equal({
+      SetMarketAdmin: {
+        oldAdmin: oldMarketAdmin,
+        newAdmin: marketUpdateTimelock.address,
+      },
+    });
+    const newMarketAdmin = await configuratorAsProxy.marketAdmin();
+    expect(newMarketAdmin).to.be.equal(marketUpdateTimelock.address);
+    expect(newMarketAdmin).to.be.not.equal(oldMarketAdmin);
+    await expect(
+      configuratorAsProxy
+        .connect(marketUpdateMultiSig)
+        .setMarketAdmin(marketUpdateTimelock.address)
+    ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
+  });
+
+  it('market admin cannot set or update market admin', async () => {
+    const {
+      governorTimelockSigner,
+      marketUpdateTimelock,
+    } = await makeMarketAdmin();
+
+    const { configurator, configuratorProxy } = await makeConfigurator({
+      governor: governorTimelockSigner,
+    });
+
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+
+    await configuratorAsProxy
+      .connect(governorTimelockSigner)
+      .setMarketAdmin(marketUpdateTimelock.address);
+
+    expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
+      marketUpdateTimelock.address
+    );
+    await expect(
+      configuratorAsProxy
+        .connect(marketUpdateTimelock.signer)
+        .setMarketAdmin(marketUpdateTimelock.address)
+    ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
+  });
+
+  it('only main-governor-timelock can set or update marketAdminPauseGuardian', async () => {
+    const {
+      governorTimelockSigner,
+      marketUpdateTimelock,
+      marketUpdateMultiSig,
+    } = await makeMarketAdmin();
+
+    const {
+      configurator,
+      configuratorProxy,
+      users: [alice],
+    } = await makeConfigurator({
+      governor: governorTimelockSigner,
+    });
+
+    const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+
+    const oldMarketAdminPauseGuardian = await configuratorAsProxy.marketAdminPauseGuardian();
+    const txn = await wait(
+      configuratorAsProxy
+        .connect(governorTimelockSigner)
+        .setMarketAdminPauseGuardian(alice.address)
+    );
+    expect(event(txn, 0)).to.be.deep.equal({
+      SetMarketAdminPauseGuardian: {
+        oldPauseGuardian: oldMarketAdminPauseGuardian,
+        newPauseGuardian: alice.address,
+      },
+    });
+    const newMarketAdminPauseGuardian = await configuratorAsProxy.marketAdminPauseGuardian();
+    expect(newMarketAdminPauseGuardian).to.be.equal(alice.address);
+    expect(newMarketAdminPauseGuardian).to.be.not.equal(
+      oldMarketAdminPauseGuardian
+    );
+    await expect(
+      configuratorAsProxy
+        .connect(marketUpdateMultiSig)
+        .setMarketAdminPauseGuardian(marketUpdateTimelock.address)
+    ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
+  });
 
   it('main-governor-timelock or marketAdminPauseGuardian can pause market admin', async () => {});
 

@@ -132,7 +132,7 @@ contract Configurator is ConfiguratorStorage {
     }
 
     function pauseMarketAdmin() external {
-        if (msg.sender != governor || msg.sender == marketAdminPauseGuardian) revert Unauthorized();
+        if (msg.sender != governor && msg.sender != marketAdminPauseGuardian) revert Unauthorized();
         marketAdminPaused = true;
         emit MarketAdminPaused(true);
     }

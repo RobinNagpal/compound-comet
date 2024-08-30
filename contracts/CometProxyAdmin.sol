@@ -59,7 +59,7 @@ contract CometProxyAdmin is ProxyAdmin {
     }
 
     function pauseMarketAdmin() external {
-        if (msg.sender != owner() || msg.sender == marketAdminPauseGuardian) revert Unauthorized();
+        if (msg.sender != owner() && msg.sender != marketAdminPauseGuardian) revert Unauthorized();
         marketAdminPaused = true;
         emit MarketAdminPaused(true);
     }

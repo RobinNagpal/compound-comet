@@ -72,8 +72,9 @@ contract MarketUpdateProposer is Ownable{
         MarketUpdateProposal storage newProposal = proposals[newProposalID];
 
         require(newProposal.id == 0, "MarketUpdateProposer::propose: ProposalID collision");
+        uint eta = add256(block.timestamp, timelock.delay());
         newProposal.id = newProposalID;
-        newProposal.eta = 0;
+        newProposal.eta = eta;
         newProposal.targets = targets;
         newProposal.values = values;
         newProposal.signatures = signatures;
@@ -85,7 +86,6 @@ contract MarketUpdateProposer is Ownable{
 
         emit MarketUpdateProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, description);
 
-        uint eta = add256(block.timestamp, timelock.delay());
         for (uint i = 0; i < newProposal.targets.length; i++) {
             queueOrRevertInternal(newProposal.targets[i], newProposal.values[i], newProposal.signatures[i], newProposal.calldatas[i], eta);
         }

@@ -1,4 +1,3 @@
-import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 import { ethers, event, expect, makeConfigurator, wait } from './helpers';
 import {
   MarketUpdateProposer__factory,
@@ -32,20 +31,6 @@ async function initializeAndFundGovernorTimelock() {
   // Get the signer from the impersonated account
   const signer = await ethers.getSigner(timelockAddress.address);
   return { signer, timelock };
-}
-
-async function initializeTimelockSigner(currentSigner: SignerWithAddress, timelockAddress: string) {
-  // Impersonate the account
-  await hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [timelockAddress]
-  });
-
-  // Fund the impersonated account
-  await currentSigner.sendTransaction({
-    to: timelockAddress,
-    value: ethers.utils.parseEther('1.0') // Sending 1 Ether to cover gas fees
-  });
 }
 
 async function makeMarketAdmin() {
@@ -84,6 +69,7 @@ async function makeMarketAdmin() {
     0
   );
 
+  marketUpdateProposer.connect(marketUpdateMultiSig).initialize(marketUpdateTimelock.address);
 
   await marketUpdateTimelock
     .connect(governorTimelockSigner)
@@ -125,12 +111,6 @@ describe('configuration market admin', function() {
       (await configuratorAsProxy.getConfiguration(cometProxy.address)).governor
     ).to.be.equal(governor.address);
 
-    console.log('proxyAdmin', proxyAdmin.address);
-
-    const setMarketUpdateProposerCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address'],
-      [marketUpdateProposer.address]
-    );
 
     const setMarketUpdateTimelockCalldata = ethers.utils.defaultAbiCoder.encode(
       ['address'],
@@ -150,6 +130,7 @@ describe('configuration market admin', function() {
       marketUpdateTimelock.address
     );
 
+
     const newKink = 100n;
     const setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
       ['address', 'uint64'],
@@ -162,6 +143,8 @@ describe('configuration market admin', function() {
 
     expect(await marketUpdateProposer.owner()).to.be.equal(marketUpdateMultiSig.address);
 
+    expect(await comet.supplyKink()).to.be.equal('800000000000000000');
+
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
@@ -173,17 +156,51 @@ describe('configuration market admin', function() {
         ],
         [setSupplyKinkCalldata, deployAndUpgradeToCalldata],
         'Test Proposal',
-
       );
 
-    const cometAsProxy = comet.attach(cometProxy.address);
+    const txWithReceipt = await marketUpdateProposer
+      .connect(marketUpdateMultiSig).execute(1);
+
+    const tx = (await  wait(txWithReceipt)) as any;
+
+
+
+
+    const abi = [
+      'event CometDeployed(address indexed cometProxy, address indexed newComet)',
+      'event Upgraded(address indexed implementation)',
+      'event MarketUpdateProposalExecuted(uint id)',
+      'event SetSupplyKink(address indexed cometProxy,uint64 oldKink, uint64 newKink)',
+      'event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta)'
+    ];
+
+    // Initialize the contract interface
+    const iface = new ethers.utils.Interface(abi);
+    const events = [];
+
+    tx.receipt.events.forEach(event => {
+      try {
+        const decodedEvent = iface.parseLog(event);
+        events.push(decodedEvent);
+      } catch (error) {
+        console.log('Failed to decode event:', event);
+      }
+    });
+
+    console.log('events', events);
+
+    // verify the event names
+    // expect(events[0].name).to.be.equal('CometDeployed');
+    // expect(events[1].name).to.be.equal('Upgraded');
+
     expect(
       (await configuratorAsProxy.getConfiguration(cometProxy.address))
         .supplyKink
     ).to.be.equal(newKink);
-    expect(await cometAsProxy.supplyKink()).to.be.equal(newKink);
 
-    // TODO: Add check to make sure no other user can call CometProxyAdmin
+    const cometAsProxy = comet.attach(cometProxy.address);
+
+    expect(await cometAsProxy.supplyKink()).to.be.equal(newKink);
   });
 
   it("Configurator's marketAdmin is set as marker-admin-timelock - Test for access", async () => {

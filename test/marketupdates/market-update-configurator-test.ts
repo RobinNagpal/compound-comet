@@ -105,6 +105,9 @@ describe('Configurator', function() {
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     const configuratorAdmin = await configuratorAsProxy.governor();
     expect(configuratorAdmin).to.be.equal(governorTimelock.address);
+    await expect(
+      configuratorAsProxy.initialize(governorTimelock.address)
+    ).to.be.revertedWith("custom error 'AlreadyInitialized()'");
   });
 
   it('only main-governor-timelock can set market admin', async () => {});

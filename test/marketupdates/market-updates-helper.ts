@@ -1,4 +1,8 @@
-import { SimpleTimelock__factory } from './../../build/types';
+import {
+  SimpleTimelock__factory,
+  MarketUpdateTimelock__factory,
+  MarketUpdateProposer__factory,
+} from './../../build/types';
 import hre from 'hardhat';
 import { ethers, expect } from './../helpers';
 
@@ -12,9 +16,9 @@ export async function makeMarketAdmin() {
 
   const marketUpdateMultiSig = signers[3];
 
-  const markerUpdaterProposerFactory = await ethers.getContractFactory(
+  const markerUpdaterProposerFactory = (await ethers.getContractFactory(
     'MarketUpdateProposer'
-  );
+  )) as MarketUpdateProposer__factory;
 
   // Fund the impersonated account
   await signers[0].sendTransaction({
@@ -31,9 +35,9 @@ export async function makeMarketAdmin() {
     marketUpdateMultiSig.address
   );
 
-  const marketAdminTimelockFactory = await ethers.getContractFactory(
+  const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
-  );
+  )) as MarketUpdateTimelock__factory;
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
     governorTimelock.address,
@@ -66,6 +70,23 @@ export async function makeMarketAdmin() {
     .connect(governorTimelockSigner)
     .setMarketUpdateProposer(marketUpdateProposer.address);
 
+  // Impersonate the account
+  await hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [marketUpdateProposer.address],
+  });
+
+  // Fund the impersonated account
+  await signers[0].sendTransaction({
+    to: marketUpdateProposer.address,
+    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
+    gasLimit: 2100000,
+  });
+
+  const marketUpdateProposerSigner = await ethers.getSigner(
+    marketUpdateProposer.address
+  );
+
   return {
     governorTimelockSigner,
     governorTimelock,
@@ -73,6 +94,7 @@ export async function makeMarketAdmin() {
     marketUpdateTimelock,
     marketUpdateTimelockSigner,
     marketUpdateProposer,
+    marketUpdateProposerSigner,
   };
 }
 

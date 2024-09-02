@@ -70,12 +70,6 @@ export async function makeMarketAdmin() {
     .connect(governorTimelockSigner)
     .setMarketUpdateProposer(marketUpdateProposer.address);
 
-  // Impersonate the account
-  await hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [marketUpdateProposer.address],
-  });
-
   return {
     governorTimelockSigner,
     governorTimelock,

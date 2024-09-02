@@ -40,7 +40,7 @@ describe('MarketUpdateTimelock', function() {
       marketUpdateTimelock,
       governorTimelockSigner,
       marketUpdateProposer,
-      marketUpdateMultiSig
+      marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
     const {
@@ -68,18 +68,19 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
-
-    // ensuring that main gover-timelock can queue transactions
+    // ensuring that market update proposer can queue transactions
     await marketUpdateProposer
       .connect(marketUpdateMultiSig)
       .propose(
         [configuratorProxy.address],
         [0],
         ['setSupplyKink(address, uint64)'],
-        [        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100]
-        )],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
         'Setting supply kink to 100'
       );
 
@@ -106,7 +107,8 @@ describe('MarketUpdateTimelock', function() {
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
-      marketUpdateProposerSigner,
+      marketUpdateProposer,
+      marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
     const {
@@ -118,6 +120,7 @@ describe('MarketUpdateTimelock', function() {
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
     configuratorAsProxy.transferGovernor(marketUpdateTimelock.address);
+    const proposalId = 1n;
 
     let latestBlock = await ethers.provider.getBlock('latest');
     let currentTimestamp = latestBlock.timestamp;
@@ -155,41 +158,25 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
-    latestBlock = await ethers.provider.getBlock('latest');
-    currentTimestamp = latestBlock.timestamp;
-
-    eta = currentTimestamp + 5; // Ensure eta is in the future
-
-    // ensuring that MarketUpdateProposer can execute transactions
-    await marketUpdateTimelock
-      .connect(marketUpdateProposerSigner)
-      .queueTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
+    // ensuring that market update proposer can queue transactions
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
       );
 
-    // Fast-forward time by 5 seconds to surpass the eta
-    await ethers.provider.send('evm_increaseTime', [5]);
-    await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
-
-    await marketUpdateTimelock
-      .connect(marketUpdateProposerSigner)
-      .executeTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
-      );
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .execute(proposalId);
 
     // ensuring that none other than the main-governor-timelock or MarketUpdateProposer can execute transactions
 
@@ -239,7 +226,8 @@ describe('MarketUpdateTimelock', function() {
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
-      marketUpdateProposerSigner,
+      marketUpdateProposer,
+      marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
     const {
@@ -250,14 +238,16 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    configuratorAsProxy.transferGovernor(marketUpdateTimelock.address);
+    await configuratorAsProxy.transferGovernor(marketUpdateTimelock.address);
+
+    const proposalId = 1n;
 
     let latestBlock = await ethers.provider.getBlock('latest');
     let currentTimestamp = latestBlock.timestamp;
 
     let eta = currentTimestamp + 5; // Ensure eta is in the future
 
-    // ensuring that main gover-timelock can execute transactions
+    // ensuring that main gover-timelock can cancel transactions
     await marketUpdateTimelock
       .connect(governorTimelockSigner)
       .queueTransaction(
@@ -284,42 +274,25 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
-    latestBlock = await ethers.provider.getBlock('latest');
-    currentTimestamp = latestBlock.timestamp;
-
-    eta = currentTimestamp + 5; // Ensure eta is in the future
-
-    // ensuring that MarketUpdateProposer can execute transactions
-    await marketUpdateTimelock
-      .connect(marketUpdateProposerSigner)
-      .queueTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
+    // ensuring that MarketUpdateProposer can cacnel transactions
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
       );
 
-    // Fast-forward time by 5 seconds to surpass the eta
-    await ethers.provider.send('evm_increaseTime', [5]);
-    await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
+    await marketUpdateProposer.connect(marketUpdateMultiSig).cancel(proposalId);
 
-    await marketUpdateTimelock
-      .connect(marketUpdateProposerSigner)
-      .cancelTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address,uint64)',
-        ethers.utils.defaultAbiCoder.encode(
-          ['address', 'uint64'],
-          [cometProxy.address, 100000]
-        ),
-        eta
-      );
-
+    // Checking the state of the transaction using the txHash
     const txHash = ethers.utils.keccak256(
       ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint', 'string', 'bytes', 'uint'],
@@ -406,7 +379,7 @@ describe('MarketUpdateTimelock', function() {
   it('MarketUpdateProposer cannot set or update MarketUpdateProposer', async () => {
     const {
       marketUpdateTimelock,
-      marketUpdateProposerSigner,
+      marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
     const {
@@ -415,7 +388,7 @@ describe('MarketUpdateTimelock', function() {
 
     await expect(
       marketUpdateTimelock
-        .connect(marketUpdateProposerSigner)
+        .connect(marketUpdateMultiSig)
         .setMarketUpdateProposer(bob.address)
     ).to.be.revertedWith(
       'MarketUpdateTimelock::setMarketUpdateProposer: Call must come from admin.'
@@ -425,7 +398,7 @@ describe('MarketUpdateTimelock', function() {
   it('MarketUpdateProposer cannot set or update main-governor-timelock', async () => {
     const {
       marketUpdateTimelock,
-      marketUpdateProposerSigner,
+      marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
     const {
@@ -433,9 +406,7 @@ describe('MarketUpdateTimelock', function() {
     } = await makeConfigurator();
 
     await expect(
-      marketUpdateTimelock
-        .connect(marketUpdateProposerSigner)
-        .setAdmin(bob.address)
+      marketUpdateTimelock.connect(marketUpdateMultiSig).setAdmin(bob.address)
     ).to.be.revertedWith(
       'MarketUpdateTimelock::setAdmin: Call must come from admin.'
     );

@@ -1,4 +1,8 @@
-import { SimpleTimelock__factory } from './../../build/types';
+import {
+  SimpleTimelock__factory,
+  MarketUpdateTimelock__factory,
+  MarketUpdateProposer__factory,
+} from './../../build/types';
 import hre from 'hardhat';
 import { ethers, expect } from './../helpers';
 
@@ -12,9 +16,9 @@ export async function makeMarketAdmin() {
 
   const marketUpdateMultiSig = signers[3];
 
-  const marketUpdaterProposerFactory = await ethers.getContractFactory(
+  const marketUpdaterProposerFactory = (await ethers.getContractFactory(
     'MarketUpdateProposer'
-  );
+  )) as MarketUpdateProposer__factory;
 
   // Fund the impersonated account
   await signers[0].sendTransaction({
@@ -31,9 +35,9 @@ export async function makeMarketAdmin() {
     marketUpdateMultiSig.address
   );
 
-  const marketAdminTimelockFactory = await ethers.getContractFactory(
+  const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
-  );
+  )) as MarketUpdateTimelock__factory;
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
     governorTimelock.address,

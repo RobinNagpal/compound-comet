@@ -271,7 +271,6 @@ describe('CometProxyAdmin', function() {
     } = await makeMarketAdmin();
 
     const {
-      comet,
       configuratorProxy,
       cometProxy,
       proxyAdmin,
@@ -279,40 +278,74 @@ describe('CometProxyAdmin', function() {
       governor: governorTimelockSigner,
     });
 
-    const modifiedComet = (
-      await ethers.getContractFactory('CometModified')
-    ).attach(comet.address);
-    const calldata = (
-      await modifiedComet.populateTransaction.initialize(
-        ethers.constants.AddressZero
-      )
-    ).data;
+    const functionAbi = new ethers.utils.Interface(['function getReserves()']);
+    const calldata = functionAbi.encodeFunctionData('getReserves', []);
 
-    const callData = '0x1c9f7fb9';
+    const abiToCheck = [
+      'event CometDeployed(address indexed cometProxy, address indexed newComet)',
+      'event Upgraded(address indexed implementation)',
+    ];
+
+    // Initialize the contract interface
+    const iface = new ethers.utils.Interface(abiToCheck);
+
+    const txnForGovernorTimelock = await wait(
+      proxyAdmin
+        .connect(governorTimelockSigner)
+        .deployUpgradeToAndCall(
+          configuratorProxy.address,
+          cometProxy.address,
+          calldata
+        )
+    );
+
+    const eventsForGovernorTimelock = [];
+
+    txnForGovernorTimelock.receipt.events.forEach((event) => {
+      try {
+        const decodedEvent = iface.parseLog(event);
+        eventsForGovernorTimelock.push(decodedEvent);
+      } catch (error) {
+        console.log('Failed to decode event:', error);
+      }
+    });
+
+    // verify the event names
+    expect(eventsForGovernorTimelock[0].name).to.be.equal('CometDeployed');
+    expect(eventsForGovernorTimelock[1].name).to.be.equal('Upgraded');
 
     await proxyAdmin
       .connect(governorTimelockSigner)
-      .deployUpgradeToAndCall(
-        configuratorProxy.address,
-        cometProxy.address,
-        calldata
-      );
+      .setMarketAdmin(marketUpdateTimelock.address);
 
-    // await proxyAdmin
-    //   .connect(governorTimelockSigner)
-    //   .setMarketAdmin(marketUpdateTimelock.address);
+    expect(await proxyAdmin.marketAdmin()).to.be.equal(
+      marketUpdateTimelock.address
+    );
 
-    // expect(await proxyAdmin.marketAdmin()).to.be.equal(
-    //   marketUpdateTimelock.address
-    // );
+    const txnForMarketAdmin = await wait(
+      proxyAdmin
+        .connect(marketUpdateTimelockSigner)
+        .deployUpgradeToAndCall(
+          configuratorProxy.address,
+          cometProxy.address,
+          calldata
+        )
+    );
 
-    // await proxyAdmin
-    //   .connect(marketUpdateTimelockSigner)
-    //   .deployUpgradeToAndCall(
-    //     configuratorProxy.address,
-    //     cometProxy.address,
-    //     callData
-    //   );
+    const eventsForMarketAdmin = [];
+
+    txnForMarketAdmin.receipt.events.forEach((event) => {
+      try {
+        const decodedEvent = iface.parseLog(event);
+        eventsForMarketAdmin.push(decodedEvent);
+      } catch (error) {
+        console.log('Failed to decode event:', error);
+      }
+    });
+
+    // verify the event names
+    expect(eventsForMarketAdmin[0].name).to.be.equal('CometDeployed');
+    expect(eventsForMarketAdmin[1].name).to.be.equal('Upgraded');
   });
 
   it('no other address can call deployAndUpgradeTo', async () => {

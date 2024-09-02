@@ -56,12 +56,6 @@ contract Configurator is ConfiguratorStorage {
         _;
     }
 
-    /**
-     * @notice Constructs a new Configurator instance
-     **/
-    constructor() {
-        // Set a high version to prevent the implementation contract from being initialized
-    }
 
     /**
      * @notice Initializes the storage for Configurator

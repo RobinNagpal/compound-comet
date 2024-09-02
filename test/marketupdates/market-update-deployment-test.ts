@@ -1,16 +1,16 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {DAI_WHALE} from "test/liquidation/addresses";
 import {expect} from "./../helpers";
 import { initializeAndFundGovernorTimelock } from './market-updates-helper';
 import {
   CometFactory__factory,
   CometProxyAdmin__factory, CometProxyAdminOld__factory, Configurator__factory,
   ConfiguratorOld__factory,
-  ConfiguratorProxy__factory, SimpleTimelock,
+  ConfiguratorProxy__factory,
+  SimpleTimelock,
   TransparentUpgradeableProxy__factory
 } from './../../build/types';
 import {makeProtocol, getConfigurationForConfigurator} from './../helpers';
-import hre, { ethers } from 'hardhat';
+import { ethers } from 'hardhat';
 
 describe('MarketUpdateDeployment', function() {
   /*

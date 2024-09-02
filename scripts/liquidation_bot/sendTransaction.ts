@@ -17,7 +17,7 @@ async function sendFlashbotsBundle(
   const signedBundle = await flashbotsProvider.signBundle(
     [
       {
-        timelockSigner: wallet, // ethers signer
+        signer: wallet, // ethers signer
         transaction: txn // ethers populated transaction object
       }
     ]);

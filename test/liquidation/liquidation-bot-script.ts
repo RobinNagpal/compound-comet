@@ -43,7 +43,7 @@ describe('Liquidation Bot', function () {
         await liquidateUnderwaterBorrowers(
           comet,
           liquidator,
-          { signer: timelockSigner },
+          { signer },
           'mainnet',
           'usdc'
         );
@@ -83,7 +83,7 @@ describe('Liquidation Bot', function () {
         comet,
         liquidator,
         assetAddresses,
-        {signer: timelockSigner},
+        {signer},
         'mainnet',
         'usdc'
       );
@@ -121,7 +121,7 @@ describe('Liquidation Bot', function () {
         comet,
         liquidator,
         assetAddresses,
-        {signer: timelockSigner},
+        {signer},
         'mainnet',
         'usdc'
       );

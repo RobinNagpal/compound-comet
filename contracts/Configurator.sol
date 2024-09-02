@@ -6,7 +6,7 @@ import "./CometConfiguration.sol";
 import "./ConfiguratorStorage.sol";
 
 contract Configurator is ConfiguratorStorage {
-    
+
     /** Custom events **/
     event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
     event CometDeployed(address indexed cometProxy, address indexed newComet);
@@ -41,7 +41,7 @@ contract Configurator is ConfiguratorStorage {
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event MarketAdminPaused(bool isMarketAdminPaused);
     event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
-    
+
     /** Custom errors **/
     error AlreadyInitialized();
     error AssetDoesNotExist();
@@ -55,14 +55,7 @@ contract Configurator is ConfiguratorStorage {
         require(msg.sender != marketAdmin || !marketAdminPaused, "Market admin is paused");
         _;
     }
-    
-    /**
-     * @notice Constructs a new Configurator instance
-     **/
-    constructor() {
-        // Set a high version to prevent the implementation contract from being initialized
-        version = type(uint256).max;
-    }
+
 
     /**
      * @notice Initializes the storage for Configurator
@@ -75,7 +68,7 @@ contract Configurator is ConfiguratorStorage {
         governor = governor_;
         version = 1;
     }
-    
+
     function setMarketAdmin(address newMarketAdmin) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldMarketAdmin = marketAdmin;
@@ -139,7 +132,7 @@ contract Configurator is ConfiguratorStorage {
         configuratorParams[cometProxy].governor = newGovernor;
         emit SetGovernor(cometProxy, oldGovernor, newGovernor);
     }
-    
+
     function setPauseGuardian(address cometProxy, address newPauseGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldPauseGuardian = configuratorParams[cometProxy].pauseGuardian;

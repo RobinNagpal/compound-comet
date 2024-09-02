@@ -393,7 +393,7 @@ async function getContextProperties(context: CometContext): Promise<CometPropert
     comet: await context.getComet(),
     configurator: await context.getConfigurator(),
     proxyAdmin: await context.getCometAdmin(),
-    timelock: await context.getTimelock(),
+    governorTimelock: await context.getTimelock(),
     governor: await context.getGovernor(),
     rewards: await context.getRewards(),
     bulker: await context.getBulker(),

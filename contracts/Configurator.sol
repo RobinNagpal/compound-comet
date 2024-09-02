@@ -54,7 +54,6 @@ contract Configurator is ConfiguratorStorage {
      **/
     constructor() {
         // Set a high version to prevent the implementation contract from being initialized
-        version = type(uint256).max;
     }
 
     modifier governorOrMarketAdmin {

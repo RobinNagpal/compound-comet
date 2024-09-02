@@ -1,4 +1,4 @@
-import { ethers, event, expect, makeConfigurator, wait } from './helpers';
+import { ethers, event, expect, makeConfigurator, wait } from './../helpers';
 import {
   MarketUpdateProposer__factory,
   MarketUpdateTimelock__factory,
@@ -241,7 +241,7 @@ describe('MarketUpdates', function() {
   // marketUpdateMultisig creates proposal using marketUpdateProposer & sets supplykink and calls deployAndUpgradeTo via marketUpdateTimelock
   // marketUpdateMultisig -> marketUpdateProposer -> marketUpdateTimelock -> configurator (setSupplyKink)
   // marketUpdateMultisig -> marketUpdateProposer -> marketUpdateTimelock -> cometProxyAdmin (deployAndUpgradeTo)
-  it.only('can create and update market update proposal', async () => {
+  it('can create and update market update proposal', async () => {
     const {
       governorTimelockSigner,
       governorTimelock,

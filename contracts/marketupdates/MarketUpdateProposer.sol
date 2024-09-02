@@ -17,25 +17,6 @@ import "./../vendor/access/Ownable.sol";
 *
 */
 contract MarketUpdateProposer is Ownable {
-
-    ITimelock public timelock;
-
-    /// @notice The official record of all proposals ever proposed
-    mapping(uint => MarketUpdateProposal) public proposals;
-    /// @notice The total number of proposals
-    uint public proposalCount;
-
-    /// @notice Initial proposal id set at become
-    uint public initialProposalId = 0;
-
-    /// @notice An event emitted when a new proposal is created
-    event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
-    event MarketUpdateProposalExecuted(uint id);
-    event MarketUpdateProposalCancelled(uint id);
-
-    error AlreadyInitialized();
-    error InvalidAddress();
-
     struct MarketUpdateProposal {
         /// @notice Unique id for looking up a proposal
         uint id;
@@ -74,6 +55,25 @@ contract MarketUpdateProposer is Ownable {
         Expired
     }
 
+    ITimelock public timelock;
+
+    /// @notice The official record of all proposals ever proposed
+    mapping(uint => MarketUpdateProposal) public proposals;
+    /// @notice The total number of proposals
+    uint public proposalCount;
+
+    /// @notice Initial proposal id set at become
+    uint public initialProposalId = 0;
+
+    /// @notice An event emitted when a new proposal is created
+    event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
+    event MarketUpdateProposalExecuted(uint id);
+    event MarketUpdateProposalCancelled(uint id);
+
+    error AlreadyInitialized();
+    error InvalidAddress();
+
+
     function initialize(ITimelock timelock_) public onlyOwner {
         if (address(timelock_) == address(0)) revert InvalidAddress();
         if (address(timelock) != address(0)) revert AlreadyInitialized();
@@ -92,11 +92,13 @@ contract MarketUpdateProposer is Ownable {
         require(newProposal.id == 0, "MarketUpdateProposer::propose: ProposalID collision");
         uint eta = add256(block.timestamp, timelock.delay());
         newProposal.id = newProposalID;
+        newProposal.proposer = msg.sender;
         newProposal.eta = eta;
         newProposal.targets = targets;
         newProposal.values = values;
         newProposal.signatures = signatures;
         newProposal.calldatas = calldatas;
+        newProposal.description = description;
         newProposal.canceled = false;
         newProposal.executed = false;
 
@@ -168,5 +170,32 @@ contract MarketUpdateProposer is Ownable {
         return c;
     }
 
-
+    function getProposal(uint proposalId) public view
+    returns (
+        uint id,
+        address proposer,
+        uint eta,
+        address[] memory targets,
+        uint[] memory values,
+        string[] memory signatures,
+        bytes[] memory calldatas,
+        string memory description,
+        bool canceled,
+        bool executed
+            )
+        {
+            MarketUpdateProposal storage proposal = proposals[proposalId];
+            return (
+                proposal.id,
+                proposal.proposer,
+                proposal.eta,
+                proposal.targets,
+                proposal.values,
+                proposal.signatures,
+                proposal.calldatas,
+                proposal.description,
+                proposal.canceled,
+                proposal.executed
+            );
+        }
 }

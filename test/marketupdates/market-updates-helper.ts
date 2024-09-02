@@ -76,17 +76,6 @@ export async function makeMarketAdmin() {
     params: [marketUpdateProposer.address],
   });
 
-  // Fund the impersonated account
-  await signers[0].sendTransaction({
-    to: marketUpdateProposer.address,
-    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
-    gasLimit: 2100000,
-  });
-
-  const marketUpdateProposerSigner = await ethers.getSigner(
-    marketUpdateProposer.address
-  );
-
   return {
     governorTimelockSigner,
     governorTimelock,
@@ -94,7 +83,6 @@ export async function makeMarketAdmin() {
     marketUpdateTimelock,
     marketUpdateTimelockSigner,
     marketUpdateProposer,
-    marketUpdateProposerSigner,
   };
 }
 

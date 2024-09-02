@@ -39,7 +39,8 @@ describe('MarketUpdateTimelock', function() {
     const {
       marketUpdateTimelock,
       governorTimelockSigner,
-      marketUpdateProposerSigner,
+      marketUpdateProposer,
+      marketUpdateMultiSig
     } = await makeMarketAdmin();
 
     const {
@@ -67,18 +68,19 @@ describe('MarketUpdateTimelock', function() {
         eta
       );
 
+
     // ensuring that main gover-timelock can queue transactions
-    await marketUpdateTimelock
-      .connect(marketUpdateProposerSigner)
-      .queueTransaction(
-        configuratorProxy.address,
-        0,
-        'setSupplyKink(address, uint64)',
-        ethers.utils.defaultAbiCoder.encode(
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address, uint64)'],
+        [        ethers.utils.defaultAbiCoder.encode(
           ['address', 'uint64'],
           [cometProxy.address, 100]
-        ),
-        eta
+        )],
+        'Setting supply kink to 100'
       );
 
     // ensuring that none other than the main-governor-timelock or MarketUpdateProposer can queue transactions

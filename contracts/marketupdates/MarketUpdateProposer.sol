@@ -74,8 +74,6 @@ contract MarketUpdateProposer is Ownable {
         Expired
     }
 
-    fallback() external payable { }
-
     function initialize(ITimelock timelock_) public onlyOwner {
         if (address(timelock_) == address(0)) revert InvalidAddress();
         if (address(timelock) != address(0)) revert AlreadyInitialized();

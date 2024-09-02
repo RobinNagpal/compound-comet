@@ -22,15 +22,14 @@ contract CometProxyAdmin is ProxyAdmin {
     event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
 
     error Unauthorized();
+    
     /**
      * @dev Throws if called by any account other than the owner and market update admin
      */
     modifier ownerOrMarketAdmin() {
         require(owner() == _msgSender() || _msgSender() == marketAdmin, "Unauthorized: caller is not owner or market update admin");
         // If the sender is the marketAdmin, check that the marketAdmin is not paused
-        if (msg.sender == marketAdmin) {
-            require(!marketAdminPaused, "Market admin is paused");
-        }
+        require(_msgSender() != marketAdmin || !marketAdminPaused, "Market admin is paused");
         _;
     }
 
@@ -38,26 +37,7 @@ contract CometProxyAdmin is ProxyAdmin {
         require(owner() == _msgSender() , "Unauthorized: caller is not the owner");
         marketAdmin = newAdmin;
     }
-    /**
-     * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy
-     *  Requirements:
-     *   - This contract must be the admin of `CometProxy`
-     */
-    function deployAndUpgradeTo(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy) public virtual ownerOrMarketAdmin {
-        address newCometImpl = configuratorProxy.deploy(address(cometProxy));
-        _upgrade(cometProxy, newCometImpl);
-    }
-
-    /**
-     * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy, then call the function
-     *  Requirements:
-     *   - This contract must be the admin of `CometProxy`
-     */
-    function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual ownerOrMarketAdmin {
-        address newCometImpl = configuratorProxy.deploy(address(cometProxy));
-        _upgradeAndCall(cometProxy, newCometImpl, data);
-    }
-
+    
     function pauseMarketAdmin() external {
         if (msg.sender != owner() && msg.sender != marketAdminPauseGuardian) revert Unauthorized();
         marketAdminPaused = true;
@@ -76,18 +56,38 @@ contract CometProxyAdmin is ProxyAdmin {
         marketAdminPauseGuardian = newPauseGuardian;
         emit SetMarketAdminPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
+    
+    /**
+     * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy
+     *  Requirements:
+     *   - This contract must be the admin or market admin of `CometProxy`
+     */
+    function deployAndUpgradeTo(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy) public virtual ownerOrMarketAdmin {
+        address newCometImpl = configuratorProxy.deploy(address(cometProxy));
+        _upgrade(cometProxy, newCometImpl);
+    }
 
     /**
-  * @dev Custom upgrade function that allows marketUpdateAdmin to call it
+     * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy, then call the function
+     *  Requirements:
+     *   - This contract must be the admin or market admin of `CometProxy`
+     */
+    function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual ownerOrMarketAdmin {
+        address newCometImpl = configuratorProxy.deploy(address(cometProxy));
+        _upgradeAndCall(cometProxy, newCometImpl, data);
+    }
+
+    /**
+  * @dev Custom upgrade function that allows owner and marketUpdateAdmin to call it
      */
     function _upgrade(TransparentUpgradeableProxy proxy, address implementation) private ownerOrMarketAdmin {
         proxy.upgradeTo(implementation);
     }
 
     /**
-     * @dev Custom upgradeAndCall function that allows marketUpdateAdmin to call it
+     * @dev Custom upgradeAndCall function that allows owner and marketUpdateAdmin to call it
      */
     function _upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) private ownerOrMarketAdmin {
-        proxy.upgradeToAndCall{value: msg.value}(implementation, data);
+        proxy.upgradeToAndCall(implementation, data);
     }
 }

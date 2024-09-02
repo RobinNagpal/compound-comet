@@ -17,25 +17,6 @@ import "./../vendor/access/Ownable.sol";
 *
 */
 contract MarketUpdateProposer is Ownable {
-
-    ITimelock public timelock;
-
-    /// @notice The official record of all proposals ever proposed
-    mapping(uint => MarketUpdateProposal) public proposals;
-    /// @notice The total number of proposals
-    uint public proposalCount;
-
-    /// @notice Initial proposal id set at become
-    uint public initialProposalId = 0;
-
-    /// @notice An event emitted when a new proposal is created
-    event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
-    event MarketUpdateProposalExecuted(uint id);
-    event MarketUpdateProposalCancelled(uint id);
-
-    error AlreadyInitialized();
-    error InvalidAddress();
-
     struct MarketUpdateProposal {
         /// @notice Unique id for looking up a proposal
         uint id;
@@ -73,6 +54,25 @@ contract MarketUpdateProposer is Ownable {
         Executed,
         Expired
     }
+
+    ITimelock public timelock;
+
+    /// @notice The official record of all proposals ever proposed
+    mapping(uint => MarketUpdateProposal) public proposals;
+    /// @notice The total number of proposals
+    uint public proposalCount;
+
+    /// @notice Initial proposal id set at become
+    uint public initialProposalId = 0;
+
+    /// @notice An event emitted when a new proposal is created
+    event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
+    event MarketUpdateProposalExecuted(uint id);
+    event MarketUpdateProposalCancelled(uint id);
+
+    error AlreadyInitialized();
+    error InvalidAddress();
+
 
     function initialize(ITimelock timelock_) public onlyOwner {
         if (address(timelock_) == address(0)) revert InvalidAddress();
@@ -198,6 +198,4 @@ contract MarketUpdateProposer is Ownable {
                 proposal.executed
             );
         }
-
-
 }

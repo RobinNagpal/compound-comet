@@ -29,6 +29,11 @@ contract MarketUpdateTimelock {
 
     mapping (bytes32 => bool) public queuedTransactions;
 
+    modifier adminOrMarketUpdater {
+        require(msg.sender == admin || msg.sender == marketUpdateProposer, "MarketUpdateTimelock::Unauthorized: call must come from admin or marketAdmin");
+        _;
+    }
+    
     constructor(address admin_, uint delay_) public {
         require(delay_ >= MINIMUM_DELAY, "MarketUpdateTimelock::constructor: Delay must exceed minimum delay.");
         require(delay_ <= MAXIMUM_DELAY, "MarketUpdateTimelock::setDelay: Delay must not exceed maximum delay.");
@@ -39,10 +44,6 @@ contract MarketUpdateTimelock {
 
     fallback() external payable { }
 
-    modifier adminOrMarketUpdater {
-        require(msg.sender == admin || msg.sender == marketUpdateProposer, "MarketUpdateTimelock::Unauthorized: call must come from admin or marketAdmin");
-        _;
-    }
 
     function setDelay(uint delay_) public {
         require(msg.sender == address(this), "MarketUpdateTimelock::setDelay: Call must come from Timelock.");

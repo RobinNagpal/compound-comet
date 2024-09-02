@@ -166,6 +166,9 @@ describe('CometProxyAdmin', function() {
       },
     });
     expect(await proxyAdmin.marketAdminPaused()).to.be.true;
+
+    // TODO: Also try to set stuff on configurator and make sure it fails
+    // TODO: Also try to call deployAndUpgrade on CometProxyAdmin and make sure it fails
   });
 
   it('marketAdminPauseGuardian cannot unpause market admin', async () => {
@@ -183,6 +186,8 @@ describe('CometProxyAdmin', function() {
     await proxyAdmin
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
+
+    // TODO: verify that the guardian is set to alice
 
     await expect(
       proxyAdmin.connect(alice).unpauseMarketAdmin()
@@ -212,11 +217,11 @@ describe('CometProxyAdmin', function() {
     // Initialize the contract interface
     const iface = new ethers.utils.Interface(abi);
 
-    const txnForGovernorTimelock = await wait(
+    const txnForGovernorTimelock = (await wait(
       proxyAdmin
         .connect(governorTimelockSigner)
         .deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)
-    );
+    )) as any;
 
     const eventsForGovernorTimelock = [];
 
@@ -241,15 +246,15 @@ describe('CometProxyAdmin', function() {
       marketUpdateTimelock.address
     );
 
-    const txnForMarketAdmin = await wait(
+    const txnForMarketAdmin = (await wait(
       proxyAdmin
         .connect(marketUpdateTimelockSigner)
         .deployAndUpgradeTo(configuratorProxy.address, cometProxy.address)
-    );
+    )) as any;
 
     const eventsForMarketAdmin = [];
 
-    txnForMarketAdmin.receipt.events.forEach((event) => {
+    (txnForMarketAdmin.receipt).events.forEach((event) => {
       try {
         const decodedEvent = iface.parseLog(event);
         eventsForMarketAdmin.push(decodedEvent);
@@ -289,7 +294,7 @@ describe('CometProxyAdmin', function() {
     // Initialize the contract interface
     const iface = new ethers.utils.Interface(abiToCheck);
 
-    const txnForGovernorTimelock = await wait(
+    const txnForGovernorTimelock = (await wait(
       proxyAdmin
         .connect(governorTimelockSigner)
         .deployUpgradeToAndCall(
@@ -297,7 +302,7 @@ describe('CometProxyAdmin', function() {
           cometProxy.address,
           calldata
         )
-    );
+    )) as any;
 
     const eventsForGovernorTimelock = [];
 
@@ -322,7 +327,7 @@ describe('CometProxyAdmin', function() {
       marketUpdateTimelock.address
     );
 
-    const txnForMarketAdmin = await wait(
+    const txnForMarketAdmin = (await wait(
       proxyAdmin
         .connect(marketUpdateTimelockSigner)
         .deployUpgradeToAndCall(
@@ -330,7 +335,7 @@ describe('CometProxyAdmin', function() {
           cometProxy.address,
           calldata
         )
-    );
+    )) as any;
 
     const eventsForMarketAdmin = [];
 

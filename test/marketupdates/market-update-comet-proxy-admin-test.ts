@@ -143,9 +143,16 @@ describe('CometProxyAdmin', function() {
   });
 
   it('marketAdminPauseGuardian can pause market admin', async () => {
-    const { governorTimelockSigner } = await makeMarketAdmin();
+    const {
+      governorTimelockSigner,
+      marketUpdateTimelock,
+      marketUpdateMultiSig,
+      marketUpdateProposer,
+    } = await makeMarketAdmin();
 
     const {
+      configuratorProxy,
+      cometProxy,
       proxyAdmin,
       users: [alice],
     } = await makeConfigurator({
@@ -158,6 +165,10 @@ describe('CometProxyAdmin', function() {
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
 
+    expect(await proxyAdmin.marketAdminPauseGuardian()).to.be.equal(
+      alice.address
+    );
+
     const txn = await wait(proxyAdmin.connect(alice).pauseMarketAdmin());
 
     expect(event(txn, 0)).to.be.deep.equal({
@@ -167,8 +178,36 @@ describe('CometProxyAdmin', function() {
     });
     expect(await proxyAdmin.marketAdminPaused()).to.be.true;
 
-    // TODO: Also try to set stuff on configurator and make sure it fails
-    // TODO: Also try to call deployAndUpgrade on CometProxyAdmin and make sure it fails
+    await proxyAdmin
+      .connect(governorTimelockSigner)
+      .setMarketAdmin(marketUpdateTimelock.address);
+
+    expect(await proxyAdmin.marketAdmin()).to.be.equal(
+      marketUpdateTimelock.address
+    );
+
+    const proposalId = 1n;
+
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [proxyAdmin.address],
+        [0],
+        ['deployAndUpgradeTo(address,address)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'address'],
+            [configuratorProxy.address, cometProxy.address]
+          ),
+        ],
+        'Upgrading comet proxy admin implementation'
+      );
+
+    await expect(
+      marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId)
+    ).to.be.rejectedWith(
+      'MarketUpdateTimelock::executeTransaction: Transaction execution reverted.'
+    );
   });
 
   it('marketAdminPauseGuardian cannot unpause market admin', async () => {
@@ -187,7 +226,9 @@ describe('CometProxyAdmin', function() {
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
 
-    // TODO: verify that the guardian is set to alice
+    expect(await proxyAdmin.marketAdminPauseGuardian()).to.be.equal(
+      alice.address
+    );
 
     await expect(
       proxyAdmin.connect(alice).unpauseMarketAdmin()
@@ -254,7 +295,7 @@ describe('CometProxyAdmin', function() {
 
     const eventsForMarketAdmin = [];
 
-    (txnForMarketAdmin.receipt).events.forEach((event) => {
+    txnForMarketAdmin.receipt.events.forEach((event) => {
       try {
         const decodedEvent = iface.parseLog(event);
         eventsForMarketAdmin.push(decodedEvent);
@@ -268,7 +309,7 @@ describe('CometProxyAdmin', function() {
     expect(eventsForMarketAdmin[1].name).to.be.equal('Upgraded');
   });
 
-  it.only('deployUpgradeToAndCall can be called by main-governor-timelock or market-admin', async () => {
+  it('deployUpgradeToAndCall can be called by main-governor-timelock or market-admin', async () => {
     const {
       governorTimelockSigner,
       marketUpdateTimelock,

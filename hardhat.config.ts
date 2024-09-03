@@ -222,7 +222,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 1337,
-      loggingEnabled: !!process.env['LOGGING'],
+      loggingEnabled: true,
       gas: 120000000,
       gasPrice: 'auto',
       blockGasLimit: 120000000,
@@ -232,6 +232,16 @@ const config: HardhatUserConfig = {
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
       hardfork: 'shanghai'
+    },
+    localhost: {
+      url: 'http://127.0.0.1:8545',
+      loggingEnabled: true,
+      gas: 120000000,
+      gasPrice: 'auto',
+      blockGasLimit: 120000000,
+      accounts:  { mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect', accountsBalance: (10n ** 36n).toString() },
+      // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
+      allowUnlimitedContractSize: true,
     },
   },
 

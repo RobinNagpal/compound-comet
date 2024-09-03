@@ -4,7 +4,6 @@
 pragma solidity ^0.8.0;
 
 import "../ERC1967/ERC1967Proxy.sol";
-import "hardhat/console.sol";
 
 /**
  * @dev This contract implements a proxy that is upgradeable by an admin.
@@ -42,31 +41,12 @@ contract TransparentUpgradeableProxy is ERC1967Proxy {
     }
 
     /**
-  * @dev Converts an `address` into a `string`.
-     * @param _addr Address to be converted.
-     * @return string representation of the address.
-     */
-    function addressToString(address _addr) internal pure returns (string memory) {
-        bytes memory alphabet = "0123456789abcdef";
-        bytes32 value = bytes32(uint256(uint160(_addr)));
-        bytes memory str = new bytes(42);
-        str[0] = '0';
-        str[1] = 'x';
-        for (uint256 i = 0; i < 20; i++) {
-            str[2+i*2] = alphabet[uint8(value[i + 12] >> 4)];
-            str[3+i*2] = alphabet[uint8(value[i + 12] & 0x0f)];
-        }
-        return string(str);
-    }
-    /**
      * @dev Modifier used internally that will delegate the call to the implementation unless the sender is the admin.
      */
     modifier ifAdmin() {
         if (msg.sender == _getAdmin()) {
-            console.log("ifAdmin: msg.sender == _getAdmin()");
             _;
         } else {
-            console.log(string(abi.encodePacked("fallback: msg.sender != admin, sender: ", addressToString(msg.sender), ", admin: ", addressToString(_getAdmin()))));
             _fallback();
         }
     }

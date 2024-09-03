@@ -268,7 +268,7 @@ describe('CometProxyAdmin', function() {
     expect(eventsForMarketAdmin[1].name).to.be.equal('Upgraded');
   });
 
-  it.only('deployUpgradeToAndCall can be called by main-governor-timelock or market-admin', async () => {
+  it('deployUpgradeToAndCall can be called by main-governor-timelock or market-admin', async () => {
     const {
       governorTimelockSigner,
       marketUpdateTimelock,

@@ -85,7 +85,6 @@ contract TransparentUpgradeableProxy is ERC1967Proxy {
      * NOTE: Only the admin can call this function. See {ProxyAdmin-changeProxyAdmin}.
      */
     function changeAdmin(address newAdmin) external virtual ifAdmin {
-        console.log("changeAdmin: newAdmin: ", addressToString(newAdmin));
         _changeAdmin(newAdmin);
     }
 

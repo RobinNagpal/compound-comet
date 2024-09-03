@@ -1,20 +1,24 @@
-import { SimpleTimelock__factory } from './../../build/types';
+import {
+  SimpleTimelock__factory,
+  MarketUpdateTimelock__factory,
+  MarketUpdateProposer__factory,
+} from './../../build/types';
 import hre from 'hardhat';
 import { ethers, expect } from './../helpers';
 
 export async function makeMarketAdmin() {
   const {
-    signer: governorTimelockSigner,
-    timelock: governorTimelock,
+    governorTimelockSigner: governorTimelockSigner,
+    governorTimelock: governorTimelock,
   } = await initializeAndFundGovernorTimelock();
 
   const signers = await ethers.getSigners();
 
   const marketUpdateMultiSig = signers[3];
 
-  const markerUpdaterProposerFactory = await ethers.getContractFactory(
+  const marketUpdaterProposerFactory = (await ethers.getContractFactory(
     'MarketUpdateProposer'
-  );
+  )) as MarketUpdateProposer__factory;
 
   // Fund the impersonated account
   await signers[0].sendTransaction({
@@ -23,7 +27,7 @@ export async function makeMarketAdmin() {
   });
 
   // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await markerUpdaterProposerFactory
+  const marketUpdateProposer = await marketUpdaterProposerFactory
     .connect(marketUpdateMultiSig)
     .deploy();
 
@@ -31,9 +35,9 @@ export async function makeMarketAdmin() {
     marketUpdateMultiSig.address
   );
 
-  const marketAdminTimelockFactory = await ethers.getContractFactory(
+  const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
-  );
+  )) as MarketUpdateTimelock__factory;
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
     governorTimelock.address,
@@ -82,22 +86,22 @@ export async function initializeAndFundGovernorTimelock() {
   const TimelockFactory = (await ethers.getContractFactory(
     'SimpleTimelock'
   )) as SimpleTimelock__factory;
-  const timelock = await TimelockFactory.deploy(gov.address);
-  const timelockAddress = await timelock.deployed();
+  const governorTimelock = await TimelockFactory.deploy(gov.address);
+  await governorTimelock.deployed();
 
   // Impersonate the account
   await hre.network.provider.request({
     method: 'hardhat_impersonateAccount',
-    params: [timelockAddress.address],
+    params: [governorTimelock.address],
   });
 
   // Fund the impersonated account
   await gov.sendTransaction({
-    to: timelock.address,
-    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
+    to: governorTimelock.address,
+    value: ethers.utils.parseEther('100.0'), // Sending 1 Ether to cover gas fees
   });
 
   // Get the signer from the impersonated account
-  const signer = await ethers.getSigner(timelockAddress.address);
-  return { signer, timelock };
+  const governorTimelockSigner = await ethers.getSigner(governorTimelock.address);
+  return { originalSigner: gov, governorTimelockSigner, governorTimelock };
 }

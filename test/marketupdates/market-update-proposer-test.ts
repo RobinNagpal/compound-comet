@@ -16,8 +16,6 @@ describe('MarketUpdateProposer', function() {
     );
   });
 
-  it('revert if timelock is not initialized', async () => {}); // Skipped for now
-
   it('throw error if MarketUpdateProposer is initialized twice', async () => {
     const {
       marketUpdateProposer,
@@ -73,9 +71,9 @@ describe('MarketUpdateProposer', function() {
       users: [alice],
     } = await makeConfigurator();
 
-    let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [cometProxy.address, alice.address]
+    let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [cometProxy.address, 100]
     );
 
     const proposalId = 1n;
@@ -88,8 +86,8 @@ describe('MarketUpdateProposer', function() {
         .propose(
           [configuratorProxy.address],
           [0],
-          ['setPauseGuardian(address,address)'],
-          [setPauseGuardianCalldata],
+          ['setSupplyKink(address,uint64)'],
+          [setSupplyKinkCalldata],
           'Test Proposal'
         )
     );
@@ -100,8 +98,8 @@ describe('MarketUpdateProposer', function() {
         id: proposalId,
         proposer: marketUpdateMultiSig.address,
         targets: [configuratorProxy.address],
-        signatures: ['setPauseGuardian(address,address)'],
-        calldatas: [setPauseGuardianCalldata],
+        signatures: ['setSupplyKink(address,uint64)'],
+        calldatas: [setSupplyKinkCalldata],
         description: proposalDescription,
       },
     });
@@ -113,8 +111,8 @@ describe('MarketUpdateProposer', function() {
         .propose(
           [configuratorProxy.address],
           [0],
-          ['setPauseGuardian(address,address)'],
-          [setPauseGuardianCalldata],
+          ['setSupplyKink(address,uint64)'],
+          [setSupplyKinkCalldata],
           proposalDescription
         )
     ).to.be.revertedWith('Ownable: caller is not the owner');
@@ -126,15 +124,11 @@ describe('MarketUpdateProposer', function() {
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    const {
-      configuratorProxy,
-      cometProxy,
-      users: [alice],
-    } = await makeConfigurator();
+    const { configuratorProxy, cometProxy } = await makeConfigurator();
 
-    let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [cometProxy.address, alice.address]
+    let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [cometProxy.address, 100]
     );
 
     const proposalId = 1n;
@@ -146,8 +140,8 @@ describe('MarketUpdateProposer', function() {
       .propose(
         [configuratorProxy.address],
         [0],
-        ['setPauseGuardian(address,address)'],
-        [setPauseGuardianCalldata],
+        ['setSupplyKink(address,uint64)'],
+        [setSupplyKinkCalldata],
         proposalDescription
       );
 
@@ -157,10 +151,8 @@ describe('MarketUpdateProposer', function() {
     expect(proposal.id).to.equal(proposalId);
     expect(proposal.proposer).to.equal(marketUpdateMultiSig.address);
     expect(proposal.targets[0]).to.equal(configuratorProxy.address);
-    expect(proposal.signatures[0]).to.equal(
-      'setPauseGuardian(address,address)'
-    );
-    expect(proposal.calldatas[0]).to.equal(setPauseGuardianCalldata);
+    expect(proposal.signatures[0]).to.equal('setSupplyKink(address,uint64)');
+    expect(proposal.calldatas[0]).to.equal(setSupplyKinkCalldata);
     expect(proposal.description).to.equal(proposalDescription);
   });
 
@@ -173,15 +165,11 @@ describe('MarketUpdateProposer', function() {
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    const {
-      configuratorProxy,
-      cometProxy,
-      users: [alice],
-    } = await makeConfigurator();
+    const { configuratorProxy, cometProxy } = await makeConfigurator();
 
-    let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [cometProxy.address, alice.address]
+    let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [cometProxy.address, 100]
     );
 
     const proposalId = 1n;
@@ -193,8 +181,8 @@ describe('MarketUpdateProposer', function() {
       .propose(
         [configuratorProxy.address],
         [0],
-        ['setPauseGuardian(address,address)'],
-        [setPauseGuardianCalldata],
+        ['setSupplyKink(address,uint64)'],
+        [setSupplyKinkCalldata],
         proposalDescription
       );
 
@@ -209,7 +197,11 @@ describe('MarketUpdateProposer', function() {
       (await marketUpdateProposer.proposals(proposalId)).canceled
     ).to.be.equal(true);
 
-    // TODO: Try executing the cancelled proposal. It should fail
+    await expect(
+      marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId)
+    ).to.be.revertedWith(
+      'MarketUpdateProposer::execute: proposal can only be executed if it is queued'
+    );
   });
 
   it('marks the proposal as expired after grace period', async () => {
@@ -218,15 +210,11 @@ describe('MarketUpdateProposer', function() {
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
 
-    const {
-      configuratorProxy,
-      cometProxy,
-      users: [alice],
-    } = await makeConfigurator();
+    const { configuratorProxy, cometProxy } = await makeConfigurator();
 
-    let setPauseGuardianCalldata = ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [cometProxy.address, alice.address]
+    let setSupplyKinkCalldata = ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [cometProxy.address, 100]
     );
 
     const proposalId = 1n;
@@ -238,8 +226,8 @@ describe('MarketUpdateProposer', function() {
       .propose(
         [configuratorProxy.address],
         [0],
-        ['setPauseGuardian(address,address)'],
-        [setPauseGuardianCalldata],
+        ['setSupplyKink(address,uint64)'],
+        [setSupplyKinkCalldata],
         proposalDescription
       );
 
@@ -250,6 +238,10 @@ describe('MarketUpdateProposer', function() {
 
     expect(await marketUpdateProposer.state(proposalId)).to.equal(3); // Proposal should be expired
 
-    // TODO: Try executing the Expired proposal. It should fail
+    await expect(
+      marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId)
+    ).to.be.revertedWith(
+      'MarketUpdateProposer::execute: proposal can only be executed if it is queued'
+    );
   });
 });

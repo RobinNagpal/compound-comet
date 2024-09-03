@@ -161,11 +161,17 @@ describe('Configurator', function() {
   });
 
   it('marketAdminPauseGuardian can pause market admin', async () => {
-    const { governorTimelockSigner } = await makeMarketAdmin();
+    const {
+      governorTimelockSigner,
+      marketUpdateMultiSig,
+      marketUpdateProposer,
+      marketUpdateTimelock,
+    } = await makeMarketAdmin();
 
     const {
       configurator,
       configuratorProxy,
+      cometProxy,
       users: [alice],
     } = await makeConfigurator({
       governor: governorTimelockSigner,
@@ -179,6 +185,10 @@ describe('Configurator', function() {
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
 
+    expect(await configuratorAsProxy.marketAdminPauseGuardian()).to.be.equal(
+      alice.address
+    );
+
     const txn = await wait(
       configuratorAsProxy.connect(alice).pauseMarketAdmin()
     );
@@ -189,6 +199,37 @@ describe('Configurator', function() {
       },
     });
     expect(await configuratorAsProxy.marketAdminPaused()).to.be.true;
+
+    await configuratorAsProxy
+      .connect(governorTimelockSigner)
+      .setMarketAdmin(marketUpdateTimelock.address);
+
+    expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
+      marketUpdateTimelock.address
+    );
+
+    const proposalId = 1n;
+
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxy.address],
+        [0],
+        ['setSupplyKink(address,uint64)'],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometProxy.address, 100]
+          ),
+        ],
+        'Setting supply kink to 100'
+      );
+
+    await expect(
+      marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId)
+    ).to.be.rejectedWith(
+      'MarketUpdateTimelock::executeTransaction: Transaction execution reverted.'
+    );
   });
   it('marketAdminPauseGuardian cannot unpause market admin', async () => {
     const { governorTimelockSigner } = await makeMarketAdmin();
@@ -208,6 +249,10 @@ describe('Configurator', function() {
     await configuratorAsProxy
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
+
+    expect(await configuratorAsProxy.marketAdminPauseGuardian()).to.be.equal(
+      alice.address
+    );
 
     await expect(
       configuratorAsProxy.connect(alice).unpauseMarketAdmin()

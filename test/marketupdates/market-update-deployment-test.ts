@@ -157,8 +157,6 @@ describe('MarketUpdateDeployment', function() {
     const configuratorNew = await ConfiguratorFactory.connect(marketUpdateMultiSig).deploy();
     await configuratorNew.deployed();
 
-    await configuratorNew.connect(marketUpdateMultiSig).initialize(governorTimelock.address);
-
 
     // -------   Update Existing Contracts -----------
     console.log('Updating the existing contracts');

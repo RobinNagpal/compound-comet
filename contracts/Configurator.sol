@@ -66,6 +66,10 @@ contract Configurator is ConfiguratorStorage {
         _;
     }
 
+    constructor() {
+        // Set a high version to prevent the implementation contract from being initialized
+        version = type(uint256).max;
+    }
 
     /**
      * @notice Initializes the storage for Configurator

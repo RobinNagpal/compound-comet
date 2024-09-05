@@ -1,15 +1,17 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {event, expect, wait} from "./../helpers";
+import { event, expect, wait } from './../helpers';
 import { initializeAndFundGovernorTimelock } from './market-updates-helper';
 import {
   CometFactory__factory,
-  CometProxyAdmin__factory, CometProxyAdminOld__factory, Configurator__factory,
+  CometProxyAdmin__factory,
+  CometProxyAdminOld__factory,
+  Configurator__factory,
   ConfiguratorOld__factory,
   ConfiguratorProxy__factory,
   SimpleTimelock,
-  TransparentUpgradeableProxy__factory
+  TransparentUpgradeableProxy__factory,
 } from './../../build/types';
-import {makeProtocol, getConfigurationForConfigurator} from './../helpers';
+import { makeProtocol, getConfigurationForConfigurator } from './../helpers';
 import { ethers } from 'hardhat';
 
 describe('MarketUpdateDeployment', function() {
@@ -78,11 +80,10 @@ describe('MarketUpdateDeployment', function() {
    */
 
   it('should be able to deploy MarketUpdates in the proper sequence', async () => {
-
     const {
       governorTimelockSigner: governorTimelockSigner,
       governorTimelock: governorTimelock,
-      originalSigner
+      originalSigner,
     } = await initializeAndFundGovernorTimelock();
 
     const {
@@ -90,14 +91,19 @@ describe('MarketUpdateDeployment', function() {
       configuratorBehindProxy,
       cometBehindProxy,
       oldCometProxyAdmin,
-      proxyOfComet
+      proxyOfComet,
+      comet,
     } = await deployExistingContracts({
       governorTimelock,
       governorTimelockSigner,
-      originalSigner
+      originalSigner,
     });
 
-    expect((await configuratorBehindProxy.governor())).to.be.equal(governorTimelock.address);
+    const cometAsProxy = comet.attach(cometBehindProxy.address);
+
+    expect(await configuratorBehindProxy.governor()).to.be.equal(
+      governorTimelock.address
+    );
     // -------   Deploy New Contracts -----------
 
     const signers = await ethers.getSigners();
@@ -157,7 +163,6 @@ describe('MarketUpdateDeployment', function() {
     const configuratorNew = await ConfiguratorFactory.connect(marketUpdateMultiSig).deploy();
     await configuratorNew.deployed();
 
-
     // -------   Update Existing Contracts -----------
     console.log('Updating the existing contracts');
 
@@ -172,8 +177,6 @@ describe('MarketUpdateDeployment', function() {
       )]
     );
 
-
-
     // Call Old CometProxyAdmin and call `changeProxyAdmin` function to set Configurator's Proxy's admin as the new CometProxyAdmin // This will allow the new CometProxyAdmin to upgrade the Configurator's implementation if needed in future
     await governorTimelock.executeTransactions(
       [oldCometProxyAdmin.address],
@@ -184,7 +187,6 @@ describe('MarketUpdateDeployment', function() {
         [configuratorProxyContract.address, proxyAdminNew.address]
       )]
     );
-
 
     //
 
@@ -198,45 +200,106 @@ describe('MarketUpdateDeployment', function() {
       )]
     );
 
+    // Setting Market Update Admin in Configurator
     await governorTimelock.executeTransactions(
       [configuratorProxyContract.address],
       [0],
       ['setMarketAdmin(address)'],
-      [ethers.utils.defaultAbiCoder.encode(
-        ['address'],
-        [marketUpdateTimelock.address]
-      )]
+      [
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketUpdateTimelock.address]
+        ),
+      ]
     );
 
+    // Setting Market Update Admin in CometProxyAdmin
+    await governorTimelock.executeTransactions(
+      [proxyAdminNew.address],
+      [0],
+      ['setMarketAdmin(address)'],
+      [
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketUpdateTimelock.address]
+        ),
+      ]
+    );
 
-    const newConfiguratorViaProxy = configuratorNew.attach(configuratorProxyContract.address);
-    const oldSupplyKink = (
+    // Setting Market Update proposer in MarketUpdateTimelock
+    await governorTimelock.executeTransactions(
+      [marketUpdateTimelock.address],
+      [0],
+      ['setMarketUpdateProposer(address)'],
+      [
+        ethers.utils.defaultAbiCoder.encode(
+          ['address'],
+          [marketUpdateProposer.address]
+        ),
+      ]
+    );
+
+    // Governor Timelock: Setting new supplyKink in Configurator and deploying Comet
+    const newSupplyKinkByGovernorTimelock = 300n;
+    const oldSupplyKink = await cometAsProxy.supplyKink();
+    expect(oldSupplyKink).to.be.equal(800000000000000000n);
+    await governorTimelock.executeTransactions(
+      [configuratorProxyContract.address, proxyAdminNew.address],
+      [0, 0],
+      ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
+      [
+        ethers.utils.defaultAbiCoder.encode(
+          ['address', 'uint64'],
+          [cometBehindProxy.address, newSupplyKinkByGovernorTimelock]
+        ),
+        ethers.utils.defaultAbiCoder.encode(
+          ['address', 'address'],
+          [configuratorProxyContract.address, cometBehindProxy.address]
+        ),
+      ]
+    );
+
+    const newSupplyKink = await cometAsProxy.supplyKink();
+    expect(newSupplyKink).to.be.equal(newSupplyKinkByGovernorTimelock);
+
+    // MarketAdmin: Setting new supplyKink in Configurator and deploying Comet
+    const newConfiguratorViaProxy = configuratorNew.attach(
+      configuratorProxyContract.address
+    );
+    const supplyKinkOld = (
       await newConfiguratorViaProxy.getConfiguration(cometBehindProxy.address)
     ).supplyKink;
-    expect(oldSupplyKink).to.be.equal(800000000000000000n);
+    expect(supplyKinkOld).to.be.equal(300n);
 
-    const newSupplyKink = 100n;
+    const newSupplyKinkByMarketAdmin = 100n;
+    await marketUpdateProposer
+      .connect(marketUpdateMultiSig)
+      .propose(
+        [configuratorProxyContract.address, proxyAdminNew.address],
+        [0, 0],
+        [
+          'setSupplyKink(address,uint64)',
+          'deployAndUpgradeTo(address,address)',
+        ],
+        [
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint64'],
+            [cometBehindProxy.address, newSupplyKinkByMarketAdmin]
+          ),
+          ethers.utils.defaultAbiCoder.encode(
+            ['address', 'address'],
+            [configuratorProxyContract.address, cometBehindProxy.address]
+          ),
+        ],
+        'Test market update'
+      );
 
-    const txnOfGovernorTimelock = await wait(
-      newConfiguratorViaProxy
-        .connect(governorTimelockSigner)
-        .setSupplyKink(cometBehindProxy.address, newSupplyKink)
-    );
+    await marketUpdateProposer.connect(marketUpdateMultiSig).execute(1);
 
-
-
-    expect(event(txnOfGovernorTimelock, 0)).to.be.deep.equal({
-      SetSupplyKink: {
-        cometProxy: cometBehindProxy.address,
-        oldKink: oldSupplyKink,
-        newKink: newSupplyKink,
-      },
-    });
     expect(
       (await newConfiguratorViaProxy.getConfiguration(cometBehindProxy.address))
         .supplyKink
-    ).to.be.equal(newSupplyKink);
-
+    ).to.be.equal(newSupplyKinkByMarketAdmin);
   });
 
   async function deployExistingContracts(input: {
@@ -244,7 +307,7 @@ describe('MarketUpdateDeployment', function() {
     governorTimelockSigner: SignerWithAddress;
     originalSigner: SignerWithAddress;
   }) {
-    const {  governorTimelock, governorTimelockSigner } = input;
+    const { governorTimelock, governorTimelockSigner } = input;
     const opts: any = {};
 
     const {
@@ -254,9 +317,9 @@ describe('MarketUpdateDeployment', function() {
       base,
       comet,
       tokens,
-      priceFeeds
+      priceFeeds,
     } = await makeProtocol({
-      governor: governorTimelockSigner
+      governor: governorTimelockSigner,
     });
 
     const configuration = await getConfigurationForConfigurator(
@@ -267,7 +330,7 @@ describe('MarketUpdateDeployment', function() {
       extensionDelegate,
       tokens,
       base,
-      priceFeeds,
+      priceFeeds
     );
 
     // Deploy ProxyAdmin
@@ -291,7 +354,6 @@ describe('MarketUpdateDeployment', function() {
     const configurator = await ConfiguratorFactory.deploy();
     await configurator.deployed();
 
-
     // Deploy Configurator proxy
     const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
     const ConfiguratorProxyContract = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
@@ -309,7 +371,7 @@ describe('MarketUpdateDeployment', function() {
       cometBehindProxy,
       proxyOfComet: cometBehindProxy,
       oldCometProxyAdmin: proxyAdmin,
+      comet,
     };
-
   }
 });

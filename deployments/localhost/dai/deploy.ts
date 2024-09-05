@@ -390,101 +390,62 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     maybeForce()
   );
 
-  trace('Updating Admin of Configurator to CometProxyAdminNew');
+  const newSupplyKinkByGovernorTimelock = 300n;
+  trace('Updating Admin of ConfiguratorProxy to CometProxyAdminNew');
+  trace('Updating Admin of CometProxy to CometProxyAdminNew');
+  trace('Upgrade Implementation of ConfiguratorProxy');
+  trace('Setting Market Update Admin in Configurator');
+  trace('Setting Market Update Admin in CometProxyAdmin');
+  trace('Setting Market Update proposer in MarketUpdateTimelock');
+  trace('Governor Timelock: Setting new supplyKink in Configurator and deploying Comet');
   await timelock.executeTransactions(
-    [cometProxyAdminOld.address],
-    [0],
-    ['changeProxyAdmin(address,address)'],
+    [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,configuratorProxyContract.address,cometProxyAdminNew.address],
+    [0,0,0,0,0,0,0,0],
+    ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)','setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)','setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
     [
       ethers.utils.defaultAbiCoder.encode(
         ['address', 'address'],
         [configuratorProxyContract.address, cometProxyAdminNew.address]
-      )
-    ]
-  );
-
-
-
-  trace('Updating Admin of CometProxy to CometProxyAdminNew');
-  await timelock.executeTransactions(
-    [cometProxyAdminOld.address],
-    [0],
-    ['changeProxyAdmin(address,address)'],
-    [
-      ethers.utils.defaultAbiCoder.encode(
+      ),ethers.utils.defaultAbiCoder.encode(
         ['address', 'address'],
         [cometProxy.address, cometProxyAdminNew.address]
-      )
-    ]
-  );
-
-  await timelock.executeTransactions(
-    [cometProxyAdminNew.address],
-    [0],
-    ['upgrade(address,address)'],
-    [
-      ethers.utils.defaultAbiCoder.encode(
+      ),ethers.utils.defaultAbiCoder.encode(
         ['address', 'address'],
         [configuratorProxyContract.address, configuratorNew.address]
-      )
-    ]
-  );
-
-  trace('Setting Market Update Admin in Configurator');
-  await timelock.executeTransactions(
-    [configuratorProxyContract.address],
-    [0],
-    ['setMarketAdmin(address)'],
-    [
-      ethers.utils.defaultAbiCoder.encode(
+      ),ethers.utils.defaultAbiCoder.encode(
         ['address'],
         [marketUpdateTimelock.address]
-      )
-    ]
-  );
-
-  trace('Setting Market Update Admin in CometProxyAdmin');
-  await timelock.executeTransactions(
-    [cometProxyAdminNew.address],
-    [0],
-    ['setMarketAdmin(address)'],
-    [
-      ethers.utils.defaultAbiCoder.encode(
+      ),ethers.utils.defaultAbiCoder.encode(
         ['address'],
         [marketUpdateTimelock.address]
-      )
-    ]
-  );
-
-  trace('Setting Market Update proposer in MarketUpdateTimelock');
-  await timelock.executeTransactions(
-    [marketUpdateTimelock.address],
-    [0],
-    ['setMarketUpdateProposer(address)'],
-    [
-      ethers.utils.defaultAbiCoder.encode(
+      ),ethers.utils.defaultAbiCoder.encode(
         ['address'],
         [marketUpdateProposer.address]
+      ),ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint64'],
+        [cometProxy.address, newSupplyKinkByGovernorTimelock]
+      ),
+      ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address'],
+        [configuratorProxyContract.address, cometProxy.address]
       )
     ]
   );
 
-  trace('Governor Timelock: Setting new supplyKink in Configurator and deploying Comet');
-  const newSupplyKinkByGovernorTimelock = 300n;
-  await timelock.executeTransactions(
-    [configuratorProxyContract.address, cometProxyAdminNew.address],
-    [0, 0],
-    ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
-    [ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint64'],
-      [cometProxy.address, newSupplyKinkByGovernorTimelock]
-    ),
-    ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [configuratorProxyContract.address, cometProxy.address]
-    )
-    ],
-  );
+  // await timelock.executeTransactions(
+  //   [configuratorProxyContract.address, cometProxyAdminNew.address],
+  //   [0, 0],
+  //   ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
+  //   [ethers.utils.defaultAbiCoder.encode(
+  //     ['address', 'uint64'],
+  //     [cometProxy.address, newSupplyKinkByGovernorTimelock]
+  //   ),
+  //   ethers.utils.defaultAbiCoder.encode(
+  //     ['address', 'address'],
+  //     [configuratorProxyContract.address, cometProxy.address]
+  //   )
+  //   ],
+  // );
 
   const supplyKinkByGovernorTimelock = await (<Comet>comet).supplyKink();
   trace(`supplyKinkByGovernorTimelock:`, supplyKinkByGovernorTimelock);

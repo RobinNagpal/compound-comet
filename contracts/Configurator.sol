@@ -247,7 +247,9 @@ contract Configurator is ConfiguratorStorage {
         emit SetBorrowPerYearInterestRateBase(cometProxy, oldBase, newBase);
     }
 
-    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external governorOrMarketAdmin {
+    function setStoreFrontPriceFactor(address cometProxy, uint64 newStoreFrontPriceFactor) external {
+        if (msg.sender != governor) revert Unauthorized();
+
         uint64 oldStoreFrontPriceFactor = configuratorParams[cometProxy].storeFrontPriceFactor;
         configuratorParams[cometProxy].storeFrontPriceFactor = newStoreFrontPriceFactor;
         emit SetStoreFrontPriceFactor(cometProxy, oldStoreFrontPriceFactor, newStoreFrontPriceFactor);
@@ -265,7 +267,9 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseTrackingBorrowSpeed(cometProxy, oldBaseTrackingBorrowSpeed, newBaseTrackingBorrowSpeed);
     }
 
-    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external governorOrMarketAdmin {
+    function setBaseMinForRewards(address cometProxy, uint104 newBaseMinForRewards) external {
+        if (msg.sender != governor) revert Unauthorized();
+
         uint104 oldBaseMinForRewards = configuratorParams[cometProxy].baseMinForRewards;
         configuratorParams[cometProxy].baseMinForRewards = newBaseMinForRewards;
         emit SetBaseMinForRewards(cometProxy, oldBaseMinForRewards, newBaseMinForRewards);
@@ -277,7 +281,9 @@ contract Configurator is ConfiguratorStorage {
         emit SetBaseBorrowMin(cometProxy, oldBaseBorrowMin, newBaseBorrowMin);
     }
 
-    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external governorOrMarketAdmin {
+    function setTargetReserves(address cometProxy, uint104 newTargetReserves) external {
+        if (msg.sender != governor) revert Unauthorized();
+
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
         configuratorParams[cometProxy].targetReserves = newTargetReserves;
         emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);

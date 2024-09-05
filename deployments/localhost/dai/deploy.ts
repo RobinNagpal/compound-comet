@@ -208,14 +208,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [configuration],
     maybeForce(),
   );
-
-  const  cometAddress = await cometFactory.callStatic.clone(configuration);
-
-
   const cometProxy = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
-    [cometAddress, cometProxyAdminOld.address, []], // NB: temporary implementation contract
+    [tmpCometImpl.address, cometProxyAdminOld.address, []], // NB: temporary implementation contract
     maybeForce(),
   ) as Comet;
 
@@ -350,7 +346,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     })
   );
 
-  const supplyKinkOld = await cometProxy.supplyKink();
+  const supplyKinkOld = await comet.supplyKink();
   trace(`supplyKink:`, supplyKinkOld);
 
   const signers = await ethers.getSigners();
@@ -477,6 +473,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'Test market update'
   );
 
+  trace('checking supplyKink after market update');
   const supplyKinkByMarketAdmin = await (<Comet>cometProxy).supplyKink();
   trace(`supplyKinkByMarketAdmin:`, supplyKinkByMarketAdmin);
 

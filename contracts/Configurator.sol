@@ -39,7 +39,7 @@ contract Configurator is ConfiguratorStorage {
     event UpdateAssetSupplyCap(address indexed cometProxy, address indexed asset, uint128 oldSupplyCap, uint128 newSupplyCap);
 
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
-    event MarketAdminPaused(bool isMarketAdminPaused);
+    event MarketAdminPaused(address indexed caller, bool isMarketAdminPaused);
     event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
 
     /** Custom errors **/
@@ -48,14 +48,28 @@ contract Configurator is ConfiguratorStorage {
     error ConfigurationAlreadyExists();
     error InvalidAddress();
     error Unauthorized();
+    error MarketAdminIsPaused();
+    error AlreadyPaused();
+    error AlreadyUnPaused();
 
+    /**
+     * @dev Ensures that the caller is either the governor or the market admin.
+     * Reverts with Unauthorized if the caller is neither. If the caller is the market admin,
+     * it also checks if the market admin is paused, reverting with MarketAdminIsPaused if so.
+     * Uses revert instead of require for consistency with other calls.
+     */
     modifier governorOrMarketAdmin {
-        require(msg.sender == governor || msg.sender == marketAdmin, "Unauthorized: caller is not governor or marketAdmin");
+        // using revert instead of require to keep it consistent with other calls
+        if(msg.sender != governor && msg.sender != marketAdmin) revert Unauthorized();
         // If the sender is the marketAdmin, check that the market admin is not paused
-        require(msg.sender != marketAdmin || !marketAdminPaused, "Market admin is paused");
+        if (msg.sender == marketAdmin && marketAdminPaused) revert MarketAdminIsPaused();
         _;
     }
 
+    constructor() {
+        // Set a high version to prevent the implementation contract from being initialized
+        version = type(uint256).max;
+    }
 
     /**
      * @notice Initializes the storage for Configurator
@@ -69,6 +83,15 @@ contract Configurator is ConfiguratorStorage {
         version = 1;
     }
 
+    /**
+     * @notice Sets a new market admin.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the governor.
+     * Emits an event with the old and new market admin addresses.
+     * Note that there is no enforced zero address check on `newMarketAdmin` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the market admin role.
+     * @param newMarketAdmin The address of the new market admin.
+     */
     function setMarketAdmin(address newMarketAdmin) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldMarketAdmin = marketAdmin;
@@ -76,18 +99,38 @@ contract Configurator is ConfiguratorStorage {
         emit SetMarketAdmin(oldMarketAdmin, newMarketAdmin);
     }
 
+    /**
+     * @notice Pauses the market admin role.
+     * @dev Can only be called by the governor or the market admin pause guardian.
+     * Reverts with Unauthorized if the caller is neither.
+     */
     function pauseMarketAdmin() external {
+        if (marketAdminPaused) revert AlreadyPaused();
         if (msg.sender != governor && msg.sender != marketAdminPauseGuardian) revert Unauthorized();
         marketAdminPaused = true;
-        emit MarketAdminPaused(true);
+        emit MarketAdminPaused(msg.sender, true);
     }
 
+    /**
+     * @notice Unpauses the market admin role.
+     * @dev Can only be called by the governor.
+     * Reverts with Unauthorized if the caller is not the governor.
+     */
     function unpauseMarketAdmin() external {
+        if (!marketAdminPaused) revert AlreadyUnPaused();
         if (msg.sender != governor) revert Unauthorized();
         marketAdminPaused = false;
-        emit MarketAdminPaused(false);
+        emit MarketAdminPaused(msg.sender, false);
     }
 
+    /**
+     * @notice Sets a new market admin pause guardian.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
+     * @param newPauseGuardian The address of the new market admin pause guardian.
+     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
+     */
     function setMarketAdminPauseGuardian(address newPauseGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldPauseGuardian = marketAdminPauseGuardian;

@@ -21,7 +21,7 @@ contract MarketUpdateTimelock {
 
     uint public constant GRACE_PERIOD = 14 days;
     uint public constant MINIMUM_DELAY = 0 days;
-    uint public constant MAXIMUM_DELAY = 0 days;
+    uint public constant MAXIMUM_DELAY = 30 days;
 
     address public admin;
     address public marketUpdateProposer;

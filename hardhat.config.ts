@@ -239,7 +239,7 @@ const config: HardhatUserConfig = {
       gas: 120000000,
       gasPrice: 'auto',
       blockGasLimit: 120000000,
-      accounts:  { mnemonic: 'myth like bonus scare over problem client lizard pioneer submit female collect', accountsBalance: (10n ** 36n).toString() },
+      accounts:  { mnemonic: MNEMONIC, accountsBalance: (10n ** 36n).toString() },
       // this should only be relied upon for test harnesses and coverage (which does not use viaIR flag)
       allowUnlimitedContractSize: true,
     },

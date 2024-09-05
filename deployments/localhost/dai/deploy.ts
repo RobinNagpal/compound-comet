@@ -1,6 +1,15 @@
 import { Deployed, DeploymentManager } from '../../../plugins/deployment_manager';
-import {Comet, FaucetToken, SimplePriceFeed, MarketUpdateProposer, CometProxyAdmin, SimpleTimelock, CometProxyAdminOld, MarketUpdateTimelock, CometFactory} from '../../../build/types';
-import {DeploySpec, exp, wait, getConfiguration, sameAddress, COMP_WHALES} from '../../../src/deploy';
+import {Comet, FaucetToken, SimplePriceFeed, MarketUpdateProposer, CometProxyAdmin, SimpleTimelock, CometProxyAdminOld, MarketUpdateTimelock, CometFactory, ConfiguratorProxy, Configurator__factory} from '../../../build/types';
+import {
+  DeploySpec,
+  exp,
+  wait,
+  getConfiguration,
+  sameAddress,
+  COMP_WHALES,
+  getConfigurationStruct
+} from '../../../src/deploy';
+import '@nomiclabs/hardhat-ethers';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -26,7 +35,7 @@ async function makePriceFeed(
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
   const trace = deploymentManager.tracer();
   const signer = await deploymentManager.getSigner();
-  const ethers = (deploymentManager.hre as any).ethers;
+  const ethers = deploymentManager.hre.ethers;
   const admin = signer;
   const voterAddress = COMP_WHALES.testnet[0];
 
@@ -142,7 +151,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     baseBorrowMin,
     targetReserves,
     assetConfigs,
-    rewardTokenAddress
   } = await getConfiguration(deploymentManager, configOverrides);
 
   /* Deploy contracts */
@@ -153,8 +161,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [],
     maybeForce()
   ) as CometProxyAdminOld;
-
-  await cometProxyAdminOld.transferOwnership(timelock.address);
 
 
 
@@ -207,13 +213,24 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     'Comet.sol',
     [configuration],
     maybeForce(),
-  );
-  const cometProxy = await deploymentManager.deploy(
+  ) as Comet;
+
+  trace('Checking tmpCometImpl:supplyKink');
+  console.log('tmpCometImpl:supplyKink', await tmpCometImpl.supplyKink());
+  const cometProxyContract = await deploymentManager.deploy(
     'comet',
     'vendor/proxy/transparent/TransparentUpgradeableProxy.sol',
     [tmpCometImpl.address, cometProxyAdminOld.address, []], // NB: temporary implementation contract
-    maybeForce(),
-  ) as Comet;
+    maybeForce()
+  );
+  const factory= await ethers.getContractFactory('Comet');
+  const cometProxy= factory.attach(cometProxyContract.address) as Comet;
+
+  trace('tmpCometImpl', tmpCometImpl.address);
+
+  trace('Checking CometProxy:supplyKink');
+  console.log('CometProxy:supplyKink', await cometProxy.supplyKink());
+
 
   const configuratorImpl = await deploymentManager.deploy(
     'configurator-old:implementation',
@@ -225,20 +242,39 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // If we deploy a new proxy, we initialize it to the current/new impl
   // If its an existing proxy, the impl we got for the alias must already be current
   // In other words, we shan't have deployed an impl in the last step unless there was no proxy too
-  const configuratorProxy = await deploymentManager.deploy(
+  const configuratorProxyContract = await deploymentManager.deploy(
     'configurator',
     'ConfiguratorProxy.sol',
-    [configuratorImpl.address, cometProxyAdminOld.address, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
+    [configuratorImpl.address, signer.address, (await configuratorImpl.populateTransaction.initialize(admin.address)).data],
     maybeForce()
-  );
+  ) as ConfiguratorProxy;
 
+  const configuratorFactory = await ethers.getContractFactory('Configurator') as Configurator__factory;
+  const configuratorProxy =  configuratorFactory.attach(configuratorProxyContract.address);
+  trace(`Setting factory in Configurator to ${cometFactory.address}`);
+  await configuratorProxy.connect(admin).setFactory(cometProxy.address, cometFactory.address);
+
+
+  const configurationStr = await getConfigurationStruct(deploymentManager);
+  trace(`Setting configuration in Configurator for ${cometProxy.address}`);
+  await configuratorProxy.connect(admin).setConfiguration(cometProxy.address, configurationStr);
+  // await txSetConfiguration.wait();
+
+
+  trace(`Upgrading implementation of Comet...`);
+
+  await configuratorProxyContract.changeAdmin(cometProxyAdminOld.address);
+
+  await cometProxyAdminOld.deployAndUpgradeTo(configuratorProxy.address, cometProxy.address);
+
+  await cometProxyAdminOld.transferOwnership(timelock.address);
 
   /* Wire things up */
 
   // Now configure the configurator and actually deploy comet
   // Note: the success of these calls is dependent on who the admin is and if/when its been transferred
   //  scenarios can pass in an impersonated signer, but real deploys may require proposals for some states
-  const configurator = configuratorImpl.attach(configuratorProxy.address);
+  const configurator = configuratorImpl.attach(configuratorProxyContract.address);
 
   // Also get a handle for Comet, although it may not *actually* support the interface yet
   const comet = await deploymentManager.cast(cometProxy.address, 'contracts/CometInterface.sol:CometInterface');
@@ -255,49 +291,13 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   // If we aren't admin, we'll need proposals to configure things
   const amAdmin = sameAddress(await cometProxyAdminOld.owner(), admin.address);
+  trace(`Am I admin? ${amAdmin}`);
 
   // Get the current impl addresses for the proxies, and determine if we've configurated
-  const $configuratorImpl = await cometProxyAdminOld.getProxyImplementation(configurator.address);
   const $cometImpl = await cometProxyAdminOld.getProxyImplementation(comet.address);
   const isTmpImpl = sameAddress($cometImpl, tmpCometImpl.address);
+  trace(`isTmpImpl ${isTmpImpl} deploySpec.all ${deploySpec.all} deploySpec.cometMain  ${deploySpec.cometMain} deploySpec.cometExt ${deploySpec.cometExt}`);
 
-  // Note: these next setup steps may require a follow-up proposal to complete, if we cannot admin here
-  await deploymentManager.idempotent(
-    async () => amAdmin && !sameAddress($configuratorImpl, configuratorImpl.address),
-    async () => {
-      trace(`Setting Configurator implementation to ${configuratorImpl.address}`);
-      trace(await wait(cometProxyAdminOld.connect(admin).upgrade(configurator.address, configuratorImpl.address)));
-    }
-  );
-
-  await deploymentManager.idempotent(
-    async () => amAdmin && !sameAddress(await configurator.factory(comet.address), cometFactory.address),
-    async () => {
-      trace(`Setting factory in Configurator to ${cometFactory.address}`);
-      trace(await wait(configurator.connect(admin).setFactory(comet.address, cometFactory.address)));
-    }
-  );
-
-  await deploymentManager.idempotent(
-    async () => amAdmin && (isTmpImpl || deploySpec.all || deploySpec.cometMain || deploySpec.cometExt),
-    async () => {
-      trace(`Setting configuration in Configurator for ${comet.address} (${isTmpImpl})`);
-      trace(await wait(configurator.connect(admin).setConfiguration(comet.address, configuration)));
-
-      trace(`Upgrading implementation of Comet...`);
-      trace(await wait(cometProxyAdminOld.connect(admin).deployAndUpgradeTo(configurator.address, comet.address)));
-
-      trace(`New Comet implementation at ${await cometProxyAdminOld.getProxyImplementation(comet.address)}`);
-    }
-  );
-
-  await deploymentManager.idempotent(
-    async () => amAdmin && rewardTokenAddress !== undefined && !sameAddress((await rewards.rewardConfig(comet.address)).token, rewardTokenAddress),
-    async () => {
-      trace(`Setting reward token in CometRewards to ${rewardTokenAddress} for ${comet.address}`);
-      trace(await wait(rewards.connect(admin).setRewardConfig(comet.address, rewardTokenAddress)));
-    }
-  );
 
   /* Transfer to Gov */
 
@@ -390,7 +390,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     maybeForce()
   );
 
-
   trace('Updating Admin of Configurator to CometProxyAdminNew');
   await timelock.executeTransactions(
     [cometProxyAdminOld.address],
@@ -399,10 +398,12 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [
       ethers.utils.defaultAbiCoder.encode(
         ['address', 'address'],
-        [configuratorProxy.address, cometProxyAdminNew.address]
+        [configuratorProxyContract.address, cometProxyAdminNew.address]
       )
     ]
   );
+
+
 
   trace('Updating Admin of CometProxy to CometProxyAdminNew');
   await timelock.executeTransactions(
@@ -424,14 +425,27 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [
       ethers.utils.defaultAbiCoder.encode(
         ['address', 'address'],
-        [configuratorProxy.address, configuratorNew.address]
+        [configuratorProxyContract.address, configuratorNew.address]
       )
     ]
   );
 
   trace('Setting Market Update Admin in Configurator');
   await timelock.executeTransactions(
-    [configuratorProxy.address],
+    [configuratorProxyContract.address],
+    [0],
+    ['setMarketAdmin(address)'],
+    [
+      ethers.utils.defaultAbiCoder.encode(
+        ['address'],
+        [marketUpdateTimelock.address]
+      )
+    ]
+  );
+
+  trace('Setting Market Update Admin in CometProxyAdmin');
+  await timelock.executeTransactions(
+    [cometProxyAdminNew.address],
     [0],
     ['setMarketAdmin(address)'],
     [
@@ -455,33 +469,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  trace('MarketAdmin: Setting new supplyKink in Configurator and deploying Comet');
-  const newSupplyKinkByMarketUpdateAdmin = 100n;
-  await marketUpdateProposer.connect(marketUpdateMultiSig).propose(
-    [configuratorProxy.address, cometProxyAdminNew.address],
-    [0, 0],
-    ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
-    [ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint64'],
-      [cometProxy.address, newSupplyKinkByMarketUpdateAdmin]
-    ),
-    ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [configuratorProxy.address, cometProxy.address]
-    )
-    ],
-    'Test market update'
-  );
-
-  trace('checking supplyKink after market update');
-  const supplyKinkByMarketAdmin = await (<Comet>cometProxy).supplyKink();
-  trace(`supplyKinkByMarketAdmin:`, supplyKinkByMarketAdmin);
-
-
   trace('Governor Timelock: Setting new supplyKink in Configurator and deploying Comet');
   const newSupplyKinkByGovernorTimelock = 300n;
   await timelock.executeTransactions(
-    [configuratorProxy.address, cometProxyAdminNew.address],
+    [configuratorProxyContract.address, cometProxyAdminNew.address],
     [0, 0],
     ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
     [ethers.utils.defaultAbiCoder.encode(
@@ -490,16 +481,39 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ),
     ethers.utils.defaultAbiCoder.encode(
       ['address', 'address'],
-      [configuratorProxy.address, cometProxy.address]
+      [configuratorProxyContract.address, cometProxy.address]
     )
     ],
   );
 
   const supplyKinkByGovernorTimelock = await (<Comet>comet).supplyKink();
   trace(`supplyKinkByGovernorTimelock:`, supplyKinkByGovernorTimelock);
+  
+  trace('MarketAdmin: Setting new supplyKink in Configurator and deploying Comet');
+  const newSupplyKinkByMarketAdmin = 100n;
+  await marketUpdateProposer.connect(marketUpdateMultiSig).propose(
+    [configuratorProxyContract.address, cometProxyAdminNew.address],
+    [0, 0],
+    ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
+    [ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint64'],
+      [cometProxy.address, newSupplyKinkByMarketAdmin]
+    ),
+    ethers.utils.defaultAbiCoder.encode(
+      ['address', 'address'],
+      [configuratorProxyContract.address, cometProxy.address]
+    )
+    ],
+    'Test market update'
+  );
 
+  trace('Executing market update proposal');
 
+  await marketUpdateProposer.connect(marketUpdateMultiSig).execute(1);
 
+  trace('checking supplyKink after market update');
+  const supplyKinkByMarketAdmin = await (<Comet>cometProxy).supplyKink();
+  trace(`supplyKinkByMarketAdmin:`, supplyKinkByMarketAdmin);
 
   return {  comet, configurator, rewards, fauceteer };
 }

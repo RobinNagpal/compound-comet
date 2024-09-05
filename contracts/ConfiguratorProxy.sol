@@ -2,7 +2,6 @@
 pragma solidity 0.8.15;
 
 import "./vendor/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "hardhat/console.sol";
 
 /**
  * @dev A TransparentUpgradeableProxy that allows its admin to call its implementation.

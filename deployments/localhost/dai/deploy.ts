@@ -432,21 +432,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ]
   );
 
-  // await timelock.executeTransactions(
-  //   [configuratorProxyContract.address, cometProxyAdminNew.address],
-  //   [0, 0],
-  //   ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
-  //   [ethers.utils.defaultAbiCoder.encode(
-  //     ['address', 'uint64'],
-  //     [cometProxy.address, newSupplyKinkByGovernorTimelock]
-  //   ),
-  //   ethers.utils.defaultAbiCoder.encode(
-  //     ['address', 'address'],
-  //     [configuratorProxyContract.address, cometProxy.address]
-  //   )
-  //   ],
-  // );
-
   const supplyKinkByGovernorTimelock = await (<Comet>comet).supplyKink();
   trace(`supplyKinkByGovernorTimelock:`, supplyKinkByGovernorTimelock);
   

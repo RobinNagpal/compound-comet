@@ -48,9 +48,34 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   const fauceteer = await deploymentManager.deploy('fauceteer', 'test/Fauceteer.sol', []);
   const timelock = await deploymentManager.deploy('timelock', 'test/SimpleTimelock.sol', [admin.address]) as SimpleTimelock;
-
   const COMP = await deploymentManager.clone('COMP', clone.comp, [admin.address]);
-
+  
+  const governorImpl = await deploymentManager.clone(
+    'governor:implementation',
+    clone.governorBravoImpl,
+    []
+  );
+  const governorProxy = await deploymentManager.clone(
+    'governor',
+    clone.governorBravo,
+    [
+      timelock.address,
+      COMP.address,
+      admin.address,
+      governorImpl.address,
+      await governorImpl.MIN_VOTING_PERIOD(),
+      await governorImpl.MIN_VOTING_DELAY(),
+      await governorImpl.MIN_PROPOSAL_THRESHOLD(),
+    ]
+  );
+  const governorBravo = governorImpl.attach(governorProxy.address);
+  await deploymentManager.idempotent(
+    async () => (await governorBravo.proposalCount()).eq(0),
+    async () => {
+      trace(`Initiating Governor using patched Timelock`);
+      trace(await wait(governorBravo.connect(admin)._initiate(timelock.address)));
+    }
+  );
 
   await deploymentManager.idempotent(
     async () => (await COMP.balanceOf(admin.address)).gte((await COMP.totalSupply()).div(3)),
@@ -59,8 +84,10 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
       const amount = (await COMP.balanceOf(admin.address)).div(4);
       trace(await wait(COMP.connect(admin).transfer(fauceteer.address, amount)));
       trace(await wait(COMP.connect(admin).transfer(timelock.address, amount)));
+      trace(await wait(COMP.connect(admin).transfer(admin.address, amount)));
       trace(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
       trace(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
+      trace(`COMP.balanceOf(${admin.address}): ${await COMP.balanceOf(admin.address)}`);
     }
   );
 
@@ -391,14 +418,48 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
 
   const newSupplyKinkByGovernorTimelock = 300n;
-  trace('Updating Admin of ConfiguratorProxy to CometProxyAdminNew');
-  trace('Updating Admin of CometProxy to CometProxyAdminNew');
-  trace('Upgrade Implementation of ConfiguratorProxy');
-  trace('Setting Market Update Admin in Configurator');
-  trace('Setting Market Update Admin in CometProxyAdmin');
-  trace('Setting Market Update proposer in MarketUpdateTimelock');
-  trace('Governor Timelock: Setting new supplyKink in Configurator and deploying Comet');
-  await timelock.executeTransactions(
+  // trace('Updating Admin of ConfiguratorProxy to CometProxyAdminNew');
+  // trace('Updating Admin of CometProxy to CometProxyAdminNew');
+  // trace('Upgrade Implementation of ConfiguratorProxy');
+  // trace('Setting Market Update Admin in Configurator');
+  // trace('Setting Market Update Admin in CometProxyAdmin');
+  // trace('Setting Market Update proposer in MarketUpdateTimelock');
+  // trace('Governor Timelock: Setting new supplyKink in Configurator and deploying Comet');
+  // await timelock.executeTransactions(
+  //   [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,configuratorProxyContract.address,cometProxyAdminNew.address],
+  //   [0,0,0,0,0,0,0,0],
+  //   ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)','setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)','setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
+  //   [
+  //     ethers.utils.defaultAbiCoder.encode(
+  //       ['address', 'address'],
+  //       [configuratorProxyContract.address, cometProxyAdminNew.address]
+  //     ),ethers.utils.defaultAbiCoder.encode(
+  //       ['address', 'address'],
+  //       [cometProxy.address, cometProxyAdminNew.address]
+  //     ),ethers.utils.defaultAbiCoder.encode(
+  //       ['address', 'address'],
+  //       [configuratorProxyContract.address, configuratorNew.address]
+  //     ),ethers.utils.defaultAbiCoder.encode(
+  //       ['address'],
+  //       [marketUpdateTimelock.address]
+  //     ),ethers.utils.defaultAbiCoder.encode(
+  //       ['address'],
+  //       [marketUpdateTimelock.address]
+  //     ),ethers.utils.defaultAbiCoder.encode(
+  //       ['address'],
+  //       [marketUpdateProposer.address]
+  //     ),ethers.utils.defaultAbiCoder.encode(
+  //       ['address', 'uint64'],
+  //       [cometProxy.address, newSupplyKinkByGovernorTimelock]
+  //     ),
+  //     ethers.utils.defaultAbiCoder.encode(
+  //       ['address', 'address'],
+  //       [configuratorProxyContract.address, cometProxy.address]
+  //     )
+  //   ]
+  // );
+  trace('Proposal from Governor Bravo');
+  await governorBravo.propose(
     [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,configuratorProxyContract.address,cometProxyAdminNew.address],
     [0,0,0,0,0,0,0,0],
     ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)','setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)','setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
@@ -429,7 +490,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
         ['address', 'address'],
         [configuratorProxyContract.address, cometProxy.address]
       )
-    ]
+    ],
+    'Test proposal'
   );
 
   const supplyKinkByGovernorTimelock = await (<Comet>comet).supplyKink();

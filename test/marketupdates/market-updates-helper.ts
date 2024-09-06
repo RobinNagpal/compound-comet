@@ -105,3 +105,8 @@ export async function initializeAndFundGovernorTimelock() {
   const governorTimelockSigner = await ethers.getSigner(governorTimelock.address);
   return { originalSigner: gov, governorTimelockSigner, governorTimelock };
 }
+
+export async function advanceTimeAndMineBlock(delay: number) {
+  await ethers.provider.send('evm_increaseTime', [delay + 10]);
+  await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
+}

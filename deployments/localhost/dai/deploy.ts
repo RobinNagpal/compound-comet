@@ -10,6 +10,7 @@ import {
   getConfigurationStruct
 } from '../../../src/deploy';
 import '@nomiclabs/hardhat-ethers';
+import { ethers } from 'hardhat';
 
 async function makeToken(
   deploymentManager: DeploymentManager,
@@ -29,6 +30,11 @@ async function makePriceFeed(
   decimals: number
 ): Promise<SimplePriceFeed> {
   return deploymentManager.deploy(alias, 'test/SimplePriceFeed.sol', [initialPrice * 1e8, decimals]);
+}
+
+async function advanceTimeAndMineBlock(delay: number) {
+  await ethers.provider.send('evm_increaseTime', [delay + 10]);
+  await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
 }
 
 // TODO: Support configurable assets as well?
@@ -366,7 +372,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const marketUpdateTimelock = await deploymentManager.deploy(
     'marketUpdateTimelock',
     'marketupdates/MarketUpdateTimelock.sol',
-    [governor, 0],
+    [governor, 2 * 24 * 60 * 60],
     maybeForce()
   ) as MarketUpdateTimelock;
 
@@ -506,6 +512,8 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     ],
     'Test market update'
   );
+
+  await advanceTimeAndMineBlock(2 * 24 * 60 * 60 + 10); // Fast forwarding by 2 days and a few seconds
 
   trace('Executing market update proposal');
 

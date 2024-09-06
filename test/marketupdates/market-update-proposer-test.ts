@@ -1,4 +1,4 @@
-import { makeMarketAdmin } from './market-updates-helper';
+import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helper';
 import { expect, makeConfigurator, ethers, wait, event } from '../helpers';
 
 describe('MarketUpdateProposer', function() {
@@ -245,8 +245,7 @@ describe('MarketUpdateProposer', function() {
 
     // Fast forward time by more than the GRACE_PERIOD
     const GRACE_PERIOD = 14 * 24 * 60 * 60; // 14 days in seconds
-    await ethers.provider.send('evm_increaseTime', [GRACE_PERIOD + delay + 1]); // Increase by 14 days(GRACE_PERIOD) + timelock delay + 1 second
-    await ethers.provider.send('evm_mine', []); // Mine the next block to apply the time increase
+    await advanceTimeAndMineBlock(GRACE_PERIOD + delay + 1);// Increase by 14 days(GRACE_PERIOD) + timelock delay + 1 second
 
     expect(await marketUpdateProposer.state(proposalId)).to.equal(3); // Proposal should be expired
 

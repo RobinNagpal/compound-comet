@@ -1,4 +1,4 @@
-import { makeMarketAdmin } from './market-updates-helper';
+import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helper';
 import { expect, makeConfigurator, ethers } from '../helpers';
 
 describe('MarketUpdateTimelock', function() {
@@ -423,8 +423,3 @@ describe('MarketUpdateTimelock', function() {
     );
   });
 });
-
-async function advanceTimeAndMineBlock(delay: number) {
-  await ethers.provider.send('evm_increaseTime', [delay + 10]);
-  await ethers.provider.send('evm_mine', []); // Mine a new block to apply the time increase
-}

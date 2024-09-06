@@ -41,7 +41,7 @@ export async function makeMarketAdmin() {
 
   const marketUpdateTimelock = await marketAdminTimelockFactory.deploy(
     governorTimelock.address,
-    0
+    2 * 24 * 60 * 60 // This is 2 days in seconds
   );
   const marketUpdateTimelockAddress = await marketUpdateTimelock.deployed();
 

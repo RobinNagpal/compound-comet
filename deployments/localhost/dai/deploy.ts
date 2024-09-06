@@ -76,6 +76,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
       trace(await wait(governorBravo.connect(admin)._initiate(timelock.address)));
     }
   );
+  await timelock.connect(admin).setAdmin(governorBravo.address);
 
   await deploymentManager.idempotent(
     async () => (await COMP.balanceOf(admin.address)).gte((await COMP.totalSupply()).div(3)),
@@ -84,19 +85,17 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
       const amount = (await COMP.balanceOf(admin.address)).div(4);
       trace(await wait(COMP.connect(admin).transfer(fauceteer.address, amount)));
       trace(await wait(COMP.connect(admin).transfer(timelock.address, amount)));
-      trace(await wait(COMP.connect(admin).transfer(admin.address, amount)));
       trace(`COMP.balanceOf(${fauceteer.address}): ${await COMP.balanceOf(fauceteer.address)}`);
       trace(`COMP.balanceOf(${timelock.address}): ${await COMP.balanceOf(timelock.address)}`);
-      trace(`COMP.balanceOf(${admin.address}): ${await COMP.balanceOf(admin.address)}`);
     }
   );
 
   await deploymentManager.idempotent(
-    async () => (await COMP.getCurrentVotes(voterAddress)).eq(0),
+    async () => (await COMP.getCurrentVotes(admin.address)).eq(0),
     async () => {
-      trace(`Delegating COMP votes to ${voterAddress}`);
-      trace(await wait(COMP.connect(admin).delegate(voterAddress)));
-      trace(`COMP.getCurrentVotes(${voterAddress}): ${await COMP.getCurrentVotes(voterAddress)}`);
+      trace(`Delegating COMP votes to ${admin.address}`);
+      trace(await wait(COMP.connect(admin).delegate(admin.address)));
+      trace(`COMP.getCurrentVotes(${admin.address}): ${await COMP.getCurrentVotes(admin.address)}`);
     }
   );
 
@@ -418,51 +417,16 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   );
 
   const newSupplyKinkByGovernorTimelock = 300n;
-  // trace('Updating Admin of ConfiguratorProxy to CometProxyAdminNew');
-  // trace('Updating Admin of CometProxy to CometProxyAdminNew');
-  // trace('Upgrade Implementation of ConfiguratorProxy');
-  // trace('Setting Market Update Admin in Configurator');
-  // trace('Setting Market Update Admin in CometProxyAdmin');
-  // trace('Setting Market Update proposer in MarketUpdateTimelock');
-  // trace('Governor Timelock: Setting new supplyKink in Configurator and deploying Comet');
-  // await timelock.executeTransactions(
-  //   [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,configuratorProxyContract.address,cometProxyAdminNew.address],
-  //   [0,0,0,0,0,0,0,0],
-  //   ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)','setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)','setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
-  //   [
-  //     ethers.utils.defaultAbiCoder.encode(
-  //       ['address', 'address'],
-  //       [configuratorProxyContract.address, cometProxyAdminNew.address]
-  //     ),ethers.utils.defaultAbiCoder.encode(
-  //       ['address', 'address'],
-  //       [cometProxy.address, cometProxyAdminNew.address]
-  //     ),ethers.utils.defaultAbiCoder.encode(
-  //       ['address', 'address'],
-  //       [configuratorProxyContract.address, configuratorNew.address]
-  //     ),ethers.utils.defaultAbiCoder.encode(
-  //       ['address'],
-  //       [marketUpdateTimelock.address]
-  //     ),ethers.utils.defaultAbiCoder.encode(
-  //       ['address'],
-  //       [marketUpdateTimelock.address]
-  //     ),ethers.utils.defaultAbiCoder.encode(
-  //       ['address'],
-  //       [marketUpdateProposer.address]
-  //     ),ethers.utils.defaultAbiCoder.encode(
-  //       ['address', 'uint64'],
-  //       [cometProxy.address, newSupplyKinkByGovernorTimelock]
-  //     ),
-  //     ethers.utils.defaultAbiCoder.encode(
-  //       ['address', 'address'],
-  //       [configuratorProxyContract.address, cometProxy.address]
-  //     )
-  //   ]
-  // );
-  trace('Proposal from Governor Bravo');
-  await governorBravo.propose(
-    [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,configuratorProxyContract.address,cometProxyAdminNew.address],
+
+  trace('Trigger updates to enable market admin');
+  const firstProposalTxn = await governorBravo.connect(admin).propose(
+    [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,
+      configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,
+      configuratorProxyContract.address,cometProxyAdminNew.address],
     [0,0,0,0,0,0,0,0],
-    ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)','setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)','setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
+    ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)',
+      'setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)',
+      'setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
     [
       ethers.utils.defaultAbiCoder.encode(
         ['address', 'address'],
@@ -491,9 +455,93 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
         [configuratorProxyContract.address, cometProxy.address]
       )
     ],
-    'Test proposal'
+    'Proposal to trigger updates for market admin'
   );
+  const firstProposalReceipt = await firstProposalTxn.wait();
 
+  const firstProposalID = firstProposalReceipt.events.find( 
+    (event) => event.event === 'ProposalCreated'
+  ).args.id;
+  console.log('first proposal id: ', firstProposalID);
+  
+  const stateBeforeStart = await governorBravo.state(firstProposalID);
+  console.log('Proposal State before start block forwarding:', stateBeforeStart);
+  
+  const votingDelay = await governorBravo.votingDelay();
+  // Fast-forward by votingDelay blocks to reach the start of the voting period
+  for (let i = 0; i < votingDelay.toNumber(); i++) {
+    await ethers.provider.send('evm_mine', []);
+  }
+  const stateAfterStart = await governorBravo.state(firstProposalID);
+  console.log('Proposal State after start block forwarding:', stateAfterStart);
+  
+  await governorBravo.connect(admin).castVote(firstProposalID, 1);
+  
+  const votingPeriod = await governorBravo.votingPeriod(); 
+  // Fast-forward to the end of the voting period
+  for (let i = 0; i <= votingPeriod.toNumber(); i++) {
+    await ethers.provider.send('evm_mine', []); // fast-forward remaining blocks
+  }
+  
+  const stateAfter = await governorBravo.state(firstProposalID);
+  console.log('Proposal State after fast-forward:', stateAfter);
+  
+  trace('Queue from Governor Bravo');
+  await governorBravo.connect(admin).queue(firstProposalID);
+  trace('Execute from Governor Bravo');
+  await governorBravo.connect(admin).execute(firstProposalID);
+  
+  trace('Update supply kink through GovernorBravo');
+  const secondProposalTxn = await governorBravo.connect(admin).propose(
+    [configuratorProxyContract.address,cometProxyAdminNew.address],
+    [0,0],
+    ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
+    [
+      ethers.utils.defaultAbiCoder.encode(
+        ['address', 'uint64'],
+        [cometProxy.address, newSupplyKinkByGovernorTimelock]
+      ),
+      ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address'],
+        [configuratorProxyContract.address, cometProxy.address]
+      )
+    ],
+    'Proposal to update supply kink'
+  );
+  const secondProposalReceipt = await secondProposalTxn.wait();
+
+  const secondProposalID = secondProposalReceipt.events.find( 
+    (event) => event.event === 'ProposalCreated'
+  ).args.id;
+  console.log('second proposal id: ', secondProposalID);
+  
+  const stateBeforeStart2 = await governorBravo.state(secondProposalID);
+  console.log('Proposal State before start block forwarding #2:', stateBeforeStart2);
+  
+  const votingDelay2 = await governorBravo.votingDelay();
+  // Fast-forward by votingDelay blocks to reach the start of the voting period
+  for (let i = 0; i < votingDelay2.toNumber(); i++) {
+    await ethers.provider.send('evm_mine', []);
+  }
+  const stateAfterStart2 = await governorBravo.state(secondProposalID);
+  console.log('Proposal State after start block forwarding #2:', stateAfterStart2);
+  
+  await governorBravo.connect(admin).castVote(secondProposalID, 1);
+  
+  const votingPeriod2 = await governorBravo.votingPeriod(); 
+  // Fast-forward to the end of the voting period
+  for (let i = 0; i <= votingPeriod2.toNumber(); i++) {
+    await ethers.provider.send('evm_mine', []); // fast-forward remaining blocks
+  }
+  
+  const stateAfter2 = await governorBravo.state(secondProposalID);
+  console.log('Proposal State after fast-forward #2:', stateAfter2);
+  
+  trace('Queue from Governor Bravo #2');
+  await governorBravo.connect(admin).queue(secondProposalID);
+  trace('Execute from Governor Bravo #2');
+  await governorBravo.connect(admin).execute(secondProposalID);
+  
   const supplyKinkByGovernorTimelock = await (<Comet>comet).supplyKink();
   trace(`supplyKinkByGovernorTimelock:`, supplyKinkByGovernorTimelock);
   

@@ -420,40 +420,30 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
 
   trace('Trigger updates to enable market admin');
   const firstProposalTxn = await governorBravo.connect(admin).propose(
-    [cometProxyAdminOld.address,cometProxyAdminOld.address,cometProxyAdminNew.address,
-      configuratorProxyContract.address,cometProxyAdminNew.address,marketUpdateTimelock.address,
-      configuratorProxyContract.address,cometProxyAdminNew.address],
-    [0,0,0,0,0,0,0,0],
-    ['changeProxyAdmin(address,address)','changeProxyAdmin(address,address)','upgrade(address,address)',
-      'setMarketAdmin(address)','setMarketAdmin(address)','setMarketUpdateProposer(address)',
-      'setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
     [
-      ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address'],
-        [configuratorProxyContract.address, cometProxyAdminNew.address]
-      ),ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address'],
-        [cometProxy.address, cometProxyAdminNew.address]
-      ),ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address'],
-        [configuratorProxyContract.address, configuratorNew.address]
-      ),ethers.utils.defaultAbiCoder.encode(
-        ['address'],
-        [marketUpdateTimelock.address]
-      ),ethers.utils.defaultAbiCoder.encode(
-        ['address'],
-        [marketUpdateTimelock.address]
-      ),ethers.utils.defaultAbiCoder.encode(
-        ['address'],
-        [marketUpdateProposer.address]
-      ),ethers.utils.defaultAbiCoder.encode(
-        ['address', 'uint64'],
-        [cometProxy.address, newSupplyKinkByGovernorTimelock]
-      ),
-      ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address'],
-        [configuratorProxyContract.address, cometProxy.address]
-      )
+      cometProxyAdminOld.address,
+      cometProxyAdminOld.address,
+      cometProxyAdminNew.address,
+      configuratorProxyContract.address,
+      cometProxyAdminNew.address,
+      marketUpdateTimelock.address
+    ],
+    [0, 0, 0, 0, 0, 0],
+    [
+      'changeProxyAdmin(address,address)',
+      'changeProxyAdmin(address,address)',
+      'upgrade(address,address)',
+      'setMarketAdmin(address)',
+      'setMarketAdmin(address)',
+      'setMarketUpdateProposer(address)',
+    ],
+    [
+      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxyContract.address, cometProxyAdminNew.address]),
+      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [cometProxy.address, cometProxyAdminNew.address]),
+      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxyContract.address, configuratorNew.address]),
+      ethers.utils.defaultAbiCoder.encode(['address'], [marketUpdateTimelock.address]),
+      ethers.utils.defaultAbiCoder.encode(['address'], [marketUpdateTimelock.address]),
+      ethers.utils.defaultAbiCoder.encode(['address'], [marketUpdateProposer.address])
     ],
     'Proposal to trigger updates for market admin'
   );
@@ -493,18 +483,18 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   
   trace('Update supply kink through GovernorBravo');
   const secondProposalTxn = await governorBravo.connect(admin).propose(
-    [configuratorProxyContract.address,cometProxyAdminNew.address],
-    [0,0],
-    ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
     [
-      ethers.utils.defaultAbiCoder.encode(
-        ['address', 'uint64'],
-        [cometProxy.address, newSupplyKinkByGovernorTimelock]
-      ),
-      ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address'],
-        [configuratorProxyContract.address, cometProxy.address]
-      )
+      configuratorProxyContract.address,
+      cometProxyAdminNew.address
+    ],
+    [0,0],
+    [
+      'setSupplyKink(address,uint64)',
+      'deployAndUpgradeTo(address,address)'
+    ],
+    [
+      ethers.utils.defaultAbiCoder.encode(['address', 'uint64'], [cometProxy.address, newSupplyKinkByGovernorTimelock]),
+      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxyContract.address, cometProxy.address])
     ],
     'Proposal to update supply kink'
   );
@@ -548,17 +538,18 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   trace('MarketAdmin: Setting new supplyKink in Configurator and deploying Comet');
   const newSupplyKinkByMarketAdmin = 100n;
   await marketUpdateProposer.connect(marketUpdateMultiSig).propose(
-    [configuratorProxyContract.address, cometProxyAdminNew.address],
+    [
+      configuratorProxyContract.address,
+      cometProxyAdminNew.address
+    ],
     [0, 0],
-    ['setSupplyKink(address,uint64)', 'deployAndUpgradeTo(address,address)'],
-    [ethers.utils.defaultAbiCoder.encode(
-      ['address', 'uint64'],
-      [cometProxy.address, newSupplyKinkByMarketAdmin]
-    ),
-    ethers.utils.defaultAbiCoder.encode(
-      ['address', 'address'],
-      [configuratorProxyContract.address, cometProxy.address]
-    )
+    [
+      'setSupplyKink(address,uint64)',
+      'deployAndUpgradeTo(address,address)'
+    ],
+    [
+      ethers.utils.defaultAbiCoder.encode(['address', 'uint64'], [cometProxy.address, newSupplyKinkByMarketAdmin]),
+      ethers.utils.defaultAbiCoder.encode(['address', 'address'], [configuratorProxyContract.address, cometProxy.address])
     ],
     'Test market update'
   );

@@ -48,6 +48,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@flashbots/ethers-provider-bundle": "^0.5.0",
+    "@openzeppelin/contracts": "4.9.6",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "deep-object-diff": "^1.1.9",

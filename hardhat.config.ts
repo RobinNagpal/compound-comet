@@ -33,7 +33,6 @@ import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/rel
 import arbitrumWETHRelationConfigMap from './deployments/arbitrum/weth/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
-import optimismSepoliaNativeUsdcRelationConfigMap from './deployments/optimism-sepolia/usdc/relations';
 import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations';
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
@@ -400,9 +399,6 @@ const config: HardhatUserConfig = {
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
         usdc: arbitrumGoerliNativeUsdcRelationConfigMap
-      },
-      'optimism-sepolia': {
-        usdc: optimismSepoliaNativeUsdcRelationConfigMap
       },
       'base': {
         usdbc: baseUsdbcRelationConfigMap,

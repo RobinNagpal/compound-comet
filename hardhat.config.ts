@@ -33,6 +33,7 @@ import arbitrumNativeUsdcRelationConfigMap from './deployments/arbitrum/usdc/rel
 import arbitrumWETHRelationConfigMap from './deployments/arbitrum/weth/relations';
 import arbitrumBridgedUsdcGoerliRelationConfigMap from './deployments/arbitrum-goerli/usdc.e/relations';
 import arbitrumGoerliNativeUsdcRelationConfigMap from './deployments/arbitrum-goerli/usdc/relations';
+import optimismSepoliaNativeUsdcRelationConfigMap from './deployments/optimism-sepolia/usdc/relations';
 import arbitrumUsdtRelationConfigMap from './deployments/arbitrum/usdt/relations';
 import baseUsdbcRelationConfigMap from './deployments/base/usdbc/relations';
 import baseWethRelationConfigMap from './deployments/base/weth/relations';
@@ -151,6 +152,11 @@ const networkConfigs: NetworkConfig[] = [
     url: `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`,
   },
   {
+    network: 'optimism-sepolia',
+    chainId: 11155420,
+    url: `https://optimism-sepolia.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
     network: 'base-goerli',
     chainId: 84531,
     url: `https://goerli.base.org/`,
@@ -220,6 +226,11 @@ const config: HardhatUserConfig = {
   },
 
   networks: {
+    optimismSepolia: {
+      url: 'https://sepolia.optimism.io',
+      accounts: [`0x${process.env.PRIVATE_KEY}`],  // Add your wallet private key in .env file
+      chainId: 11155420
+    },
     hardhat: {
       chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],
@@ -270,7 +281,9 @@ const config: HardhatUserConfig = {
       'base-goerli': BASESCAN_KEY,
       // Linea
       'linea-goerli': LINEASCAN_KEY,
+      // Optimism
       optimism: OPTIMISMSCAN_KEY,
+      'optimism-sepolia': OPTIMISMSCAN_KEY,
       optimisticEthereum: OPTIMISMSCAN_KEY,
       // Scroll Testnet
       'scroll-goerli': ETHERSCAN_KEY,
@@ -294,6 +307,15 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api-goerli.arbiscan.io/api',
           browserURL: 'https://goerli.arbiscan.io/'
+        }
+      },
+      {
+        // Hardhat's Etherscan plugin calls the network `optimismSepolia`, so we need to add an entry for our own network name
+        network: 'optimism-sepolia',
+        chainId: 11155420,
+        urls: {
+          apiURL: 'https://api-sepolia.optimistic.etherescan.io/api',
+          browserURL: 'https://sepolia.optimistic.etherscan.io/'
         }
       },
       {
@@ -378,6 +400,9 @@ const config: HardhatUserConfig = {
       'arbitrum-goerli': {
         'usdc.e': arbitrumBridgedUsdcGoerliRelationConfigMap,
         usdc: arbitrumGoerliNativeUsdcRelationConfigMap
+      },
+      'optimism-sepolia': {
+        usdc: optimismSepoliaNativeUsdcRelationConfigMap
       },
       'base': {
         usdbc: baseUsdbcRelationConfigMap,
@@ -506,6 +531,12 @@ const config: HardhatUserConfig = {
         network: 'arbitrum-goerli',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'optimism-sepolia-usdc',
+        network: 'optimism-sepolia',
+        deployment: 'usdc',
+        auxiliaryBase: 'sepolia'
       },
       {
         name: 'base-usdbc',

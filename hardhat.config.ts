@@ -240,6 +240,11 @@ const config: HardhatUserConfig = {
       accounts: [`0x${process.env.PRIVATE_KEY}`],  // Add your wallet private key in .env file
       chainId: 421614
     },
+    mainnetSepolia: {
+      url: 'https://ethereum-sepolia.blockpi.network/v1/rpc/public',
+      accounts: [`0x${process.env.PRIVATE_KEY}`],  // Add your wallet private key in .env file
+      chainId: 11155111
+    },
     hardhat: {
       chainId: 1337,
       loggingEnabled: !!process.env['LOGGING'],

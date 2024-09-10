@@ -23,13 +23,11 @@ async function main() {
   // Define your contract bytecode
   const ContractFactory = await ethers.getContractFactory('MarketUpdateProposer');
 
-
   const creationBytecode = await ContractFactory.getDeployTransaction();
 
   const artifact = hre.artifacts.readArtifact('MarketUpdateProposer');
   const bytecode = (await artifact).bytecode;
   const deployedByteCode = (await artifact).deployedBytecode;
-  // console.log('bytecode: ', bytecode);
 
   // Define your salt
   const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('my-salt-string'));
@@ -39,12 +37,12 @@ async function main() {
 
   console.log('Deterministic Address of MarketUpdateProposer:', contractAddress);
 
-  const marketProposer =  await ethers.getContractAt('MarketUpdateProposer', contractAddress);
+  const deployedCode =  await ethers.provider.getCode(contractAddress);
 
-  if(marketProposer) {
-    const marketProposerByteCode = await marketProposer.provider.getCode(marketProposer.address);
+  if(deployedCode !== '0x') {
+    const marketProposer = await ethers.getContractAt('MarketUpdateProposer', contractAddress);
+    const marketProposerByteCode = await ethers.provider.getCode(marketProposer.address);
     console.log('MarketUpdateProposer already deployed at address: ', contractAddress);
-
     console.log('MarketUpdateProposer ByteCode is Same? : ', marketProposerByteCode.toLowerCase() == deployedByteCode.toLowerCase());
     return;
   } else {

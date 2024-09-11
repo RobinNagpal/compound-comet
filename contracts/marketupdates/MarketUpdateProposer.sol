@@ -63,7 +63,7 @@ contract MarketUpdateProposer is Ownable {
     uint public proposalCount;
 
     /// @notice Initial proposal id set at become
-    uint public initialProposalId = 0;
+    uint public initialProposalId;
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);

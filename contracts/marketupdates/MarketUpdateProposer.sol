@@ -16,7 +16,7 @@ import "./../vendor/access/Ownable.sol";
 * overkill
 *
 */
-contract MarketUpdateProposer is Ownable {
+contract MarketUpdateProposer {
     struct MarketUpdateProposal {
         /// @notice Unique id for looking up a proposal
         uint id;
@@ -56,6 +56,9 @@ contract MarketUpdateProposer is Ownable {
     }
 
     ITimelock public timelock;
+    address public admin;
+    address public pauseGuardian;
+    address public marketAdmin;
 
     /// @notice The official record of all proposals ever proposed
     mapping(uint => MarketUpdateProposal) public proposals;
@@ -63,25 +66,57 @@ contract MarketUpdateProposer is Ownable {
     uint public proposalCount;
 
     /// @notice Initial proposal id set at become
-    uint public initialProposalId;
+    uint public initialProposalId = 0;
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
     event MarketUpdateProposalExecuted(uint id);
     event MarketUpdateProposalCancelled(uint id);
+    event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
 
     error AlreadyInitialized();
     error InvalidAddress();
+    
+    modifier onlyAdmin(){
+        if (msg.sender != admin) revert Unauthorized();
+        _;
+    }
 
-
-    function initialize(ITimelock timelock_) public onlyOwner {
+    modifier adminOrPauseGuardianOrMarketAdmin(){
+        if (msg.sender != admin && msg.sender != pauseGuardian) revert Unauthorized();
+        _;
+    }
+    
+    modifier onlyMarketAdmin(){
+        if (msg.sender != marketAdmin) revert Unauthorized();
+        _;
+    }
+    
+    constructor(address admin_) public {
+        admin = admin_;
+    }
+    
+    function initialize(ITimelock timelock_) public onlyAdmin {
         if (address(timelock_) == address(0)) revert InvalidAddress();
         if (address(timelock) != address(0)) revert AlreadyInitialized();
 
         timelock = timelock_;
     }
+    
+    function setPauseGuardian(address newPauseGuardian) external onlyAdmin {
+        address oldPauseGuardian = pauseGuardian;
+        pauseGuardian = newPauseGuardian;
+        emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
+    }
 
-    function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public onlyOwner returns (uint) {
+    function setMarketAdmin(address newAdmin) external onlyAdmin {
+        address oldAdmin = marketAdmin;
+        marketAdmin = newAdmin;
+        emit SetMarketAdmin(oldAdmin, newAdmin);
+    }
+    
+    function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public onlyMarketAdmin returns (uint) {
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "MarketUpdateProposer::propose: proposal function information arity mismatch");
         require(targets.length != 0, "MarketUpdateProposer::propose: must provide actions");
 
@@ -123,7 +158,7 @@ contract MarketUpdateProposer is Ownable {
       * @notice Executes a queued proposal if eta has passed
       * @param proposalId The id of the proposal to execute
       */
-    function execute(uint proposalId) external payable onlyOwner {
+    function execute(uint proposalId) external payable onlyMarketAdmin {
         require(state(proposalId) == ProposalState.Queued, "MarketUpdateProposer::execute: proposal can only be executed if it is queued");
         MarketUpdateProposal storage proposal = proposals[proposalId];
         proposal.executed = true;
@@ -137,7 +172,7 @@ contract MarketUpdateProposer is Ownable {
       * @notice Cancels a proposal only if sender is the proposer, or proposer delegates dropped below proposal threshold
       * @param proposalId The id of the proposal to cancel
       */
-    function cancel(uint proposalId) external onlyOwner {
+    function cancel(uint proposalId) external adminOrPauseGuardianOrMarketAdmin {
         require(state(proposalId) != ProposalState.Executed, "MarketUpdateProposer::cancel: cannot cancel executed proposal");
 
         MarketUpdateProposal storage proposal = proposals[proposalId];

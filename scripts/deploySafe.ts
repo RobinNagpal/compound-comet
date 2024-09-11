@@ -23,7 +23,7 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   const owners = [deployer.address, '0x7053e25f7076F4986D632A3C04313C81831e0d55', '0x77B65c68E52C31eb844fb3b4864B91133e2C1308']; // Replace with actual addresses
   const threshold = 2; // Require 2 out of 3 approvals
-  const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('deterministic-safe-5'));
+  const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('deterministic-safe-8'));
 
   
   const proxyFactoryDeployment = getProxyFactoryDeployment({ network: String(network.chainId) });
@@ -65,7 +65,7 @@ async function main() {
   console.log('Safe deployed at:', deployedAddress);
   
   // const safeFactory = await SafeFactory.init({ provider: 'https://sepolia.optimism.io', signer: process.env.PRIVATE_KEY });
-  const safeFactory = await SafeFactory.init({ provider: rpcUrl, signer: process.env.PRIVATE_KEY });
+  const safeFactory = await SafeFactory.init({ provider: rpcUrl, signer: process.env.PRIVATE_KEY,safeVersion:'1.4.1' });
   // const safeFactory = await SafeFactory.init({ provider: 'https://ethereum-sepolia.blockpi.network/v1/rpc/public', signer: process.env.PRIVATE_KEY });
   console.log('safe factory: ', safeFactory);
 

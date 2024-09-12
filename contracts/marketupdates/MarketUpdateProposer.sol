@@ -2,7 +2,6 @@
 pragma solidity 0.8.15;
 
 import "./../ITimelock.sol";
-import "./../vendor/access/Ownable.sol";
 
 /**
 * @title MarketUpdateProposer
@@ -55,10 +54,10 @@ contract MarketUpdateProposer {
         Expired
     }
 
-    ITimelock public timelock;
     address public governor;
     address public pauseGuardian;
     address public marketAdmin;
+    ITimelock public timelock;
 
     /// @notice The official record of all proposals ever proposed
     mapping(uint => MarketUpdateProposal) public proposals;
@@ -74,11 +73,13 @@ contract MarketUpdateProposer {
     event MarketUpdateProposalCancelled(uint id);
     event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
-    event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
+    event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
 
     error Unauthorized();
+    error InvalidAddress();
 
     constructor(address governor_, address marketAdmin_, ITimelock timelock_) public {
+        if (address(governor_) == address(0) || address(marketAdmin_) == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
         governor = governor_;
         marketAdmin = marketAdmin_;
         timelock = timelock_;
@@ -90,11 +91,13 @@ contract MarketUpdateProposer {
      * Emits an event with the old and new governor addresses.
      * @param newGovernor The address of the new governor.
      */
-    function transferGovernor(address newGovernor) external {
+    function setGovernor(address newGovernor) external {
         if (msg.sender != governor) revert Unauthorized();
+        if (address(newGovernor) == address(0)) revert InvalidAddress();
+        
         address oldGovernor = governor;
         governor = newGovernor;
-        emit GovernorTransferred(oldGovernor, newGovernor);
+        emit SetGovernor(oldGovernor, newGovernor);
     }
     
     /**

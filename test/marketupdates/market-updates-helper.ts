@@ -15,25 +15,7 @@ export async function makeMarketAdmin() {
   const signers = await ethers.getSigners();
 
   const marketUpdateMultiSig = signers[3];
-
-  const marketUpdaterProposerFactory = (await ethers.getContractFactory(
-    'MarketUpdateProposer'
-  )) as MarketUpdateProposer__factory;
-
-  // Fund the impersonated account
-  await signers[0].sendTransaction({
-    to: marketUpdateMultiSig.address,
-    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
-  });
-
-  // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
-  const marketUpdateProposer = await marketUpdaterProposerFactory
-    .deploy(governorTimelock.address);
-
-  expect(await marketUpdateProposer.governor()).to.be.equal(
-    governorTimelock.address
-  );
-
+  
   const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'
   )) as MarketUpdateTimelock__factory;
@@ -61,11 +43,23 @@ export async function makeMarketAdmin() {
     marketUpdateTimelockAddress.address
   );
 
-  await marketUpdateProposer
-    .connect(governorTimelockSigner)
-    .initialize(marketUpdateTimelock.address);
-    
-  await marketUpdateProposer.connect(governorTimelockSigner).setMarketAdmin(marketUpdateMultiSig.address);
+  const marketUpdaterProposerFactory = (await ethers.getContractFactory(
+    'MarketUpdateProposer'
+  )) as MarketUpdateProposer__factory;
+
+  // Fund the impersonated account
+  await signers[0].sendTransaction({
+    to: marketUpdateMultiSig.address,
+    value: ethers.utils.parseEther('1.0'), // Sending 1 Ether to cover gas fees
+  });
+
+  // This sets the owner of the MarketUpdateProposer to the marketUpdateMultiSig
+  const marketUpdateProposer = await marketUpdaterProposerFactory
+    .deploy(governorTimelock.address, marketUpdateMultiSig.address, marketUpdateTimelock.address);
+
+  expect(await marketUpdateProposer.governor()).to.be.equal(
+    governorTimelock.address
+  );
 
   await marketUpdateTimelock
     .connect(governorTimelockSigner)

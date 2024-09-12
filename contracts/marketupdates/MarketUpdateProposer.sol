@@ -76,19 +76,11 @@ contract MarketUpdateProposer {
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
 
-    error AlreadyInitialized();
-    error InvalidAddress();
     error Unauthorized();
 
-    constructor(address governor_) public {
+    constructor(address governor_, address marketAdmin_, ITimelock timelock_) public {
         governor = governor_;
-    }
-
-    function initialize(ITimelock timelock_) public {
-        if (msg.sender != governor) revert Unauthorized();
-        if (address(timelock_) == address(0)) revert InvalidAddress();
-        if (address(timelock) != address(0)) revert AlreadyInitialized();
-
+        marketAdmin = marketAdmin_;
         timelock = timelock_;
     }
     

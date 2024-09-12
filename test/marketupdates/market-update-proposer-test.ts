@@ -16,21 +16,8 @@ describe('MarketUpdateProposer', function() {
     );
   });
 
-  it('throw error if MarketUpdateProposer is initialized twice', async () => {
-    const {
-      governorTimelockSigner,
-      marketUpdateProposer,
-      marketUpdateTimelock,
-    } = await makeMarketAdmin();
-
-    await expect(
-      marketUpdateProposer.connect(governorTimelockSigner).initialize(marketUpdateTimelock.address)
-    ).to.be.revertedWithCustomError(marketUpdateProposer, 'AlreadyInitialized');
-  });
-
   it('MarketUpdateMultisig is set as the marketAdmin of MarketUpdateProposer', async () => {
     const {
-      governorTimelockSigner,
       marketUpdateProposer,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();
@@ -94,7 +81,6 @@ describe('MarketUpdateProposer', function() {
   
   it('only allows MarketUpdateMultisig to create proposal', async () => {
     const {
-      governorTimelockSigner,
       marketUpdateProposer,
       marketUpdateMultiSig,
     } = await makeMarketAdmin();

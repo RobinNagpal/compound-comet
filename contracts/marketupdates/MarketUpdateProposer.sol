@@ -56,7 +56,7 @@ contract MarketUpdateProposer {
     }
 
     ITimelock public timelock;
-    address public admin;
+    address public governor;
     address public pauseGuardian;
     address public marketAdmin;
 
@@ -74,49 +74,71 @@ contract MarketUpdateProposer {
     event MarketUpdateProposalCancelled(uint id);
     event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
+    event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
 
     error AlreadyInitialized();
     error InvalidAddress();
-    
-    modifier onlyAdmin(){
-        if (msg.sender != admin) revert Unauthorized();
-        _;
+    error Unauthorized();
+
+    constructor(address governor_) public {
+        governor = governor_;
     }
 
-    modifier adminOrPauseGuardianOrMarketAdmin(){
-        if (msg.sender != admin && msg.sender != pauseGuardian) revert Unauthorized();
-        _;
-    }
-    
-    modifier onlyMarketAdmin(){
-        if (msg.sender != marketAdmin) revert Unauthorized();
-        _;
-    }
-    
-    constructor(address admin_) public {
-        admin = admin_;
-    }
-    
-    function initialize(ITimelock timelock_) public onlyAdmin {
+    function initialize(ITimelock timelock_) public {
+        if (msg.sender != governor) revert Unauthorized();
         if (address(timelock_) == address(0)) revert InvalidAddress();
         if (address(timelock) != address(0)) revert AlreadyInitialized();
 
         timelock = timelock_;
     }
     
-    function setPauseGuardian(address newPauseGuardian) external onlyAdmin {
+    /**
+     * @notice Transfers the governor rights to a new address
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
+     * Emits an event with the old and new governor addresses.
+     * @param newGovernor The address of the new governor.
+     */
+    function transferGovernor(address newGovernor) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldGovernor = governor;
+        governor = newGovernor;
+        emit GovernorTransferred(oldGovernor, newGovernor);
+    }
+    
+    /**
+     * @notice Sets a new pause guardian.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
+     * Emits an event with the old and new pause guardian addresses.
+     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
+     * @param newPauseGuardian The address of the new market admin pause guardian.
+     */
+    function setPauseGuardian(address newPauseGuardian) external {
+        if (msg.sender != governor) revert Unauthorized();
         address oldPauseGuardian = pauseGuardian;
         pauseGuardian = newPauseGuardian;
         emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
     }
 
-    function setMarketAdmin(address newAdmin) external onlyAdmin {
-        address oldAdmin = marketAdmin;
-        marketAdmin = newAdmin;
-        emit SetMarketAdmin(oldAdmin, newAdmin);
+    /**
+     * @notice Sets a new market admin.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the governor.
+     * Emits an event with the old and new market admin addresses.
+     * Note that there is no enforced zero address check on `newMarketAdmin` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the market admin role.
+     * @param newMarketAdmin The address of the new market admin.
+     */
+    function setMarketAdmin(address newMarketAdmin) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldMarketAdmin = marketAdmin;
+        marketAdmin = newMarketAdmin;
+        emit SetMarketAdmin(oldMarketAdmin, newMarketAdmin);
     }
     
-    function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public onlyMarketAdmin returns (uint) {
+    function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
+        if (msg.sender != marketAdmin) revert Unauthorized();
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "MarketUpdateProposer::propose: proposal function information arity mismatch");
         require(targets.length != 0, "MarketUpdateProposer::propose: must provide actions");
 
@@ -158,7 +180,8 @@ contract MarketUpdateProposer {
       * @notice Executes a queued proposal if eta has passed
       * @param proposalId The id of the proposal to execute
       */
-    function execute(uint proposalId) external payable onlyMarketAdmin {
+    function execute(uint proposalId) external payable {
+        if (msg.sender != marketAdmin) revert Unauthorized();
         require(state(proposalId) == ProposalState.Queued, "MarketUpdateProposer::execute: proposal can only be executed if it is queued");
         MarketUpdateProposal storage proposal = proposals[proposalId];
         proposal.executed = true;
@@ -172,7 +195,8 @@ contract MarketUpdateProposer {
       * @notice Cancels a proposal only if sender is the proposer, or proposer delegates dropped below proposal threshold
       * @param proposalId The id of the proposal to cancel
       */
-    function cancel(uint proposalId) external adminOrPauseGuardianOrMarketAdmin {
+    function cancel(uint proposalId) external {
+        if (msg.sender != governor && msg.sender != pauseGuardian && msg.sender != marketAdmin) revert Unauthorized();
         require(state(proposalId) != ProposalState.Executed, "MarketUpdateProposer::cancel: cannot cancel executed proposal");
 
         MarketUpdateProposal storage proposal = proposals[proposalId];

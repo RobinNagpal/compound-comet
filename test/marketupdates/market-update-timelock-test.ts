@@ -3,10 +3,10 @@ import { expect, makeConfigurator, ethers } from '../helpers';
 
 describe('MarketUpdateTimelock', function() {
   it('is created properly with main-governor-timelock as governor', async () => {
-    const { marketUpdateTimelock, governorTimelock } = await makeMarketAdmin();
+    const { marketUpdateTimelock, governorTimelockSigner } = await makeMarketAdmin();
 
     expect(await marketUpdateTimelock.governor()).to.equal(
-      governorTimelock.address
+      governorTimelockSigner.address
     );
   });
 

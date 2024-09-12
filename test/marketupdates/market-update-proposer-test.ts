@@ -2,27 +2,6 @@ import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helpe
 import { expect, makeConfigurator, ethers, wait, event } from '../helpers';
 import { MarketUpdateProposer__factory } from '../../build/types';
 
-async function deployMarketUpdateProposer() {
-  const {
-    governorTimelock,
-    governorTimelockSigner,
-    marketUpdateMultiSig,
-    marketUpdateTimelock,
-  } = await makeMarketAdmin();
-  
-  const {users:[pauseGuardian]} = await makeConfigurator();
-
-  const marketUpdateProposerFactory = (await ethers.getContractFactory(
-    'MarketUpdateProposer'
-  )) as MarketUpdateProposer__factory;
-
-  const marketUpdateProposer = await marketUpdateProposerFactory
-    .deploy(governorTimelock.address, marketUpdateMultiSig.address, pauseGuardian.address, marketUpdateTimelock.address);
-
-  return { marketUpdateProposer, governorTimelockSigner, marketUpdateMultiSig, pauseGuardian, marketUpdateTimelock };
-}
-
-
 describe('MarketUpdateProposer', function() {
   // We are not checking market updates here. we are just checking interaction
   // between MarketUpdateMultisig and MarketUpdateProposer or checking interactions
@@ -51,7 +30,6 @@ describe('MarketUpdateProposer', function() {
 
   it('only GovernorTimelock can set a new governor for MarketUpdateProposer', async () => {
     const {
-      governorTimelock,
       governorTimelockSigner,
       marketUpdateProposer,
     } = await makeMarketAdmin();
@@ -61,7 +39,7 @@ describe('MarketUpdateProposer', function() {
     } = await makeConfigurator();
 
     expect(await marketUpdateProposer.governor()).to.equal(
-      governorTimelock.address
+      governorTimelockSigner.address
     );
 
     await marketUpdateProposer
@@ -77,7 +55,6 @@ describe('MarketUpdateProposer', function() {
   
   it('only GovernorTimelock can set a new pause guardian for MarketUpdateProposer', async () => {
     const {
-      governorTimelock,
       governorTimelockSigner,
       marketUpdateProposer,
     } = await makeMarketAdmin();
@@ -87,7 +64,7 @@ describe('MarketUpdateProposer', function() {
     } = await makeConfigurator();
 
     expect(await marketUpdateProposer.governor()).to.equal(
-      governorTimelock.address
+      governorTimelockSigner.address
     );
 
     await marketUpdateProposer
@@ -303,7 +280,7 @@ describe('MarketUpdateProposer', function() {
       const {
         governorTimelockSigner,
         marketUpdateMultiSig,
-        pauseGuardian,
+        pauseGuardianSigner,
         marketUpdateTimelock
       } = await makeMarketAdmin();
       
@@ -313,24 +290,24 @@ describe('MarketUpdateProposer', function() {
     
       // Governor as zero address
       await expect(marketUpdaterProposerFactory
-        .deploy(ethers.constants.AddressZero, marketUpdateMultiSig.address, pauseGuardian.address, marketUpdateTimelock.address))
+        .deploy(ethers.constants.AddressZero, marketUpdateMultiSig.address, pauseGuardianSigner.address, marketUpdateTimelock.address))
         .to.be.revertedWithCustomError(marketUpdaterProposerFactory, 'InvalidAddress');
         
       // Market admin as zero address
       await expect(marketUpdaterProposerFactory
-        .deploy(governorTimelockSigner.address, ethers.constants.AddressZero, pauseGuardian.address, marketUpdateTimelock.address))
+        .deploy(governorTimelockSigner.address, ethers.constants.AddressZero, pauseGuardianSigner.address, marketUpdateTimelock.address))
         .to.be.revertedWithCustomError(marketUpdaterProposerFactory, 'InvalidAddress');
         
       await expect(marketUpdaterProposerFactory
-        .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardian.address, ethers.constants.AddressZero))
+        .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardianSigner.address, ethers.constants.AddressZero))
         .to.be.revertedWithCustomError(marketUpdaterProposerFactory, 'InvalidAddress');
         
       const marketUpdateProposer = await marketUpdaterProposerFactory
-        .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardian.address, marketUpdateTimelock.address);
+        .deploy(governorTimelockSigner.address, marketUpdateMultiSig.address, pauseGuardianSigner.address, marketUpdateTimelock.address);
         
       expect(await marketUpdateProposer.governor()).to.be.equal(governorTimelockSigner.address);
       expect(await marketUpdateProposer.marketAdmin()).to.be.equal(marketUpdateMultiSig.address);
-      expect(await marketUpdateProposer.pauseGuardian()).to.be.equal(pauseGuardian.address);
+      expect(await marketUpdateProposer.pauseGuardian()).to.be.equal(pauseGuardianSigner.address);
       expect(await marketUpdateProposer.timelock()).to.be.equal(marketUpdateTimelock.address);
       
     });
@@ -341,7 +318,7 @@ describe('MarketUpdateProposer', function() {
         governorTimelockSigner,
         marketUpdateProposer,
         marketUpdateMultiSig,
-        pauseGuardian,
+        pauseGuardianSigner,
       } = await makeMarketAdmin();
   
       const {
@@ -364,7 +341,7 @@ describe('MarketUpdateProposer', function() {
       
       // failure case: pause guardian cannot update the governor
       await expect(
-        marketUpdateProposer.connect(pauseGuardian).setGovernor(alice.address)
+        marketUpdateProposer.connect(pauseGuardianSigner).setGovernor(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
       // failure case: Non-governor cannot update the governor
@@ -378,7 +355,7 @@ describe('MarketUpdateProposer', function() {
         governorTimelockSigner,
         marketUpdateProposer,
         marketUpdateMultiSig,
-        pauseGuardian,
+        pauseGuardianSigner,
       } = await makeMarketAdmin();
   
       const {
@@ -401,7 +378,7 @@ describe('MarketUpdateProposer', function() {
       
       // failure case: pause guardian cannot update the market admin
       await expect(
-        marketUpdateProposer.connect(pauseGuardian).setMarketAdmin(alice.address)
+        marketUpdateProposer.connect(pauseGuardianSigner).setMarketAdmin(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
       // failure case: Non-governor cannot update the market admin
@@ -453,7 +430,7 @@ describe('MarketUpdateProposer', function() {
         governorTimelockSigner,
         marketUpdateProposer,
         marketUpdateMultiSig,
-        pauseGuardian
+        pauseGuardianSigner
       } = await makeMarketAdmin();
   
       const { configuratorProxy, cometProxy, users: [alice] } = await makeConfigurator();
@@ -496,7 +473,7 @@ describe('MarketUpdateProposer', function() {
       // Failure case: Pause guardian cannot create a proposal
       await expect(
         marketUpdateProposer
-          .connect(pauseGuardian)
+          .connect(pauseGuardianSigner)
           .propose(
             [configuratorProxy.address],
             [0],

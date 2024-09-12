@@ -14,7 +14,7 @@ export async function makeMarketAdmin() {
 
   const signers = await ethers.getSigners();
 
-  const marketUpdateMultiSig = signers[3];
+  const marketUpdateMultiSig = signers[10];
   
   const marketAdminTimelockFactory = (await ethers.getContractFactory(
     'MarketUpdateTimelock'

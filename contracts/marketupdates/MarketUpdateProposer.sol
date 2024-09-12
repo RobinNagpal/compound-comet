@@ -78,10 +78,11 @@ contract MarketUpdateProposer {
     error Unauthorized();
     error InvalidAddress();
 
-    constructor(address governor_, address marketAdmin_, ITimelock timelock_) public {
+    constructor(address governor_, address marketAdmin_, address pauseGuardian_, ITimelock timelock_) public {
         if (address(governor_) == address(0) || address(marketAdmin_) == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
         governor = governor_;
         marketAdmin = marketAdmin_;
+        pauseGuardian = pauseGuardian_;
         timelock = timelock_;
     }
     

@@ -275,4 +275,31 @@ describe('MarketUpdateProposer', function() {
       'MarketUpdateProposer::execute: proposal can only be executed if it is queued'
     );
   });
+
+  describe('MarketUpdateProposer::permissions', function () {
+    it('should ensure the addresses are not zero while creating the contract(constructor validation)', async () => {
+
+    });
+
+    it('only governor can update a governor', async () => {
+      // include checks for pauseGuardian, marketAdmin, and nonGovernor for failure scenario
+    });
+    it('only governor can update a marketAdmin', async () => {
+      // include checks for pauseGuardian, marketAdmin, and nonGovernor for failure scenario
+    });
+    it('only governor can update a pauseGuardian', async () => {
+      // include checks for pauseGuardian, marketAdmin, and nonGovernor for failure scenario
+    });
+
+    it('only marketAdmin can create a proposal', async () => {
+      // include checks for pauseGuardian, marketAdmin, and governor, and anonymous address
+    });
+
+    it('only marketAdmin can execute a proposal', async () => {
+      // include checks for pauseGuardian, marketAdmin, and governor, and anonymous address
+    });
+    it('only marketAdmin, pauseGuardian, or governor can cancel a proposal', async () => {
+      // include checks for pauseGuardian, marketAdmin, and governor, and anonymous address
+    });
+  });
 });

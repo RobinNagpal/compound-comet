@@ -1,10 +1,9 @@
 import { ethers } from 'hardhat';
 import Safe, { SafeFactory, SafeAccountConfig, PredictedSafeProps } from '@safe-global/protocol-kit';
-import { getProxyFactoryDeployment, getSafeSingletonDeployment } from '@safe-global/safe-deployments';
 
-async function main() {
+async function deploySafe(owners:string[], threshold:number, salt:string){
   const [deployer] = await ethers.getSigners();
-  
+  console.log('Deploying safe with the account:', deployer.address);
   const balance = await deployer.getBalance();
   console.log("Account balance:", ethers.utils.formatEther(balance));
   const network = await ethers.provider.getNetwork();
@@ -19,77 +18,43 @@ async function main() {
   } else {
     throw new Error('Unsupported network');
   }
+  
+  let signer;
+  if (process.env.PRIVATE_KEY) {
+    signer = process.env.PRIVATE_KEY;
+  } else{
+    throw new Error('Signer private key not available in env');
+  }
 
-  console.log('Deploying contracts with the account:', deployer.address);
-  const owners = [deployer.address, '0x7053e25f7076F4986D632A3C04313C81831e0d55', '0x77B65c68E52C31eb844fb3b4864B91133e2C1308']; // Replace with actual addresses
+  const safeFactory = await SafeFactory.init({ provider: rpcUrl, signer: signer, safeVersion:'1.4.1' });
+
+  const safeAccountConfig: SafeAccountConfig = {
+    owners:[deployer.address, ...owners],
+    threshold: threshold
+  };
+
+  console.log('Predicting safe address..');
+  const predictedDeployAddress = await safeFactory.predictSafeAddress(safeAccountConfig,salt);
+  console.log('Predicted deployed address:', predictedDeployAddress);
+   
+  const safe = await safeFactory.deploySafe({ safeAccountConfig: safeAccountConfig, saltNonce: salt });
+  const safeAddress = await safe.getAddress();
+  console.log('Safe deployed at:', safeAddress);
+  
+  return {safe, safeAddress};
+}
+async function main() {
+  
+  
+  const owners = ['0x7053e25f7076F4986D632A3C04313C81831e0d55', '0x77B65c68E52C31eb844fb3b4864B91133e2C1308']; // Replace with actual addresses
   const threshold = 2; // Require 2 out of 3 approvals
   const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('deterministic-safe-8'));
 
-  
-  const proxyFactoryDeployment = getProxyFactoryDeployment({ network: String(network.chainId) });
-  if (!proxyFactoryDeployment) {
-    throw new Error(`No Proxy Factory deployment found for network ${network.chainId}`);
-  }
-
-  const proxyFactoryAddress = proxyFactoryDeployment.defaultAddress;
-  const proxyFactoryAbi = proxyFactoryDeployment.abi;
-  console.log('ProxyFactory:', proxyFactoryAddress);
-  const proxyFactory = new ethers.Contract(proxyFactoryAddress, proxyFactoryAbi, deployer);
-  console.log('Using Safe Proxy Factory at address:', proxyFactoryAddress);
-
-  const safeDeployment = getSafeSingletonDeployment({ network: String(network.chainId) });
-  const safeSingletonAddress = safeDeployment.defaultAddress;
-  const safeSingletonAbi = safeDeployment.abi;
-  console.log('Safe Singleton Address:', safeSingletonAddress);
-
-  const safeContract = new ethers.Contract(safeSingletonAddress, safeSingletonAbi, deployer);
-  const initializer = safeContract.interface.encodeFunctionData('setup', [
-    owners,  // owners of the Safe
-    threshold,  // number of required confirmations
-    ethers.constants.AddressZero,  // Contract address for optional delegate call.
-    '0x',  // Data payload for optional delegate call.
-    ethers.constants.AddressZero,  // Handler for fallback calls to this contract
-    ethers.constants.AddressZero,  // Token that should be used for the payment (0 is ETH)
-    0,  // payment: Value that should be paid
-    ethers.constants.AddressZero,  // payment receiver: Address that should receive the payment (or 0 if tx.origin)
-  ]);
-
-
-  const tx = await proxyFactory.createProxyWithNonce(safeSingletonAddress, initializer, salt);
-  const receipt = await tx.wait(); // Wait for the transaction to be mined
-
-  // The deployed contract address is in the logs
-  const proxyDeployedEvent = receipt.events.find(event => event.event === 'ProxyCreation');
-  const deployedAddress = proxyDeployedEvent.args.proxy;
-
-  console.log('Safe deployed at:', deployedAddress);
-  
-  // const safeFactory = await SafeFactory.init({ provider: 'https://sepolia.optimism.io', signer: process.env.PRIVATE_KEY });
-  const safeFactory = await SafeFactory.init({ provider: rpcUrl, signer: process.env.PRIVATE_KEY,safeVersion:'1.4.1' });
-  // const safeFactory = await SafeFactory.init({ provider: 'https://ethereum-sepolia.blockpi.network/v1/rpc/public', signer: process.env.PRIVATE_KEY });
-  console.log('safe factory: ', safeFactory);
-
-  const safeAccountConfig: SafeAccountConfig = {
-    owners,
-    threshold
-  };
-
-  // predict deployed address
-  console.log('predict deploy address..');
-  
-  const predictedDeployAddress = await safeFactory.predictSafeAddress(safeAccountConfig,salt);
-  
-  console.log('Predicted deployed address:', predictedDeployAddress);
-   
- 
-  const protocolKit = await safeFactory.deploySafe({ safeAccountConfig: safeAccountConfig, saltNonce: salt });
-  const safeAddress = await protocolKit.getAddress();
-  console.log('Safe deployed at:', safeAddress);
-  
-  const safeBalance = await protocolKit.getBalance();
+  const {safe} = await deploySafe(owners, threshold, salt);
+  const safeBalance = await safe.getBalance();
   console.log('Safe balance:', safeBalance.toString());
   
-  const chainId = await protocolKit.getChainId();
+  const chainId = await safe.getChainId();
   console.log('Safe chainId:', chainId);
   
   // loading already deployed safe

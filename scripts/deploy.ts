@@ -76,14 +76,13 @@ async function checkAndDeploy(create2Deployer: Create2Deployer, salt: string, co
     const contractByteCode = await ethers.provider.getCode(contract.address);
     console.log(`${contractName} already deployed at address: `, computedAddress);
     console.log(`${contractName} ByteCode is Same? : `, contractByteCode.toLowerCase() === deployedByteCode.toLowerCase());
-    return {contract, contractAddress:computedAddress};
+    return {contract, computedAddress};
   } else {
     // Deploy using CREATE2 if not already deployed
-    const tx = await create2Deployer.deploy(0, salt, creationBytecode.data); // value = 0 for no ether transfer
     console.log(`Deploying ${contractName}...`);
-    const contractAddress = (await tx.wait()).contractAddress;
-    console.log(`Deployed ${contractName} at address:`, contractAddress);
-    return {contract: await ethers.getContractAt(contractName, computedAddress), contractAddress };
+    await create2Deployer.deploy(0, salt, creationBytecode.data); // value = 0 for no ether transfer
+    console.log(`Deployed ${contractName} at address (deterministic):`, computedAddress);
+    return {contract: await ethers.getContractAt(contractName, computedAddress), computedAddress };
   }
 }
 
@@ -93,7 +92,7 @@ async function main() {
   const balance = await deployer.getBalance();
   console.log('Account balance:', balance.toString());
 
-  const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('Salt-10'));
+  const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('Salt-15'));
   console.log('salt: ', salt);
   const owners = ['0x7053e25f7076F4986D632A3C04313C81831e0d55', '0x77B65c68E52C31eb844fb3b4864B91133e2C1308']; // Replace with actual addresses
   const threshold = 2; // Require 2 out of 3 approvals
@@ -111,18 +110,15 @@ async function main() {
 
   const delay = 2 * 24 * 60 * 60;
   const marketTimelockArgs = [governorTimelockAddr, delay]; // This is 2 days in seconds
-  const {contract:marketUpdateTimelock, contractAddress:marketUpdateTimelockAddress} = await checkAndDeploy(create2Deployer, salt, 'MarketUpdateTimelock', marketTimelockArgs);
-  console.log('MarketUpdateTimelock deployed at: ', marketUpdateTimelockAddress);
+  const {contract:marketUpdateTimelock, computedAddress:marketUpdateTimelockAddress} = await checkAndDeploy(create2Deployer, salt, 'MarketUpdateTimelock', marketTimelockArgs);
   
   const marketProposerArgs = [governorTimelockAddr,multisigAddress,pauseGuardianAddr,marketUpdateTimelockAddress];
-  const {contract:marketUpdateProposer, contractAddress: marketProposerAddress} = await checkAndDeploy(create2Deployer, salt, 'MarketUpdateTimelock', marketProposerArgs);
-  console.log('MarketUpdateProposer deployed at: ', marketProposerAddress);
+  const {contract:marketUpdateProposer, computedAddress: marketProposerAddress} = await checkAndDeploy(create2Deployer, salt, 'MarketUpdateProposer', marketProposerArgs);
   
-  const {contract:configurator, contractAddress: configuratorAddress} = await checkAndDeploy(create2Deployer, salt, 'Configurator');
-  console.log('Configurator deployed at: ', configuratorAddress);
-  
-  const {contract:cometProxyAdmin, contractAddress: cometProxyAdminAddress} = await checkAndDeploy(create2Deployer, salt, 'CometProxyAdmin');
-  console.log('CometProxyAdmin deployed at: ', cometProxyAdminAddress);
+  const {contract:configurator, computedAddress: configuratorAddress} = await checkAndDeploy(create2Deployer, salt, 'Configurator');
+
+  const {contract:cometProxyAdmin, computedAddress: cometProxyAdminAddress} = await checkAndDeploy(create2Deployer, salt, 'CometProxyAdmin');
+
   
 }
 

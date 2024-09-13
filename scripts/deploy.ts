@@ -104,8 +104,7 @@ async function main() {
   const signers = await ethers.getSigners();
   const governorTimelockAddr = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
   const pauseGuardianAddr = '0x7053e25f7076F4986D632A3C04313C81831e0d55';
-  // const governorTimelockSigner = signers[1];
-  // const pauseGuardianSigner = signers[2];
+
   const {safeAddress: multisigAddress} = await deploySafe(owners,threshold,salt);
 
   const delay = 2 * 24 * 60 * 60;

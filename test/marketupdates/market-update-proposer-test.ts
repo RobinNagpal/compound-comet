@@ -573,9 +573,10 @@ describe('MarketUpdateProposer', function() {
         governorTimelockSigner,
         marketUpdateProposer,
         marketUpdateMultiSig,
+        pauseGuardianSigner
       } = await makeMarketAdmin();
   
-      const { configuratorProxy, cometProxy, users: [alice, bob] } = await makeConfigurator();
+      const { configuratorProxy, cometProxy, users: [bob] } = await makeConfigurator();
       
       expect(await marketUpdateProposer.marketAdmin()).to.be.equal(
         marketUpdateMultiSig.address
@@ -606,11 +607,7 @@ describe('MarketUpdateProposer', function() {
       await marketUpdateProposer.connect(marketUpdateMultiSig).cancel(1);
       
       // Success case: Pause guardian can cancel the proposal
-      await marketUpdateProposer.connect(governorTimelockSigner).setPauseGuardian(alice.address); 
-      expect(await marketUpdateProposer.pauseGuardian()).to.be.equal(
-        alice.address
-      );
-      expect(await marketUpdateProposer.connect(alice).cancel(1)); 
+      expect(await marketUpdateProposer.connect(pauseGuardianSigner).cancel(1)); 
       
       // Failure case: anonymous cannot cancel the proposal
       await expect(

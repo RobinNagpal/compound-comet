@@ -100,15 +100,14 @@ async function main() {
   // Get the Create2 Deployer contract at its known address
   const create2DeployerAddress = '0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2';
   const create2Deployer = await ethers.getContractAt('Create2Deployer', create2DeployerAddress) as Create2Deployer;
-  
-  const signers = await ethers.getSigners();
+
   const governorTimelockAddr = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
   const pauseGuardianAddr = '0x7053e25f7076F4986D632A3C04313C81831e0d55';
 
   const {safeAddress: multisigAddress} = await deploySafe(owners,threshold,salt);
 
-  const delay = 2 * 24 * 60 * 60;
-  const marketTimelockArgs = [governorTimelockAddr, delay]; // This is 2 days in seconds
+  const delay = 2 * 24 * 60 * 60; // This is 2 days in seconds
+  const marketTimelockArgs = [governorTimelockAddr, delay]; 
   const {contract:marketUpdateTimelock, computedAddress:marketUpdateTimelockAddress} = await checkAndDeploy(create2Deployer, salt, 'MarketUpdateTimelock', marketTimelockArgs);
   
   const marketProposerArgs = [governorTimelockAddr,multisigAddress,pauseGuardianAddr,marketUpdateTimelockAddress];
@@ -117,7 +116,6 @@ async function main() {
   const {contract:configurator, computedAddress: configuratorAddress} = await checkAndDeploy(create2Deployer, salt, 'Configurator');
 
   const {contract:cometProxyAdmin, computedAddress: cometProxyAdminAddress} = await checkAndDeploy(create2Deployer, salt, 'CometProxyAdmin');
-
   
 }
 

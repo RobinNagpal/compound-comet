@@ -55,7 +55,7 @@ contract MarketUpdateProposer {
     }
 
     address public governor;
-    address public pauseGuardian;
+    address public proposalGuardian;
     address public marketAdmin;
     ITimelock public timelock;
 
@@ -71,18 +71,18 @@ contract MarketUpdateProposer {
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
     event MarketUpdateProposalExecuted(uint id);
     event MarketUpdateProposalCancelled(uint id);
-    event SetPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event SetProposalGuardian(address indexed oldProposalGuardian, address indexed newProposalGuardian);
     event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
     event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
 
     error Unauthorized();
     error InvalidAddress();
 
-    constructor(address governor_, address marketAdmin_, address pauseGuardian_, ITimelock timelock_) public {
+    constructor(address governor_, address marketAdmin_, address proposalGuardian_, ITimelock timelock_) public {
         if (address(governor_) == address(0) || address(marketAdmin_) == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
         governor = governor_;
         marketAdmin = marketAdmin_;
-        pauseGuardian = pauseGuardian_;
+        proposalGuardian = proposalGuardian_;
         timelock = timelock_;
     }
     
@@ -102,19 +102,19 @@ contract MarketUpdateProposer {
     }
     
     /**
-     * @notice Sets a new pause guardian.
+     * @notice Sets a new proposal guardian.
      * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
-     * Emits an event with the old and new pause guardian addresses.
-     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
+     * Emits an event with the old and new proposal guardian addresses.
+     * Note that there is no enforced zero address check on `newProposalGuardian` as it may be a deliberate choice
      * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
-     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
-     * @param newPauseGuardian The address of the new market admin pause guardian.
+     * is intended to represent a specific state, such as temporarily disabling the proposal guadian.
+     * @param newProposalGuardian The address of the new market admin proposal guardian.
      */
-    function setPauseGuardian(address newPauseGuardian) external {
+    function setProposalGuardian(address newProposalGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
-        address oldPauseGuardian = pauseGuardian;
-        pauseGuardian = newPauseGuardian;
-        emit SetPauseGuardian(oldPauseGuardian, newPauseGuardian);
+        address oldProposalGuardian = proposalGuardian;
+        proposalGuardian = newProposalGuardian;
+        emit SetProposalGuardian(oldProposalGuardian, newProposalGuardian);
     }
 
     /**
@@ -192,7 +192,7 @@ contract MarketUpdateProposer {
       * @param proposalId The id of the proposal to cancel
       */
     function cancel(uint proposalId) external {
-        if (msg.sender != governor && msg.sender != pauseGuardian && msg.sender != marketAdmin) revert Unauthorized();
+        if (msg.sender != governor && msg.sender != proposalGuardian && msg.sender != marketAdmin) revert Unauthorized();
         require(state(proposalId) != ProposalState.Executed, "MarketUpdateProposer::cancel: cannot cancel executed proposal");
 
         MarketUpdateProposal storage proposal = proposals[proposalId];

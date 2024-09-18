@@ -7,9 +7,9 @@ import "./../ITimelock.sol";
 * @title MarketUpdateProposer
 * @notice This contract allows for the creation of proposals that can be executed by the timelock
 * @dev This contract is used to propose market updates
-* Here owner will be the market update multi-sig. The owner can set the new owner by calling `transferOwnership`.
-* If multi-sig is compromised, the new owner will only be able to call timelock. marketUpdatePauseGuardian in
-* Configurator or CometProxyAdmin can pause these updated.
+* Here marketAdmin will be the multi-sig. The governor can set the new marketAdmin by calling `setMarketAdmin`.
+* If multi-sig is compromised, the new marketAdmin will only be able to call timelock. marketUpdatePauseGuardian in
+* Configurator or CometProxyAdmin can pause these updates.
 *
 * Other logic can be that only main-governor-timelock can update the owner of this contract, but that logic can be an
 * overkill
@@ -64,7 +64,7 @@ contract MarketUpdateProposer {
     /// @notice The total number of proposals
     uint public proposalCount;
 
-    /// @notice Initial proposal id set at become
+    /// @notice The initial proposal ID, set when the contract is deployed
     uint public initialProposalId = 0;
 
     /// @notice An event emitted when a new proposal is created
@@ -88,7 +88,7 @@ contract MarketUpdateProposer {
     
     /**
      * @notice Transfers the governor rights to a new address
-     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the governor.
      * Emits an event with the old and new governor addresses.
      * @param newGovernor The address of the new governor.
      */
@@ -102,13 +102,13 @@ contract MarketUpdateProposer {
     }
     
     /**
-     * @notice Sets a new proposal guardian.
+     * @notice Sets a new proposalGuardian.
      * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
-     * Emits an event with the old and new proposal guardian addresses.
+     * Emits an event with the old and new proposalGuardian addresses.
      * Note that there is no enforced zero address check on `newProposalGuardian` as it may be a deliberate choice
      * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
-     * is intended to represent a specific state, such as temporarily disabling the proposal guadian.
-     * @param newProposalGuardian The address of the new market admin proposal guardian.
+     * is intended to represent a specific state, such as temporarily disabling the proposalGuardian.
+     * @param newProposalGuardian The address of the new market admin proposalGuardian.
      */
     function setProposalGuardian(address newProposalGuardian) external {
         if (msg.sender != governor) revert Unauthorized();
@@ -188,7 +188,7 @@ contract MarketUpdateProposer {
     }
 
     /**
-      * @notice Cancels a proposal only if sender is the proposer, or proposer delegates dropped below proposal threshold
+      * @notice Cancels a proposal only if sender is the proposer, proposalGuardian, or marketAdmin, and the proposal is not already executed
       * @param proposalId The id of the proposal to cancel
       */
     function cancel(uint proposalId) external {

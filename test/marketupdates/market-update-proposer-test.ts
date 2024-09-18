@@ -53,7 +53,7 @@ describe('MarketUpdateProposer', function() {
     ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
   });
   
-  it('only GovernorTimelock can set a new proposal guardian for MarketUpdateProposer', async () => {
+  it('only GovernorTimelock can set a new proposalGuardian for MarketUpdateProposer', async () => {
     const {
       governorTimelockSigner,
       marketUpdateProposer,
@@ -369,7 +369,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposer.connect(marketUpdateMultiSig).setGovernor(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
-      // failure case: proposal guardian cannot update the governor
+      // failure case: proposalGuardian cannot update the governor
       await expect(
         marketUpdateProposer
           .connect(proposalGuardianSigner)
@@ -408,7 +408,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposer.connect(marketUpdateMultiSig).setMarketAdmin(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
-      // failure case: proposal guardian cannot update the market admin
+      // failure case: proposalGuardian cannot update the market admin
       await expect(
         marketUpdateProposer
           .connect(proposalGuardianSigner)
@@ -434,25 +434,25 @@ describe('MarketUpdateProposer', function() {
       
       expect(await marketUpdateProposer.governor()).to.be.equal(governorTimelockSigner.address);
   
-      // Ensure only the governor can set a new proposal guardian
+      // Ensure only the governor can set a new proposalGuardian
       await marketUpdateProposer
         .connect(governorTimelockSigner)
         .setProposalGuardian(alice.address);
   
       expect(await marketUpdateProposer.proposalGuardian()).to.equal(alice.address);
   
-      // failure case: market admin cannot update the proposal guardian
+      // failure case: market admin cannot update the proposalGuardian
       await expect(
         marketUpdateProposer.connect(marketUpdateMultiSig).setProposalGuardian(bob.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
-      // failure case: proposal guardian cannot update the proposal guardian
-      // alice is the proposal guardian by the above governor call
+      // failure case: proposalGuardian cannot update the proposalGuardian
+      // alice is the proposalGuardian by the above governor call
       await expect(
         marketUpdateProposer.connect(alice).setProposalGuardian(bob.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
-      // failure case: Non-governor cannot update the proposal guardian
+      // failure case: Non-governor cannot update the proposalGuardian
       await expect(
         marketUpdateProposer.connect(john).setGovernor(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
@@ -504,7 +504,7 @@ describe('MarketUpdateProposer', function() {
           )
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
       
-      // Failure case: proposal guardian cannot create a proposal
+      // Failure case: proposalGuardian cannot create a proposal
       await expect(
         marketUpdateProposer
           .connect(proposalGuardianSigner)
@@ -583,7 +583,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposer.connect(governorTimelockSigner).execute(proposalId)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized'); 
       
-      // Failure case: Proposal guardian cannot execute the proposal
+      // Failure case: proposalGuardian cannot execute the proposal
       await expect(
         marketUpdateProposer.connect(proposalGuardianSigner).execute(proposalId)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized'); 
@@ -640,7 +640,7 @@ describe('MarketUpdateProposer', function() {
       // Success case: MarketAdmin can cancel the proposal
       await marketUpdateProposer.connect(marketUpdateMultiSig).cancel(proposalId);
       
-      // Success case: Proposal guardian can cancel the proposal
+      // Success case: proposalGuardian can cancel the proposal
       expect(
         await marketUpdateProposer
           .connect(proposalGuardianSigner)

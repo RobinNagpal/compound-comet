@@ -381,6 +381,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposer.connect(bob).setGovernor(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
     });
+
     it('only governor can update a marketAdmin', async () => {
       // include checks for proposalGuardian, marketAdmin, and nonGovernor for failure scenario
       const {
@@ -420,6 +421,7 @@ describe('MarketUpdateProposer', function() {
         marketUpdateProposer.connect(bob).setGovernor(alice.address)
       ).to.be.revertedWithCustomError(marketUpdateProposer, 'Unauthorized');
     });
+
     it('only governor can update a proposalGuardian', async () => {
       // include checks for proposalGuardian, marketAdmin, and nonGovernor for failure scenario
       const {

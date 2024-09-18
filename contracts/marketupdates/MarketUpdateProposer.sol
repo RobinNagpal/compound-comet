@@ -7,12 +7,15 @@ import "./../ITimelock.sol";
 * @title MarketUpdateProposer
 * @notice This contract allows for the creation of proposals that can be executed by the timelock
 * @dev This contract is used to propose market updates
-* Here marketAdmin will be the multi-sig. The governor can set the new marketAdmin by calling `setMarketAdmin`.
-* If multi-sig is compromised, the new marketAdmin will only be able to call timelock. marketUpdatePauseGuardian in
-* Configurator or CometProxyAdmin can pause these updates.
+* Few important points to note:
+* 1) The marketAdmin can propose updates. The marketAdmin can be set by the governor. marketAdmin will be a multi-sig.
+* 2) Here governor is the main-governor-timelock. This terminology(using governor as variable for timelock) is for
+*    consistency with Configurator.sol.
+* 3) If marketAdmin/multi-sig is compromised, the new marketAdmin can be set by the governor.
+* 4) While the marketAdmin/multi-sig is compromised, the new marketAdmin can propose updates. But those updates will be
+*    sent to timelock and can be paused by the marketAdminPauseGuardian Configurator and CometProxyAdmin.
+* 5) The proposalGuardian can also be used for the same purpose and can cancel the proposal.
 *
-* Other logic can be that only main-governor-timelock can update the owner of this contract, but that logic can be an
-* overkill
 *
 */
 contract MarketUpdateProposer {

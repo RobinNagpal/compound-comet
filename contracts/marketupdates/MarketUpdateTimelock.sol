@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.10;
 
+/**
+* @title MarketUpdateTimelock
+* @notice This contract allows for the execution of transactions after a delay and a proposal mechanism.
+* @dev This contract is used for the market updates. The market updates are proposed by the marketAdmin.
+* Few important points to note:
+* 1) The call to queue, cancel, and execute transaction functions should come from the marketUpdateProposer.
+* 2) The marketUpdateProposer can only be set by the governor.
+*
+*/
+
 contract MarketUpdateTimelock {
 
     event SetGovernor(address indexed oldGovernor, address indexed newGovernor);

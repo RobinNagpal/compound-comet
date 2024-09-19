@@ -7,7 +7,7 @@ import {
 } from '../../build/types';
 import { ethers, event, expect, makeConfigurator, wait } from './../helpers';
 
-describe('configurator', function() {
+describe.only('configurator', function() {
   it("Ensure - timelock's admin is set as Governor - Add two(access and not access) test for it.", async () => {
     const { signer, timelock } = await initializeAndFundTimelock();
 

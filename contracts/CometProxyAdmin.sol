@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "./vendor/proxy/transparent/ProxyAdmin.sol";
-import "./marketupdates/MarketAdminPermissionChecker.sol";
+import "./marketupdates/IMarketAdminPermissionChecker.sol";
 
 interface Deployable {
   function deploy(address cometProxy) external returns (address);
@@ -11,7 +11,7 @@ interface Deployable {
 contract CometProxyAdmin is ProxyAdmin {
 
     /// @notice MarketAdminPermissionChecker contract which is used to check if the caller has permission to perform market updates
-    MarketAdminPermissionChecker public marketAdminPermissionChecker;
+    IMarketAdminPermissionChecker public marketAdminPermissionChecker;
 
     event SetMarketAdminPermissionChecker(address indexed oldMarketAdminPermissionChecker, address indexed newMarketAdminPermissionChecker);
     error Unauthorized();
@@ -21,7 +21,7 @@ contract CometProxyAdmin is ProxyAdmin {
      * This delegates the permission check logic to the MarketAdminPermissionChecker contract.
      */
     modifier ownerOrMarketAdmin {
-        if(_msgSender() != owner()) marketAdminPermissionChecker.canUpdateMarket(_msgSender());
+        if(_msgSender() != owner()) marketAdminPermissionChecker.checkUpdatePermission(_msgSender());
         _;
     }
 
@@ -52,7 +52,7 @@ contract CometProxyAdmin is ProxyAdmin {
     function setMarketAdminPermissionChecker(address newMarketAdminPermissionChecker) external {
         if (_msgSender() != owner()) revert Unauthorized();
         address oldMarketAdminPermissionChecker = address(marketAdminPermissionChecker);
-        marketAdminPermissionChecker = MarketAdminPermissionChecker(newMarketAdminPermissionChecker);
+        marketAdminPermissionChecker = IMarketAdminPermissionChecker(newMarketAdminPermissionChecker);
         emit SetMarketAdminPermissionChecker(oldMarketAdminPermissionChecker, newMarketAdminPermissionChecker);
     }
 

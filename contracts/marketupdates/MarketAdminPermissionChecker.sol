@@ -2,8 +2,9 @@
 pragma solidity 0.8.15;
 
 import "../vendor/access/Ownable.sol";
+import "./IMarketAdminPermissionChecker.sol";
 
-contract MarketAdminPermissionChecker is Ownable {
+contract MarketAdminPermissionChecker is IMarketAdminPermissionChecker, Ownable {
     /// @notice The address of the market admin. This will be the address of a timelock contract.
     address public marketAdmin;
     
@@ -86,10 +87,8 @@ contract MarketAdminPermissionChecker is Ownable {
         emit MarketAdminPaused(msg.sender, false);
     }
 
-    function canUpdateMarket(address callerAddress) external view returns (bool){   // update the msg.sender
+    function checkUpdatePermission(address callerAddress) external view {   // update the msg.sender
         if (callerAddress != marketAdmin) revert Unauthorized();
         if (marketAdminPaused) revert MarketAdminIsPaused();
-
-        return true;
     }
 }

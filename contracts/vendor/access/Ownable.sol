@@ -4,6 +4,7 @@
 pragma solidity ^0.8.0;
 
 import "../utils/Context.sol";
+import "hardhat/console.sol";
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -14,7 +15,7 @@ import "../utils/Context.sol";
  * can later be changed with {transferOwnership}.
  *
  * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * `onlyOwner`, which can be applied to your funwctions to restrict their use to
  * the owner.
  */
 abstract contract Ownable is Context {

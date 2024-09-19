@@ -1,6 +1,6 @@
 import { makeMarketAdmin, advanceTimeAndMineBlock } from './market-updates-helper';
 import { expect, makeConfigurator, ethers, wait, event } from '../helpers';
-import { MarketUpdateProposer__factory } from '../../build/types';
+import { MarketAdminPermissionChecker__factory, MarketUpdateProposer__factory } from '../../build/types';
 
 describe('MarketUpdateProposer', function() {
   // We are not checking market updates here. we are just checking interaction
@@ -597,8 +597,20 @@ describe('MarketUpdateProposer', function() {
       
       // Success case: only MarketAdmin can execute the proposal
       const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-      await configuratorAsProxy.connect(governorTimelockSigner).setMarketAdmin(marketUpdateTimelock.address);
-      expect (await configuratorAsProxy.marketAdmin()).to.be.equal(marketUpdateTimelock.address);
+      const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+      const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+        'MarketAdminPermissionChecker'
+      )) as MarketAdminPermissionChecker__factory;
+      const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+        marketAdminCheckerAddress
+      );
+      await marketAdminCheckerInstance
+        .connect(governorTimelockSigner)
+        .setMarketAdmin(marketUpdateTimelock.address);
+
+      expect(await marketAdminCheckerInstance.marketAdmin()).to.be.equal(
+        marketUpdateTimelock.address
+      );
       await marketUpdateProposer.connect(marketUpdateMultiSig).execute(proposalId);
     });
     

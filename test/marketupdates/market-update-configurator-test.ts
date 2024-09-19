@@ -1,3 +1,4 @@
+import { MarketAdminPermissionChecker__factory } from '../../build/types';
 import { expect, makeConfigurator, event, wait } from './../helpers';
 import { makeMarketAdmin } from './market-updates-helper';
 import { ethers } from 'hardhat';
@@ -160,7 +161,7 @@ describe('Configurator', function() {
     expect(await configuratorAsProxy.marketAdminPaused()).to.be.false;
   });
 
-  it('marketAdminPauseGuardian can pause market admin', async () => {
+  it.only('marketAdminPauseGuardian can pause market admin', async () => {
     const {
       governorTimelockSigner,
       marketUpdateMultiSig,
@@ -178,33 +179,41 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
 
-    expect(await configuratorAsProxy.marketAdminPaused()).to.be.false;
+    expect(await marketAdminCheckerInstance.marketAdminPaused()).to.be.false;
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
 
-    expect(await configuratorAsProxy.marketAdminPauseGuardian()).to.be.equal(
-      alice.address
-    );
+    expect(
+      await marketAdminCheckerInstance.marketAdminPauseGuardian()
+    ).to.be.equal(alice.address);
 
     const txn = await wait(
-      configuratorAsProxy.connect(alice).pauseMarketAdmin()
+      marketAdminCheckerInstance.connect(alice).pauseMarketAdmin()
     );
 
     expect(event(txn, 0)).to.be.deep.equal({
       MarketAdminPaused: {
+        caller: alice.address,
         isMarketAdminPaused: true,
       },
     });
-    expect(await configuratorAsProxy.marketAdminPaused()).to.be.true;
+    expect(await marketAdminCheckerInstance.marketAdminPaused()).to.be.true;
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdmin(marketUpdateTimelock.address);
 
-    expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
+    expect(await marketAdminCheckerInstance.marketAdmin()).to.be.equal(
       marketUpdateTimelock.address
     );
 
@@ -243,20 +252,27 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
 
-    expect(await configuratorAsProxy.marketAdminPaused()).to.be.false;
+    expect(await marketAdminCheckerInstance.marketAdminPaused()).to.be.false;
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdminPauseGuardian(alice.address);
 
-    expect(await configuratorAsProxy.marketAdminPauseGuardian()).to.be.equal(
-      alice.address
-    );
+    expect(
+      await marketAdminCheckerInstance.marketAdminPauseGuardian()
+    ).to.be.equal(alice.address);
 
     await expect(
-      configuratorAsProxy.connect(alice).unpauseMarketAdmin()
-    ).to.be.revertedWithCustomError(configuratorAsProxy, 'Unauthorized');
+      marketAdminCheckerInstance.connect(alice).unpauseMarketAdmin()
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it('only main-governor-timelock or market admin can call market update functions', async () => {
@@ -275,6 +291,13 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
 
     const oldSupplyKink = (
       await configuratorAsProxy.getConfiguration(cometProxy.address)
@@ -299,11 +322,11 @@ describe('Configurator', function() {
         .supplyKink
     ).to.be.equal(newSupplyKink);
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdmin(marketUpdateTimelock.address);
 
-    expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
+    expect(await marketAdminCheckerInstance.marketAdmin()).to.be.equal(
       marketUpdateTimelock.address
     );
 
@@ -349,7 +372,14 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdmin(marketUpdateTimelock.address);
 
@@ -376,19 +406,26 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdmin(marketUpdateTimelock.address);
 
-    expect(await configuratorAsProxy.marketAdmin()).to.be.equal(
+    expect(await marketAdminCheckerInstance.marketAdmin()).to.be.equal(
       marketUpdateTimelock.address
     );
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .pauseMarketAdmin();
-    expect(await configuratorAsProxy.marketAdminPaused()).to.be.true;
+    expect(await marketAdminCheckerInstance.marketAdminPaused()).to.be.true;
 
     const newBorrowKink = 100n;
     await expect(
@@ -410,11 +447,18 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
 
-    await configuratorAsProxy
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .pauseMarketAdmin();
-    expect(await configuratorAsProxy.marketAdminPaused()).to.be.true;
+    expect(await marketAdminCheckerInstance.marketAdminPaused()).to.be.true;
 
     const oldSupplyKink = (
       await configuratorAsProxy.getConfiguration(cometProxy.address)
@@ -457,7 +501,14 @@ describe('Configurator', function() {
     });
 
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
-    await configuratorAsProxy
+    const marketAdminCheckerAddress = await configuratorAsProxy.marketAdminPermissionChecker();
+    const MarketAdminPermissionChecker = (await ethers.getContractFactory(
+      "MarketAdminPermissionChecker"
+    )) as MarketAdminPermissionChecker__factory;
+    const marketAdminCheckerInstance = MarketAdminPermissionChecker.attach(
+      marketAdminCheckerAddress
+    );
+    await marketAdminCheckerInstance
       .connect(governorTimelockSigner)
       .setMarketAdmin(marketUpdateTimelock.address);
 

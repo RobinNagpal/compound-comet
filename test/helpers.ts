@@ -32,6 +32,7 @@ import {
   CometInterface,
   NonStandardFaucetFeeToken,
   NonStandardFaucetFeeToken__factory,
+  MarketAdminPermissionChecker__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -427,9 +428,16 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     priceFeeds,
   } = await makeProtocol(opts);
 
+  // Deploy MarketAdminPermissionChecker
+  const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
+    'MarketAdminPermissionChecker'
+  )) as MarketAdminPermissionChecker__factory;
+  const MarketAdminPermissionChecker = await MarketAdminPermissionCheckerFactory.connect(governor).deploy();
+  await MarketAdminPermissionChecker.deployed();
+
   // Deploy ProxyAdmin
   const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
-  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
+  const proxyAdmin = await ProxyAdmin.connect(governor).deploy(MarketAdminPermissionChecker.address);
   await proxyAdmin.deployed();
 
   // Deploy Comet proxy
@@ -462,7 +470,12 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await configurator.deployed();
 
   // Deploy Configurator proxy
-  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
+  const initializeCalldata = (
+    await configurator.populateTransaction.initialize(
+      governor.address,
+      MarketAdminPermissionChecker.address
+    )
+  ).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,

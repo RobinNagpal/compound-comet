@@ -229,17 +229,17 @@ contract MarketUpdateProposer {
     }
 
     function getProposal(uint proposalId) public view
-    returns (
-        uint id,
-        address proposer,
-        uint eta,
-        address[] memory targets,
-        uint[] memory values,
-        string[] memory signatures,
-        bytes[] memory calldatas,
-        string memory description,
-        bool canceled,
-        bool executed
+        returns (
+            uint id,
+            address proposer,
+            uint eta,
+            address[] memory targets,
+            uint[] memory values,
+            string[] memory signatures,
+            bytes[] memory calldatas,
+            string memory description,
+            bool canceled,
+            bool executed
         )
     {
         MarketUpdateProposal storage proposal = proposals[proposalId];

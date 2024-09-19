@@ -12,6 +12,7 @@ contract Configurator is ConfiguratorStorage {
     event AddAsset(address indexed cometProxy, AssetConfig assetConfig);
     event CometDeployed(address indexed cometProxy, address indexed newComet);
     event GovernorTransferred(address indexed oldGovernor, address indexed newGovernor);
+    event MarketAdminPaused(address indexed caller, bool isMarketAdminPaused);
     event SetFactory(address indexed cometProxy, address indexed oldFactory, address indexed newFactory);
     event SetGovernor(address indexed cometProxy, address indexed oldGovernor, address indexed newGovernor);
     event SetConfiguration(address indexed cometProxy, Configuration oldConfiguration, Configuration newConfiguration);
@@ -33,6 +34,8 @@ contract Configurator is ConfiguratorStorage {
     event SetBaseMinForRewards(address indexed cometProxy, uint104 oldBaseMinForRewards, uint104 newBaseMinForRewards);
     event SetBaseBorrowMin(address indexed cometProxy, uint104 oldBaseBorrowMin, uint104 newBaseBorrowMin);
     event SetTargetReserves(address indexed cometProxy, uint104 oldTargetReserves, uint104 newTargetReserves);
+    event SetMarketAdmin(address indexed oldAdmin, address indexed newAdmin);
+    event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
     event UpdateAsset(address indexed cometProxy, AssetConfig oldAssetConfig, AssetConfig newAssetConfig);
     event UpdateAssetPriceFeed(address indexed cometProxy, address indexed asset, address oldPriceFeed, address newPriceFeed);
     event UpdateAssetBorrowCollateralFactor(address indexed cometProxy, address indexed asset, uint64 oldBorrowCF, uint64 newBorrowCF);
@@ -233,6 +236,61 @@ contract Configurator is ConfiguratorStorage {
         uint104 oldTargetReserves = configuratorParams[cometProxy].targetReserves;
         configuratorParams[cometProxy].targetReserves = newTargetReserves;
         emit SetTargetReserves(cometProxy, oldTargetReserves, newTargetReserves);
+    }
+
+    /**
+     * @notice Sets a new market admin.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the governor.
+     * Emits an event with the old and new market admin addresses.
+     * Note that there is no enforced zero address check on `newMarketAdmin` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the market admin role.
+     * @param newMarketAdmin The address of the new market admin.
+     */
+    function setMarketAdmin(address newMarketAdmin) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldMarketAdmin = marketAdmin;
+        marketAdmin = newMarketAdmin;
+        emit SetMarketAdmin(oldMarketAdmin, newMarketAdmin);
+    }
+
+    /**
+     * @notice Sets a new market admin pause guardian.
+     * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the owner.
+     * @param newPauseGuardian The address of the new market admin pause guardian.
+     * Note that there is no enforced zero address check on `newPauseGuadian` as it may be a deliberate choice
+     * to assign the zero address in certain scenarios. This design allows flexibility if the zero address
+     * is intended to represent a specific state, such as temporarily disabling the pause guadian.
+     */
+    function setMarketAdminPauseGuardian(address newPauseGuardian) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldPauseGuardian = marketAdminPauseGuardian;
+        marketAdminPauseGuardian = newPauseGuardian;
+        emit SetMarketAdminPauseGuardian(oldPauseGuardian, newPauseGuardian);
+    }
+
+    /**
+     * @notice Pauses the market admin role.
+     * @dev Can only be called by the governor or the market admin pause guardian.
+     * Reverts with Unauthorized if the caller is neither.
+     */
+    function pauseMarketAdmin() external {
+        if (marketAdminPaused) revert AlreadyPaused();
+        if (msg.sender != governor && msg.sender != marketAdminPauseGuardian) revert Unauthorized();
+        marketAdminPaused = true;
+        emit MarketAdminPaused(msg.sender, true);
+    }
+
+    /**
+     * @notice Unpauses the market admin role.
+     * @dev Can only be called by the governor.
+     * Reverts with Unauthorized if the caller is not the governor.
+     */
+    function unpauseMarketAdmin() external {
+        if (!marketAdminPaused) revert AlreadyUnPaused();
+        if (msg.sender != governor) revert Unauthorized();
+        marketAdminPaused = false;
+        emit MarketAdminPaused(msg.sender, false);
     }
 
     function addAsset(address cometProxy, AssetConfig calldata assetConfig) external {

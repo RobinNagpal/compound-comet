@@ -9,23 +9,20 @@ interface Deployable {
 }
 
 contract CometProxyAdmin is ProxyAdmin {
+
+    /// @notice MarketAdminPermissionChecker contract which is used to check if the caller has permission to perform market updates
     MarketAdminPermissionChecker public marketAdminPermissionChecker;
 
+    event SetMarketAdminPermissionChecker(address indexed oldMarketAdminPermissionChecker, address indexed newMarketAdminPermissionChecker);
     error Unauthorized();
 
     /**
-     * @dev Throws if called by any account other than the owner and market update admin
+     * @dev Ensures that the caller is either the owner or the market admin.
+     * This delegates the permission check logic to the MarketAdminPermissionChecker contract.
      */
-    modifier ownerOrMarketAdmin() {
-        // using revert instead of require to keep it consistent with other calls
-        if (owner() != _msgSender() && marketAdminPermissionChecker.marketAdmin() != _msgSender()) revert Unauthorized();
-        // If the sender is the marketAdmin, check that the marketAdmin is not paused
-        marketAdminPermissionChecker.checkMarketAdminPermission();
+    modifier ownerOrMarketAdmin {
+        if(_msgSender() != owner()) marketAdminPermissionChecker.canUpdateMarket(_msgSender());
         _;
-    }
-
-    constructor(MarketAdminPermissionChecker marketAdminPermissionChecker_) {
-        marketAdminPermissionChecker = marketAdminPermissionChecker_;
     }
 
     /**
@@ -47,6 +44,18 @@ contract CometProxyAdmin is ProxyAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
         _upgradeAndCall(cometProxy, newCometImpl, data);
     }
+
+    /**
+    * @notice Sets the MarketAdminPermissionChecker contract
+    * @dev Note: Only callable by governor
+    **/
+    function setMarketAdminPermissionChecker(address newMarketAdminPermissionChecker) external {
+        if (_msgSender() != owner()) revert Unauthorized();
+        address oldMarketAdminPermissionChecker = address(marketAdminPermissionChecker);
+        marketAdminPermissionChecker = MarketAdminPermissionChecker(newMarketAdminPermissionChecker);
+        emit SetMarketAdminPermissionChecker(oldMarketAdminPermissionChecker, newMarketAdminPermissionChecker);
+    }
+
 
     /**
      * @dev Custom upgrade function that allows owner and marketUpdateAdmin to call it

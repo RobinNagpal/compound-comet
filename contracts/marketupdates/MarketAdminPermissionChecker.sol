@@ -18,9 +18,22 @@ contract MarketAdminPermissionChecker is Ownable {
     event MarketAdminPaused(address indexed caller, bool isMarketAdminPaused);
 
     error Unauthorized();
+    error InvalidAddress();
     error MarketAdminIsPaused();
     error AlreadyPaused();
     error AlreadyUnPaused();
+
+    /**
+     * @notice Construct a new MarketAdminPermissionChecker contract.
+     * Not adding any checks for zero address as it may be a deliberate choice to assign the zero address i.e. keep the
+     * market updates disabled.
+     * @param _marketAdmin The address of the market admin.
+     * @param _marketAdminPauseGuardian The address of the market admin pause guardian.
+     */
+    constructor(address _marketAdmin, address _marketAdminPauseGuardian) {
+        marketAdmin = _marketAdmin;
+        marketAdminPauseGuardian = _marketAdminPauseGuardian;
+    }
     /**
      * @notice Sets a new market admin.
      * @dev Can only be called by the governor. Reverts with Unauthorized if the caller is not the governor.
@@ -73,7 +86,10 @@ contract MarketAdminPermissionChecker is Ownable {
         emit MarketAdminPaused(msg.sender, false);
     }
 
-    function checkMarketAdminPermission() external view {   // update the msg.sender
-        if (msg.sender == marketAdmin && marketAdminPaused) revert MarketAdminIsPaused();
+    function canUpdateMarket(address callerAddress) external view returns (bool){   // update the msg.sender
+        if (callerAddress != marketAdmin) revert Unauthorized();
+        if (marketAdminPaused) revert MarketAdminIsPaused();
+
+        return true;
     }
 }

@@ -16,6 +16,7 @@ contract Configurator is ConfiguratorStorage {
     event SetGovernor(address indexed cometProxy, address indexed oldGovernor, address indexed newGovernor);
     event SetConfiguration(address indexed cometProxy, Configuration oldConfiguration, Configuration newConfiguration);
     event SetPauseGuardian(address indexed cometProxy, address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event SetMarketAdminPermissionChecker(address indexed oldMarketAdminPermissionChecker, address indexed newMarketAdminPermissionChecker);
     event SetBaseTokenPriceFeed(address indexed cometProxy, address indexed oldBaseTokenPriceFeed, address indexed newBaseTokenPriceFeed);
     event SetExtensionDelegate(address indexed cometProxy, address indexed oldExt, address indexed newExt);
     event SetSupplyKink(address indexed cometProxy,uint64 oldKink, uint64 newKink);
@@ -53,29 +54,22 @@ contract Configurator is ConfiguratorStorage {
 
     /**
      * @dev Ensures that the caller is either the governor or the market admin.
-     * Reverts with Unauthorized if the caller is neither. If the caller is the market admin,
-     * it also checks if the market admin is paused, reverting with MarketAdminIsPaused if so.
-     * Uses revert instead of require for consistency with other calls.
+     * This delegates the permission check logic to the MarketAdminPermissionChecker contract.
      */
     modifier governorOrMarketAdmin {
-        // using revert instead of require to keep it consistent with other calls
-        if(msg.sender != governor && msg.sender != marketAdminPermissionChecker.marketAdmin()) revert Unauthorized();
-        // If the sender is the marketAdmin, check that the market admin is not paused
-        marketAdminPermissionChecker.checkMarketAdminPermission();
+        if(msg.sender != governor) marketAdminPermissionChecker.canUpdateMarket(msg.sender);
         _;
     }
 
     /**
      * @notice Initializes the storage for Configurator
      * @param governor_ The address of the governor
-     * @param marketAdminPermissionChecker_ The address of the MarketAdminPermissionChecker contract
      **/
-    function initialize(address governor_, MarketAdminPermissionChecker marketAdminPermissionChecker_) public {
+    function initialize(address governor_) public {
         if (version != 0) revert AlreadyInitialized();
         if (governor_ == address(0)) revert InvalidAddress();
 
         governor = governor_;
-        marketAdminPermissionChecker = marketAdminPermissionChecker_;
         version = 1;
     }
 
@@ -122,6 +116,17 @@ contract Configurator is ConfiguratorStorage {
         address oldPauseGuardian = configuratorParams[cometProxy].pauseGuardian;
         configuratorParams[cometProxy].pauseGuardian = newPauseGuardian;
         emit SetPauseGuardian(cometProxy, oldPauseGuardian, newPauseGuardian);
+    }
+
+    /**
+    * @notice Sets the MarketAdminPermissionChecker contract
+    * @dev Note: Only callable by governor
+    **/
+    function setMarketAdminPermissionChecker(address newMarketAdminPermissionChecker) external {
+        if (msg.sender != governor) revert Unauthorized();
+        address oldMarketAdminPermissionChecker = address(marketAdminPermissionChecker);
+        marketAdminPermissionChecker = MarketAdminPermissionChecker(newMarketAdminPermissionChecker);
+        emit SetMarketAdminPermissionChecker(oldMarketAdminPermissionChecker, newMarketAdminPermissionChecker);
     }
 
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {

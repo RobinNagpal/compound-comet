@@ -12,14 +12,6 @@ pragma solidity ^0.8.10;
 */
 
 contract MarketUpdateTimelock {
-
-    event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
-    event SetMarketUpdateProposer(address indexed oldMarketAdmin, address indexed newMarketAdmin);
-    event SetDelay(uint indexed newDelay);
-    event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
-    event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
-    event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
-
     uint public constant GRACE_PERIOD = 14 days;
     uint public constant MINIMUM_DELAY = 2 days;
     uint public constant MAXIMUM_DELAY = 30 days;
@@ -28,7 +20,14 @@ contract MarketUpdateTimelock {
     address public marketUpdateProposer;
     uint public delay;
 
-    mapping (bytes32 => bool) public queuedTransactions;
+    mapping(bytes32 => bool) public queuedTransactions;
+
+    event SetGovernor(address indexed oldGovernor, address indexed newGovernor);
+    event SetMarketUpdateProposer(address indexed oldMarketAdmin, address indexed newMarketAdmin);
+    event SetDelay(uint indexed newDelay);
+    event CancelTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
+    event ExecuteTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature,  bytes data, uint eta);
+    event QueueTransaction(bytes32 indexed txHash, address indexed target, uint value, string signature, bytes data, uint eta);
     
     constructor(address governor_, uint delay_) public {
         require(delay_ >= MINIMUM_DELAY, "MarketUpdateTimelock::constructor: Delay must exceed minimum delay.");

@@ -240,20 +240,20 @@ contract MarketUpdateProposer {
         string memory description,
         bool canceled,
         bool executed
-            )
-        {
-            MarketUpdateProposal storage proposal = proposals[proposalId];
-            return (
-                proposal.id,
-                proposal.proposer,
-                proposal.eta,
-                proposal.targets,
-                proposal.values,
-                proposal.signatures,
-                proposal.calldatas,
-                proposal.description,
-                proposal.canceled,
-                proposal.executed
-            );
-        }
+        )
+    {
+        MarketUpdateProposal storage proposal = proposals[proposalId];
+        return (
+            proposal.id,
+            proposal.proposer,
+            proposal.eta,
+            proposal.targets,
+            proposal.values,
+            proposal.signatures,
+            proposal.calldatas,
+            proposal.description,
+            proposal.canceled,
+            proposal.executed
+        );
+    }
 }

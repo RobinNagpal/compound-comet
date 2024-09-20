@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC1820Implementer} from "@openzeppelin/contracts/utils/introspection/ERC1820Implementer.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable as OwnableFromOpenZeppelin} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
@@ -15,7 +15,7 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
  * the address where a smart contract will be deployed, which allows
  * for interesting new mechanisms known as 'counterfactual interactions'.
  */
-contract Create2Deployer is Ownable, Pausable {
+contract Create2Deployer is OwnableFromOpenZeppelin, Pausable {
     
     /**
      * @dev Deploys a contract using `CREATE2`. The address where the
@@ -30,8 +30,8 @@ contract Create2Deployer is Ownable, Pausable {
      * - the factory must have a balance of at least `value`.
      * - if `value` is non-zero, `bytecode` must have a `payable` constructor.
      */
-    function deploy(uint256 value, bytes32 salt, bytes memory code) public whenNotPaused {
-        Create2.deploy(value, salt, code);
+    function deploy(uint256 value, bytes32 salt, bytes memory code) public whenNotPaused returns (address) {
+        return Create2.deploy(value, salt, code);
     }
 
     /**

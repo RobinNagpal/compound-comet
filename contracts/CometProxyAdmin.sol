@@ -28,7 +28,7 @@ contract CometProxyAdmin is ProxyAdmin {
     /**
      * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy
      *  Requirements:
-     *   - This contract must be the admin or market admin of `CometProxy`
+     *   - This contract must be the admin of `CometProxy`
      */
     function deployAndUpgradeTo(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy) public virtual ownerOrMarketAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));
@@ -38,7 +38,7 @@ contract CometProxyAdmin is ProxyAdmin {
     /**
      * @dev Deploy a new Comet and upgrade the implementation of the Comet proxy, then call the function
      *  Requirements:
-     *   - This contract must be the admin or market admin of `CometProxy`
+     *   - This contract must be the admin of `CometProxy`
      */
     function deployUpgradeToAndCall(Deployable configuratorProxy, TransparentUpgradeableProxy cometProxy, bytes memory data) public virtual ownerOrMarketAdmin {
         address newCometImpl = configuratorProxy.deploy(address(cometProxy));

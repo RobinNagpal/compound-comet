@@ -472,7 +472,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     initializeCalldata,
   );
   await configuratorProxy.deployed();
-  
+
   // Set the initial factory and configuration for Comet in Configurator
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxy.address, configuration);

@@ -220,8 +220,6 @@ describe('MarketUpdateDeployment', function() {
       ]
     );
 
-    //
-
     await governorTimelock.executeTransactions(
       [proxyAdminNew.address],
       [0],

@@ -10,7 +10,7 @@ interface Deployable {
 
 contract CometProxyAdmin is ProxyAdmin {
 
-    /// @notice MarketAdminPermissionChecker contract which is used to check if the caller has permission to perform market updates
+    /// @notice MarketAdminPermissionChecker contract which is used to check if the caller has permission to perform market updates(or deployment)
     MarketAdminPermissionCheckerInterface public marketAdminPermissionChecker;
 
     event SetMarketAdminPermissionChecker(address indexed oldMarketAdminPermissionChecker, address indexed newMarketAdminPermissionChecker);
@@ -47,7 +47,7 @@ contract CometProxyAdmin is ProxyAdmin {
 
     /**
     * @notice Sets the MarketAdminPermissionChecker contract
-    * @dev Note: Only callable by governor
+    * @dev Note: Only callable by main-governor-timelock
     **/
     function setMarketAdminPermissionChecker(MarketAdminPermissionCheckerInterface newMarketAdminPermissionChecker) external {
         if (_msgSender() != owner()) revert Unauthorized();
@@ -58,14 +58,14 @@ contract CometProxyAdmin is ProxyAdmin {
 
 
     /**
-     * @dev Custom upgrade function that allows owner and marketUpdateAdmin to call it
+     * @dev Custom upgrade function that allows owner and marketAdmin to call it
      */
     function _upgrade(TransparentUpgradeableProxy proxy, address implementation) private ownerOrMarketAdmin {
         proxy.upgradeTo(implementation);
     }
 
     /**
-     * @dev Custom upgradeAndCall function that allows owner and marketUpdateAdmin to call it
+     * @dev Custom upgradeAndCall function that allows owner and marketAdmin to call it
      */
     function _upgradeAndCall(TransparentUpgradeableProxy proxy, address implementation, bytes memory data) private ownerOrMarketAdmin {
         proxy.upgradeToAndCall(implementation, data);

@@ -6,7 +6,6 @@ import {
   wait,
   getConfiguration,
   sameAddress,
-  COMP_WHALES,
   getConfigurationStruct
 } from '../../../src/deploy';
 import '@nomiclabs/hardhat-ethers';
@@ -43,7 +42,6 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const signer = await deploymentManager.getSigner();
   const ethers = deploymentManager.hre.ethers;
   const admin = signer;
-  const voterAddress = COMP_WHALES.testnet[0];
 
   // Deploy governance contracts
   const clone = {

@@ -32,7 +32,7 @@ import {
   CometInterface,
   NonStandardFaucetFeeToken,
   NonStandardFaucetFeeToken__factory,
-  MarketAdminPermissionChecker,
+  MarketAdminPermissionChecker, MarketAdminPermissionChecker__factory,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -481,6 +481,18 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   if(opts.marketAdminPermissionCheckerContract) {
     await configuratorAsProxy.connect(governor).setMarketAdminPermissionChecker(opts.marketAdminPermissionCheckerContract.address);
     await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(opts.marketAdminPermissionCheckerContract.address);
+  } else {
+    const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
+      'MarketAdminPermissionChecker'
+    )) as MarketAdminPermissionChecker__factory;
+
+    const marketAdminPermissionCheckerContract =  await MarketAdminPermissionCheckerFactory.deploy(
+      ethers.constants.AddressZero,
+      ethers.constants.AddressZero
+    );
+
+    await configuratorAsProxy.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
+    await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(marketAdminPermissionCheckerContract.address);
   }
 
   return {

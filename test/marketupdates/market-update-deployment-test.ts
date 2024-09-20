@@ -38,19 +38,19 @@ describe('MarketUpdateDeployment', function() {
     -------   Deploy New Contracts -----------
     1) Deploy the address of MarketAdminMultiSig
 
-    2) Deploy MarketUpdateProposer with MarketAdminMultiSig as the owner
+    2) Deploy MarketUpdateTimelock with Governor Timelock as the owner
 
-    3) Deploy MarketUpdateTimelock with Governor Timelock as the owner
+    3) Deploy MarketUpdateProposer with MarketAdminMultiSig as the owner
 
-    4) Initialize the MarketUpdateProposer with MarketUpdateTimelock
+    4) Deploy the new CometProxyAdmin
 
-    5) Deploy the new CometProxyAdmin
+    5) Set MainGovernorTimelock as the owner of new CometProxyAdmin by calling transferOwnership
 
-    6) Set MainGovernorTimelock as the owner of new CometProxyAdmin by calling transferOwnership
+    6) Deploy the new Configurator's Implementation
 
-    7) Deploy the new Configurator's Implementation
+    7) Deploy the MarketAdminPermissionChecker contract
 
-    8) Initialize the new Configurator with Governor Timelock
+    8) Transfer the ownership of MarketAdminPermissionChecker to Governor Timelock
 
     -------   Update Existing Contracts -----------
 
@@ -60,18 +60,18 @@ describe('MarketUpdateDeployment', function() {
 
     2) Call Old CometProxyAdmin and call `changeProxyAdmin` function to set Configurator's Proxy's admin as the new CometProxyAdmin // This will allow the new CometProxyAdmin to upgrade the Configurator's implementation if needed in future
 
-    -- Set new configurator as implementation ---
+    -- Set new configurator's implementation ---
 
-    3) Set marketUpdateAdmin on Configurator
+    3) Set marketUpdateAdmin on MarketAdminPermissionChecker
 
-    4) Set marketUpdateAdmin on CometProxyAdmin
+    4) Set MarketAdminPermissionChecker on Configurator
 
-    5) Set marketAdminPauseGuardian on Configurator
+    5) Set MarketAdminPermissionChecker on CometProxyAdmin
 
-    6) Set marketAdminPauseGuardian on CometProxyAdmin
+    6) Set Market Update proposer in MarketUpdateTimelock
 
     7) Deploy market update   // This will make sure existing functionality is working fine
-          - setSupplyCap
+          - setSupplyKink
           - deployAndUpgrade
    */
 
@@ -142,16 +142,17 @@ describe('MarketUpdateDeployment', function() {
     });
 
     // 3) Deploy MarketUpdateProposer with MarketAdminMultiSig as the owner
-    const proposalGuardian = signers[11];
+    const proposalGuardian = signers[5];
     const marketUpdateProposer = await marketUpdaterProposerFactory
       .connect(marketUpdateMultiSig)
       .deploy(
-        governorTimelockSigner.address,
+        governorTimelock.address,
         marketUpdateMultiSig.address,
         proposalGuardian.address,
         marketUpdateTimelock.address
       );
 
+    // 4) Deploy the new CometProxyAdmin
     const ProxyAdmin = (await ethers.getContractFactory(
       'CometProxyAdmin'
     )) as CometProxyAdmin__factory;
@@ -159,12 +160,12 @@ describe('MarketUpdateDeployment', function() {
       marketUpdateMultiSig
     ).deploy();
 
-    // 4) Set MainGovernorTimelock as the owner of new CometProxyAdmin by calling transferOwnership
+    // 5) Set MainGovernorTimelock as the owner of new CometProxyAdmin by calling transferOwnership
     await proxyAdminNew
       .connect(marketUpdateMultiSig)
       .transferOwnership(governorTimelock.address);
 
-    // 5) Deploy the new Configurator's Implementation
+    // 6) Deploy the new Configurator's Implementation
     const ConfiguratorFactory = (await ethers.getContractFactory(
       'Configurator'
     )) as Configurator__factory;
@@ -173,7 +174,7 @@ describe('MarketUpdateDeployment', function() {
     ).deploy();
     await configuratorNew.deployed();
 
-    // 8) Deploy the MarketAdminPermissionChecker contract
+    // 7) Deploy the MarketAdminPermissionChecker contract
     const MarketAdminPermissionCheckerFactory =
       (await ethers.getContractFactory(
         'MarketAdminPermissionChecker'
@@ -184,8 +185,10 @@ describe('MarketUpdateDeployment', function() {
         ethers.constants.AddressZero,
         ethers.constants.AddressZero
       );
+
+    // 8) Transfer the ownership of MarketAdminPermissionChecker to Governor Timelock
     await marketAdminPermissionCheckerContract.transferOwnership(
-      governorTimelockSigner.address
+      governorTimelock.address
     );
 
     // -------   Update Existing Contracts -----------
@@ -244,7 +247,7 @@ describe('MarketUpdateDeployment', function() {
       ]
     );
 
-    // Setting MarketAdminPermissionChecker in Configurator
+    // Setting MarketAdminPermissionChecker on Configurator
     await governorTimelock.executeTransactions(
       [configuratorProxyContract.address],
       [0],
@@ -257,7 +260,7 @@ describe('MarketUpdateDeployment', function() {
       ]
     );
 
-    // Setting MarketAdminPermissionChecker in CometProxyAdmin
+    // Setting MarketAdminPermissionChecker on CometProxyAdmin
     await governorTimelock.executeTransactions(
       [proxyAdminNew.address],
       [0],

@@ -16,7 +16,7 @@ interface MarketAdminPermissionCheckerInterface {
     /**
      * @notice Checks if the caller can perform market updates or not.
      * Throws an error if the callerAddress is not same as market admin, or if the market admin is paused
-     * @param callerAddress
+     * @param callerAddress The address of the caller
      */
     function checkUpdatePermission(address callerAddress) external view;
 }

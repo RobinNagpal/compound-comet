@@ -32,7 +32,7 @@ import {
   CometInterface,
   NonStandardFaucetFeeToken,
   NonStandardFaucetFeeToken__factory,
-  MarketAdminPermissionChecker__factory,
+  MarketAdminPermissionChecker,
 } from '../build/types';
 import { BigNumber } from 'ethers';
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
@@ -88,6 +88,7 @@ export type ProtocolOpts = {
   baseBorrowMin?: Numeric;
   targetReserves?: Numeric;
   baseTokenBalance?: Numeric;
+  marketAdminPermissionCheckerContract?: MarketAdminPermissionChecker;
 };
 
 export type Protocol = {
@@ -428,16 +429,9 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
     priceFeeds,
   } = await makeProtocol(opts);
 
-  // Deploy MarketAdminPermissionChecker
-  const MarketAdminPermissionCheckerFactory = (await ethers.getContractFactory(
-    'MarketAdminPermissionChecker'
-  )) as MarketAdminPermissionChecker__factory;
-  const MarketAdminPermissionChecker = await MarketAdminPermissionCheckerFactory.connect(governor).deploy();
-  await MarketAdminPermissionChecker.deployed();
-
   // Deploy ProxyAdmin
   const ProxyAdmin = (await ethers.getContractFactory('CometProxyAdmin')) as CometProxyAdmin__factory;
-  const proxyAdmin = await ProxyAdmin.connect(governor).deploy(MarketAdminPermissionChecker.address);
+  const proxyAdmin = await ProxyAdmin.connect(governor).deploy();
   await proxyAdmin.deployed();
 
   // Deploy Comet proxy
@@ -470,12 +464,7 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   await configurator.deployed();
 
   // Deploy Configurator proxy
-  const initializeCalldata = (
-    await configurator.populateTransaction.initialize(
-      governor.address,
-      MarketAdminPermissionChecker.address
-    )
-  ).data;
+  const initializeCalldata = (await configurator.populateTransaction.initialize(governor.address)).data;
   const ConfiguratorProxy = (await ethers.getContractFactory('ConfiguratorProxy')) as ConfiguratorProxy__factory;
   const configuratorProxy = await ConfiguratorProxy.deploy(
     configurator.address,
@@ -488,6 +477,12 @@ export async function makeConfigurator(opts: ProtocolOpts = {}): Promise<Configu
   const configuratorAsProxy = configurator.attach(configuratorProxy.address);
   await configuratorAsProxy.connect(governor).setConfiguration(cometProxy.address, configuration);
   await configuratorAsProxy.connect(governor).setFactory(cometProxy.address, cometFactory.address);
+
+  if(opts.marketAdminPermissionCheckerContract) {
+    await configuratorAsProxy.connect(governor).setMarketAdminPermissionChecker(opts.marketAdminPermissionCheckerContract.address);
+    await proxyAdmin.connect(governor).setMarketAdminPermissionChecker(opts.marketAdminPermissionCheckerContract.address);
+  }
+
   return {
     opts,
     governor,

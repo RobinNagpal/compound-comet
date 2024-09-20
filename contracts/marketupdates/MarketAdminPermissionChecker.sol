@@ -26,8 +26,8 @@ contract MarketAdminPermissionChecker is MarketAdminPermissionCheckerInterface, 
      * @notice Construct a new MarketAdminPermissionChecker contract.
      * Not adding any checks for zero address as it may be a deliberate choice to assign the zero address i.e. keep the
      * market updates disabled.
-     * @param _marketAdmin The address of the market admin.
-     * @param _marketAdminPauseGuardian The address of the market admin pause guardian.
+     * @param marketAdmin_ The address of the market admin.
+     * @param marketAdminPauseGuardian_ The address of the market admin pause guardian.
      */
     constructor(address marketAdmin_, address marketAdminPauseGuardian_) {
         marketAdmin = marketAdmin_;

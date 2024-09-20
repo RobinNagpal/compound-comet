@@ -71,7 +71,7 @@ function expectAssetConfigsToMatch(
   expect(configuratorAssetConfigs.supplyCap).to.be.equal(cometAssetInfo.supplyCap);
 }
 
-describe.only('configurator', function () {
+describe('configurator', function () {
   it('deploys Comet', async () => {
     const { configurator, configuratorProxy, cometProxy } = await makeConfigurator();
 

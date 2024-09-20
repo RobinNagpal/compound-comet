@@ -11,8 +11,6 @@ describe('Configurator', function() {
       governor: governorTimelockSigner,
     });
 
-    console.log('configurator', configurator.address);
-
     const configuratorAsProxy = configurator.attach(configuratorProxy.address);
 
     // check already initialized properly

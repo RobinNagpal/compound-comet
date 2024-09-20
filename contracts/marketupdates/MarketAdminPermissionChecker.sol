@@ -2,9 +2,9 @@
 pragma solidity 0.8.15;
 
 import "../vendor/access/Ownable.sol";
-import "./IMarketAdminPermissionChecker.sol";
+import "./MarketAdminPermissionCheckerInterface.sol";
 
-contract MarketAdminPermissionChecker is IMarketAdminPermissionChecker, Ownable {
+contract MarketAdminPermissionChecker is MarketAdminPermissionCheckerInterface, Ownable {
     /// @notice The address of the market admin. This will be the address of a timelock contract.
     address public marketAdmin;
     
@@ -18,9 +18,7 @@ contract MarketAdminPermissionChecker is IMarketAdminPermissionChecker, Ownable 
     event SetMarketAdminPauseGuardian(address indexed oldPauseGuardian, address indexed newPauseGuardian);
     event MarketAdminPaused(address indexed caller, bool isMarketAdminPaused);
 
-    error Unauthorized();
     error InvalidAddress();
-    error MarketAdminIsPaused();
     error AlreadyPaused();
     error AlreadyUnPaused();
 

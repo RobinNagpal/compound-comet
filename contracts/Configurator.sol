@@ -4,7 +4,7 @@ pragma solidity 0.8.15;
 import "./CometFactory.sol";
 import "./CometConfiguration.sol";
 import "./ConfiguratorStorage.sol";
-import "./marketupdates/IMarketAdminPermissionChecker.sol";
+import "./marketupdates/MarketAdminPermissionCheckerInterface.sol";
 
 contract Configurator is ConfiguratorStorage {
 
@@ -125,11 +125,11 @@ contract Configurator is ConfiguratorStorage {
     * @notice Sets the MarketAdminPermissionChecker contract
     * @dev Note: Only callable by governor
     **/
-    function setMarketAdminPermissionChecker(address newMarketAdminPermissionChecker) external {
+    function setMarketAdminPermissionChecker(MarketAdminPermissionCheckerInterface newMarketAdminPermissionChecker) external {
         if (msg.sender != governor) revert Unauthorized();
         address oldMarketAdminPermissionChecker = address(marketAdminPermissionChecker);
-        marketAdminPermissionChecker = IMarketAdminPermissionChecker(newMarketAdminPermissionChecker);
-        emit SetMarketAdminPermissionChecker(oldMarketAdminPermissionChecker, newMarketAdminPermissionChecker);
+        marketAdminPermissionChecker = newMarketAdminPermissionChecker;
+        emit SetMarketAdminPermissionChecker(oldMarketAdminPermissionChecker, address(newMarketAdminPermissionChecker));
     }
 
     function setBaseTokenPriceFeed(address cometProxy, address newBaseTokenPriceFeed) external {

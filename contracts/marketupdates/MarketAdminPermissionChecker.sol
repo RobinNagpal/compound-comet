@@ -29,9 +29,9 @@ contract MarketAdminPermissionChecker is MarketAdminPermissionCheckerInterface, 
      * @param _marketAdmin The address of the market admin.
      * @param _marketAdminPauseGuardian The address of the market admin pause guardian.
      */
-    constructor(address _marketAdmin, address _marketAdminPauseGuardian) {
-        marketAdmin = _marketAdmin;
-        marketAdminPauseGuardian = _marketAdminPauseGuardian;
+    constructor(address marketAdmin_, address marketAdminPauseGuardian_) {
+        marketAdmin = marketAdmin_;
+        marketAdminPauseGuardian = marketAdminPauseGuardian_;
     }
     /**
      * @notice Sets a new market admin.

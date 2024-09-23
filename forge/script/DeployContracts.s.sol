@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../lib/forge-std/src/Script.sol";
-import "../../contracts/Create2Deployer.sol";
+import "./contracts/Create2Deployer.sol";
 import "./MarketUpdateConstants.sol";
 import "../../contracts/marketupdates/MarketUpdateTimelock.sol";
 import "../../contracts/marketupdates/MarketUpdateProposer.sol";

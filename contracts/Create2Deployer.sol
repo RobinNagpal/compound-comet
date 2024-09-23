@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC1820Implementer} from "@openzeppelin/contracts/utils/introspection/ERC1820Implementer.sol";
-import {Ownable as OwnableFromOpenZeppelin} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 /**

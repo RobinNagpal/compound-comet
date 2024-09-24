@@ -1,4 +1,4 @@
-import {Create2Deployer} from './../build/types';
+import {ICreate2Deployer} from './../build/types';
 import hre, {ethers} from 'hardhat';
 import { SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 
@@ -44,7 +44,7 @@ async function deploySafe(owners:string[], threshold:number, salt:string){
   return {safe, safeAddress};
 }
 
-async function createBytecode(create2Deployer:Create2Deployer, contract:string, salt:string, args?:any[]){
+async function createBytecode(create2Deployer:ICreate2Deployer, contract:string, salt:string, args?:any[]){
   const contractFactory = await ethers.getContractFactory(contract);
   
   let creationBytecode;
@@ -62,7 +62,7 @@ async function createBytecode(create2Deployer:Create2Deployer, contract:string, 
   return {computedAddress, creationBytecode, deployedByteCode};
 }
 
-async function checkAndDeploy(create2Deployer: Create2Deployer, salt: string, contractName: string, args?: any[]) {
+async function checkAndDeploy(create2Deployer: ICreate2Deployer, salt: string, contractName: string, args?: any[]) {
   // Create bytecode and compute the deterministic address
   const { computedAddress, creationBytecode, deployedByteCode } = await createBytecode(create2Deployer, contractName, salt, args);
 
@@ -99,7 +99,10 @@ async function main() {
   
   // Get the Create2 Deployer contract at its known address
   const create2DeployerAddress = '0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2';
-  const create2Deployer = await ethers.getContractAt('Create2Deployer', create2DeployerAddress) as Create2Deployer;
+  const create2Deployer = (await ethers.getContractAt(
+    'ICreate2Deployer',
+    create2DeployerAddress
+  )) as ICreate2Deployer;
 
   const governorTimelockAddr = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
   const pauseGuardianAddr = '0x7053e25f7076F4986D632A3C04313C81831e0d55';

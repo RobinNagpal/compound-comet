@@ -15,8 +15,6 @@ contract DeployContracts is Script {
     address public deployedWalletAddress;
 
     function run() external {
-        uint256 contractCodeSize; // Stores the size of the code at a given contract address
-
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
         // Set up the owners array
@@ -42,21 +40,7 @@ contract DeployContracts is Script {
 
         bytes memory expectedBytecodeMarketUpdateTimelock = type(MarketUpdateTimelock).runtimeCode;
 
-        // Checking if the contract is already deployed at the computed address
-        assembly {
-            contractCodeSize := extcodesize(computedMarketUpdateTimelockAddress)
-        }
-        if (contractCodeSize > 0) {
-            // The contract is already deployed, skipping the deployment and comparing the bytecode
-            bytes memory deployedBytecode = new bytes(contractCodeSize); // Initialize a bytes array with the size of the contract code
-            assembly {
-                extcodecopy(computedMarketUpdateTimelockAddress, add(deployedBytecode, 0x20), 0, contractCodeSize)
-            }
-            require(keccak256(deployedBytecode) == keccak256(expectedBytecodeMarketUpdateTimelock), "Deployed bytecode does not match the expected bytecode");
-        } else {
-            // Deploy the contract if it is not already deployed and compare the bytecodes
-            deployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketUpdateTimelock, computedMarketUpdateTimelockAddress, expectedBytecodeMarketUpdateTimelock);
-        }
+        checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketUpdateTimelock, computedMarketUpdateTimelockAddress, expectedBytecodeMarketUpdateTimelock);
 
         // Encode the constructor arguments into the bytecode
         bytes memory bytecodeMarketUpdateProposer = abi.encodePacked(
@@ -68,21 +52,7 @@ contract DeployContracts is Script {
 
         bytes memory expectedBytecodeMarketUpdateProposer = type(MarketUpdateProposer).runtimeCode;
 
-        // Checking if the contract is already deployed at the computed address
-        assembly {
-            contractCodeSize := extcodesize(computedMarketUpdateProposerAddress)
-        }
-        if (contractCodeSize > 0) {
-            // The contract is already deployed, skipping the deployment and comparing the bytecode
-            bytes memory deployedBytecode = new bytes(contractCodeSize); // Initialize a bytes array with the size of the contract code
-            assembly {
-                extcodecopy(computedMarketUpdateProposerAddress, add(deployedBytecode, 0x20), 0, contractCodeSize)
-            }
-            require(keccak256(deployedBytecode) == keccak256(expectedBytecodeMarketUpdateProposer), "Deployed bytecode does not match the expected bytecode");
-        } else {
-            // Deploy the contract if it is not already deployed and compare the bytecodes
-            deployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketUpdateProposer, computedMarketUpdateProposerAddress, expectedBytecodeMarketUpdateProposer);
-        }
+        checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketUpdateProposer, computedMarketUpdateProposerAddress, expectedBytecodeMarketUpdateProposer);
 
         // Prepare bytecode for Configurator
         bytes memory bytecodeConfigurator = abi.encodePacked(
@@ -93,21 +63,7 @@ contract DeployContracts is Script {
 
         bytes memory expectedBytecodeConfigurator = type(Configurator).runtimeCode;
 
-        // Checking if the contract is already deployed at the computed address
-        assembly {
-            contractCodeSize := extcodesize(computedConfiguratorAddress)
-        }
-        if (contractCodeSize > 0) {
-            // The contract is already deployed, skipping the deployment and comparing the bytecode
-            bytes memory deployedBytecode = new bytes(contractCodeSize); // Initialize a bytes array with the size of the contract code
-            assembly {
-                extcodecopy(computedConfiguratorAddress, add(deployedBytecode, 0x20), 0, contractCodeSize)
-            }
-            require(keccak256(deployedBytecode) == keccak256(expectedBytecodeConfigurator), "Deployed bytecode does not match the expected bytecode");
-        } else {
-            // Deploy the contract if it is not already deployed and compare the bytecodes
-            deployAndCompareBytecodes(create2Deployer, salt, bytecodeConfigurator, computedConfiguratorAddress, expectedBytecodeConfigurator);
-        }
+        checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeConfigurator, computedConfiguratorAddress, expectedBytecodeConfigurator);
 
         // Prepare bytecode for CometProxyAdmin
         bytes memory bytecodeCometProxyAdmin = abi.encodePacked(
@@ -118,21 +74,7 @@ contract DeployContracts is Script {
 
         bytes memory expectedBytecodeCometProxyAdmin = type(CometProxyAdmin).runtimeCode;
 
-        // Checking if the contract is already deployed at the computed address
-        assembly {
-            contractCodeSize := extcodesize(computedCometProxyAdminAddress)
-        }
-        if (contractCodeSize > 0) {
-            // The contract is already deployed, skipping the deployment and comparing the bytecode
-            bytes memory deployedBytecode = new bytes(contractCodeSize); // Initialize a bytes array with the size of the contract code
-            assembly {
-                extcodecopy(computedCometProxyAdminAddress, add(deployedBytecode, 0x20), 0, contractCodeSize)
-            }
-            require(keccak256(deployedBytecode) == keccak256(expectedBytecodeCometProxyAdmin), "Deployed bytecode does not match the expected bytecode");
-        } else {
-            // Deploy the contract if it is not already deployed and compare the bytecodes
-            deployAndCompareBytecodes(create2Deployer, salt, bytecodeCometProxyAdmin, computedCometProxyAdminAddress, expectedBytecodeCometProxyAdmin);
-        }
+        checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeCometProxyAdmin, computedCometProxyAdminAddress, expectedBytecodeCometProxyAdmin);
 
         vm.stopBroadcast();
     }
@@ -156,5 +98,35 @@ contract DeployContracts is Script {
         }
 
         require(keccak256(deployedBytecode) == keccak256(expectedBytecode), "Deployed bytecode does not match the expected bytecode");
+    }
+
+    function checkOrDeployAndCompareBytecodes(ICreate2Deployer create2Deployer, bytes32 salt, bytes memory actualBytecode, address computedAddress, bytes memory expectedBytecode) internal {
+        uint256 contractCodeSize = getContractCodeSizeAtAddress(computedAddress);
+
+        if (contractCodeSize > 0) {
+            // The contract is already deployed, skipping the deployment and comparing the bytecode
+            bytes memory deployedBytecode = verifyDeployedBytecode(computedAddress, contractCodeSize);
+            
+            require(keccak256(deployedBytecode) == keccak256(expectedBytecode), "Deployed bytecode does not match the expected bytecode");
+        } else {
+            // Deploy the contract if it is not already deployed and compare the bytecodes
+            deployAndCompareBytecodes(create2Deployer, salt, actualBytecode, computedAddress, expectedBytecode);
+        }
+    }
+
+    function getContractCodeSizeAtAddress(address contractAddress) internal view returns (uint256) {
+        uint256 size;
+        assembly {
+            size := extcodesize(contractAddress)
+        }
+        return size;
+    }
+
+    function verifyDeployedBytecode(address computedAddress, uint256 contractCodeSize) internal view returns (bytes memory) {
+        bytes memory deployedBytecode = new bytes(contractCodeSize); // Initialize a bytes array with the size of the contract code
+        assembly {
+            extcodecopy(computedAddress, add(deployedBytecode, 0x20), 0, contractCodeSize)
+        }
+        return deployedBytecode;
     }
 }

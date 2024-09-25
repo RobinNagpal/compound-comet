@@ -2,11 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "../lib/forge-std/src/Script.sol";
+import "../lib/forge-std/src/console.sol";
 import "./MarketUpdateConstants.sol";
 import "../../contracts/marketupdates/MarketUpdateTimelock.sol";
 import "../../contracts/marketupdates/MarketUpdateProposer.sol";
 import "../../contracts/Configurator.sol";
 import "../../contracts/CometProxyAdmin.sol";
+import "../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
 import "../../contracts/Create2DeployerInterface.sol";
 
 contract DeployContracts is Script {
@@ -22,7 +24,7 @@ contract DeployContracts is Script {
         owners.push(MarketUpdateConstants.OWNER_2);
         owners.push(msg.sender); // You can change to a specific deployer address
 
-        bytes32 salt = keccak256(abi.encodePacked("Salt-28"));
+        bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
 
         // Assuming that the Safe Wallet is already deployed
         deployedWalletAddress = MarketUpdateConstants.WALLET_ADDRESS; // Store the address in the variable
@@ -37,6 +39,7 @@ contract DeployContracts is Script {
         );
         // Precomputing the address of MarketUpdateTimelock contract
         address computedMarketUpdateTimelockAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketUpdateTimelock));
+        console.log("computed MarketUpdateTimelockAddress: ", computedMarketUpdateTimelockAddress);
 
         bytes memory expectedBytecodeMarketUpdateTimelock = type(MarketUpdateTimelock).runtimeCode;
 
@@ -49,6 +52,7 @@ contract DeployContracts is Script {
         );
         // Precompute the address of MarketUpdateProposer contract
         address computedMarketUpdateProposerAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketUpdateProposer));
+        console.log("computed MarketUpdateProposerAddress: ", computedMarketUpdateProposerAddress);
 
         bytes memory expectedBytecodeMarketUpdateProposer = type(MarketUpdateProposer).runtimeCode;
 
@@ -60,6 +64,7 @@ contract DeployContracts is Script {
         );
         // Precompute the address of Configurator contract
         address computedConfiguratorAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeConfigurator));
+        console.log("computed ConfiguratorAddress: ", computedConfiguratorAddress);
 
         bytes memory expectedBytecodeConfigurator = type(Configurator).runtimeCode;
 
@@ -71,10 +76,26 @@ contract DeployContracts is Script {
         );
         // Precompute the address of CometProxyAdmin contract
         address computedCometProxyAdminAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeCometProxyAdmin));
+        console.log("computedCometProxyAdminAddress: ", computedCometProxyAdminAddress);
 
         bytes memory expectedBytecodeCometProxyAdmin = type(CometProxyAdmin).runtimeCode;
 
         checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeCometProxyAdmin, computedCometProxyAdminAddress, expectedBytecodeCometProxyAdmin);
+
+         // Prepare bytecode for MarketAdminPermissionChecker
+        bytes memory bytecodeMarketAdminPermissionChecker = abi.encodePacked(
+            type(MarketAdminPermissionChecker).creationCode,
+            abi.encode(address(0), address(0))
+        );
+        // Precompute the address of MarketAdminPermissionChecker contract
+        address computedMarketAdminPermissionCheckerAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketAdminPermissionChecker));
+        console.log("computed MarketAdminPermissionCheckerAddress: ", computedMarketAdminPermissionCheckerAddress);
+
+        // bytes memory expectedBytecodeMarketAdminPermissionChecker = type(MarketAdminPermissionChecker).runtimeCode;
+
+        create2Deployer.deploy(0, salt, bytecodeMarketAdminPermissionChecker);
+
+        // checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketAdminPermissionChecker, computedMarketAdminPermissionCheckerAddress, expectedBytecodeMarketAdminPermissionChecker);
 
         vm.stopBroadcast();
     }

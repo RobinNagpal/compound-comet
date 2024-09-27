@@ -12,8 +12,7 @@ import "../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
 import "../../contracts/Create2DeployerInterface.sol";
 
 contract DeployContracts is Script {
-    address[] public owners; // Dynamic array to store owners
-    // Variable to store the deployed safe wallet address
+    address[] public owners;
     address public deployedWalletAddress;
 
     function run() external {
@@ -21,25 +20,20 @@ contract DeployContracts is Script {
 
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
-        // Set up the owners array
         owners.push(MarketUpdateConstants.OWNER_1);
         owners.push(MarketUpdateConstants.OWNER_2);
-        owners.push(msg.sender); // You can change to a specific deployer address
+        owners.push(msg.sender);
 
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
 
-        // Assuming that the Safe Wallet is already deployed
-        deployedWalletAddress = MarketUpdateConstants.WALLET_ADDRESS; // Store the address in the variable
+        deployedWalletAddress = MarketUpdateConstants.WALLET_ADDRESS;
 
-        // Continue with other contract deployments using CREATE2Deployer
         ICreate2Deployer create2Deployer = ICreate2Deployer(MarketUpdateConstants.CREATE2_DEPLOYER_ADDRESS);
 
-        // Encode the constructor arguments into the bytecode
         bytes memory bytecodeMarketUpdateTimelock = abi.encodePacked(
             type(MarketUpdateTimelock).creationCode,
             abi.encode(MarketUpdateConstants.GOVERNOR_TIMELOCK_ADDRESS, MarketUpdateConstants.DELAY)
         );
-        // Precomputing the address of MarketUpdateTimelock contract
         address computedMarketUpdateTimelockAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketUpdateTimelock));
         console.log("computed MarketUpdateTimelockAddress: ", computedMarketUpdateTimelockAddress);
 
@@ -47,12 +41,10 @@ contract DeployContracts is Script {
 
         checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketUpdateTimelock, computedMarketUpdateTimelockAddress, expectedBytecodeMarketUpdateTimelock);
 
-        // Encode the constructor arguments into the bytecode
         bytes memory bytecodeMarketUpdateProposer = abi.encodePacked(
             type(MarketUpdateProposer).creationCode,
             abi.encode(MarketUpdateConstants.GOVERNOR_TIMELOCK_ADDRESS, deployedWalletAddress, MarketUpdateConstants.PAUSE_GUARDIAN_ADDRESS, computedMarketUpdateTimelockAddress)
         );
-        // Precompute the address of MarketUpdateProposer contract
         address computedMarketUpdateProposerAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketUpdateProposer));
         console.log("computed MarketUpdateProposerAddress: ", computedMarketUpdateProposerAddress);
 
@@ -60,11 +52,9 @@ contract DeployContracts is Script {
 
         checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketUpdateProposer, computedMarketUpdateProposerAddress, expectedBytecodeMarketUpdateProposer);
 
-        // Prepare bytecode for Configurator
         bytes memory bytecodeConfigurator = abi.encodePacked(
             type(Configurator).creationCode
         );
-        // Precompute the address of Configurator contract
         address computedConfiguratorAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeConfigurator));
         console.log("computed ConfiguratorAddress: ", computedConfiguratorAddress);
 
@@ -72,12 +62,10 @@ contract DeployContracts is Script {
 
         checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeConfigurator, computedConfiguratorAddress, expectedBytecodeConfigurator);
 
-        // Prepare bytecode for CometProxyAdmin
         bytes memory bytecodeCometProxyAdmin = abi.encodePacked(
             type(CometProxyAdmin).creationCode,
             abi.encode(timelock)
         );
-        // Precompute the address of CometProxyAdmin contract
         address computedCometProxyAdminAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeCometProxyAdmin));
         console.log("computedCometProxyAdminAddress: ", computedCometProxyAdminAddress);
 
@@ -87,57 +75,57 @@ contract DeployContracts is Script {
 
         console.log("Owner of cometProxyAdmin: ", CometProxyAdmin(computedCometProxyAdminAddress).owner());
 
-         // Prepare bytecode for MarketAdminPermissionChecker
         bytes memory bytecodeMarketAdminPermissionChecker = abi.encodePacked(
             type(MarketAdminPermissionChecker).creationCode,
             abi.encode(timelock, address(0), address(0))
         );
-        // Precompute the address of MarketAdminPermissionChecker contract
         address computedMarketAdminPermissionCheckerAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketAdminPermissionChecker));
         console.log("computed MarketAdminPermissionCheckerAddress: ", computedMarketAdminPermissionCheckerAddress);
 
         bytes memory expectedBytecodeMarketAdminPermissionChecker = type(MarketAdminPermissionChecker).runtimeCode;
 
-//        create2Deployer.deploy(0, salt, bytecodeMarketAdminPermissionChecker);
-
         checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketAdminPermissionChecker, computedMarketAdminPermissionCheckerAddress, expectedBytecodeMarketAdminPermissionChecker);
 
         vm.stopBroadcast();
-    }
 
-    function deployAndCompareBytecodes(ICreate2Deployer create2Deployer, bytes32 salt, bytes memory actualBytecode, address computedAddress, bytes memory expectedBytecode) internal {
-        uint256 size;
-
-        // Deploy the contract using CREATE2Deployer
-        create2Deployer.deploy(0, salt, actualBytecode);
-
-        // Check if the contract is deployed at the computed address
-        assembly {
-            size := extcodesize(computedAddress)
-        }
-        require(size > 0, "No contract deployed at this address");
-
-        // Check if the bytecode matches the expected bytecode
-        bytes memory deployedBytecode = new bytes(size); // Initialize a bytes array with the size of the contract code
-        assembly {
-            extcodecopy(computedAddress, add(deployedBytecode, 0x20), 0, size)
-        }
-
-        require(keccak256(deployedBytecode) == keccak256(expectedBytecode), "Deployed bytecode does not match the expected bytecode");
+        // Write the computed addresses to a Solidity file
+        writeAddressesToFile(
+            computedMarketUpdateTimelockAddress,
+            computedMarketUpdateProposerAddress,
+            computedConfiguratorAddress,
+            computedCometProxyAdminAddress,
+            computedMarketAdminPermissionCheckerAddress
+        );
     }
 
     function checkOrDeployAndCompareBytecodes(ICreate2Deployer create2Deployer, bytes32 salt, bytes memory actualBytecode, address computedAddress, bytes memory expectedBytecode) internal {
         uint256 contractCodeSize = getContractCodeSizeAtAddress(computedAddress);
 
         if (contractCodeSize > 0) {
-            // The contract is already deployed, skipping the deployment and comparing the bytecode
             bytes memory deployedBytecode = verifyDeployedBytecode(computedAddress, contractCodeSize);
-            
+
             require(keccak256(deployedBytecode) == keccak256(expectedBytecode), "Deployed bytecode does not match the expected bytecode");
         } else {
-            // Deploy the contract if it is not already deployed and compare the bytecodes
             deployAndCompareBytecodes(create2Deployer, salt, actualBytecode, computedAddress, expectedBytecode);
         }
+    }
+
+    function deployAndCompareBytecodes(ICreate2Deployer create2Deployer, bytes32 salt, bytes memory actualBytecode, address computedAddress, bytes memory expectedBytecode) internal {
+        uint256 size;
+
+        create2Deployer.deploy(0, salt, actualBytecode);
+
+        assembly {
+            size := extcodesize(computedAddress)
+        }
+        require(size > 0, "No contract deployed at this address");
+
+        bytes memory deployedBytecode = new bytes(size);
+        assembly {
+            extcodecopy(computedAddress, add(deployedBytecode, 0x20), 0, size)
+        }
+
+        require(keccak256(deployedBytecode) == keccak256(expectedBytecode), "Deployed bytecode does not match the expected bytecode");
     }
 
     function getContractCodeSizeAtAddress(address contractAddress) internal view returns (uint256) {
@@ -149,10 +137,45 @@ contract DeployContracts is Script {
     }
 
     function verifyDeployedBytecode(address computedAddress, uint256 contractCodeSize) internal view returns (bytes memory) {
-        bytes memory deployedBytecode = new bytes(contractCodeSize); // Initialize a bytes array with the size of the contract code
+        bytes memory deployedBytecode = new bytes(contractCodeSize);
         assembly {
             extcodecopy(computedAddress, add(deployedBytecode, 0x20), 0, contractCodeSize)
         }
         return deployedBytecode;
+    }
+
+    function writeAddressesToFile(
+        address computedMarketUpdateTimelockAddress,
+        address computedMarketUpdateProposerAddress,
+        address computedConfiguratorAddress,
+        address computedCometProxyAdminAddress,
+        address computedMarketAdminPermissionCheckerAddress
+    ) internal {
+        string memory path = "./contracts/marketupdates/DeployedAddresses.sol";
+        string memory content = "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.15;\n\ncontract DeployedAddresses {\n";
+
+        content = string(abi.encodePacked(content, "    address public constant computedMarketUpdateTimelockAddress = ", addressToString(computedMarketUpdateTimelockAddress), ";\n"));
+        content = string(abi.encodePacked(content, "    address public constant computedMarketUpdateProposerAddress = ", addressToString(computedMarketUpdateProposerAddress), ";\n"));
+        content = string(abi.encodePacked(content, "    address public constant computedConfiguratorAddress = ", addressToString(computedConfiguratorAddress), ";\n"));
+        content = string(abi.encodePacked(content, "    address public constant computedCometProxyAdminAddress = ", addressToString(computedCometProxyAdminAddress), ";\n"));
+        content = string(abi.encodePacked(content, "    address public constant computedMarketAdminPermissionCheckerAddress = ", addressToString(computedMarketAdminPermissionCheckerAddress), ";\n"));
+
+        content = string(abi.encodePacked(content, "}\n"));
+
+        vm.writeFile(path, content);
+    }
+
+    function addressToString(address _address) internal pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_address)));
+        bytes memory alphabet = "0123456789abcdef";
+
+        bytes memory str = new bytes(2 + 2 * 20);
+        str[0] = '0';
+        str[1] = 'x';
+        for (uint256 i = 0; i < 20; i++) {
+            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
     }
 }

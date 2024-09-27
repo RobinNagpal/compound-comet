@@ -7,7 +7,6 @@ import "./helperContracts/GovernorBravoDelegate.sol";
 import "./helperContracts/Comp.sol";
 import "../../contracts/marketupdates/CometProxyAdminOld.sol";
 
-
 contract GovernorProposal is Script {
 
     function run() external {
@@ -18,12 +17,12 @@ contract GovernorProposal is Script {
         GovernorBravoDelegate governorBravo = GovernorBravoDelegate(governorBravoProxyAddress);
 
         address cometProxyAdminOldAddress = 0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779;
-        address cometProxyAdminNewAddress = 0xF8666e4029a721EBcbD77780786aD4A4d8a7466c;
+        address cometProxyAdminNewAddress = 0xE0bB5FF77e211EC41344Fd7278a3fbd2112755eE;
         address configuratorProxyContractAddress = 0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3;
-        address marketUpdateTimelockAddress = 0x2F6321105FE8D94800c754bDaF83A79685D2A540;
-        address marketUpdateProposerAddress = 0xa0a44d5aB5f106d710B0Cb5CD0c2c158bD035D85;
-        address marketAdminPermissionCheckerAddress = 0x4186B8aB64bF01C1c6af6E67518E1bb9CBCF3E02;
-        address configuratorNewAddress = 0x7aC523b5Efcc3edD9B9DF16F4271F93050e609c5;
+        address marketUpdateTimelockAddress = 0x92821Ee970607cf9124A85bcd97e0ecF4660F951;
+        address marketUpdateProposerAddress = 0xBA6A372486b38546C8c20Fd804fC62357462A5A7;
+        address marketAdminPermissionCheckerAddress = 0x14EB58Db876dF21f7BFeE4e4A675e7007a558F99;
+        address configuratorNewAddress = 0xBd7ef0ea7C0494F595198EC5b31C645908E57d3e;
         address cometProxyAddress = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
 
         address[] memory targets = new address[](7);
@@ -86,28 +85,60 @@ contract GovernorProposal is Script {
         // Call the propose function via the proxy (delegation to the implementation contract)
         uint proposalId = governorBravo.propose(targets, values, signatures, calldatas, description);
 
+        (
+            uint id,
+            address proposer,
+            uint eta,
+            uint startBlock,
+            uint endBlock,
+            uint forVotes,
+            uint againstVotes,
+            uint abstainVotes,
+            bool canceled,
+            bool executed
+        ) = governorBravo.proposals(proposalId);
+
+        console.log("proposal id: ", id);
+
+        console.log("proposal start block: ", startBlock);
+        console.log("proposal end block: ", endBlock);
+
         uint votingDelay = governorBravo.votingDelay();
         uint votingPeriod = governorBravo.votingPeriod();
 
+        console.log("proposal state: ", uint(governorBravo.state(proposalId)));
+
         // Fast forward by voting delay
-        vm.roll(block.number + votingDelay + 1);
+        console.log("block number: ", block.number);
+        console.log("voting delay: ", votingDelay);
+        vm.roll(block.number + votingDelay + 10);
+
+        // advanceBlocks(votingDelay + 1);
+
+        console.log("proposal state: ", uint(governorBravo.state(proposalId)));
+        console.log("block number: ", block.number);
 
         vm.stopBroadcast(); // Stop broadcasting for the previous voter
 
         // Cast votes from multiple accounts
         for (uint i = 0; i < voters.length; i++) {
             vm.startBroadcast(voters[i]); // Start broadcasting for the next voter
+            // Optional: Print block number and proposal state
+            console.log("Block number during voting: ", block.number);
+            console.log("Proposal state during voting: ", uint(governorBravo.state(proposalId)));
             governorBravo.castVote(proposalId, 1); // 1 = "For" vote
 
             vm.stopBroadcast(); // Stop broadcasting for this voter
         }
 
-        vm.startBroadcast(voters[0]);
-
         // Fast forward by voting period
         vm.roll(block.number + votingPeriod + 1);
 
+        vm.startBroadcast(voters[0]);
+
         governorBravo.queue(proposalId);
+
+        console.log("block number after voting period has passed: ", block.number);
 
         // Fast forward time by the timelock delay (172800 seconds or 2 days)
         uint timelockDelay = 172800;
@@ -117,4 +148,18 @@ contract GovernorProposal is Script {
 
         vm.stopBroadcast();
     }
+
+    // Instead of vm.roll, use evm_mine to advance blocks
+    function advanceBlocks(uint256 numberOfBlocks) internal {
+        for (uint256 i = 0; i < numberOfBlocks; i++) {
+            vm.rpc("evm_mine", "[]");
+        }
+    }
+
+    // // Instead of vm.warp, use evm_increaseTime
+    // function increaseTime(uint256 sec) internal {
+    //     vm.rpc("evm_increaseTime", abi.encode(sec));
+    //     vm.rpc("evm_mine", "");
+    // }
+
 }

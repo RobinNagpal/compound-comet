@@ -17,6 +17,8 @@ contract DeployContracts is Script {
     address public deployedWalletAddress;
 
     function run() external {
+        address timelock = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
         // Set up the owners array
@@ -72,7 +74,8 @@ contract DeployContracts is Script {
 
         // Prepare bytecode for CometProxyAdmin
         bytes memory bytecodeCometProxyAdmin = abi.encodePacked(
-            type(CometProxyAdmin).creationCode
+            type(CometProxyAdmin).creationCode,
+            abi.encode(timelock)
         );
         // Precompute the address of CometProxyAdmin contract
         address computedCometProxyAdminAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeCometProxyAdmin));
@@ -82,10 +85,12 @@ contract DeployContracts is Script {
 
         checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeCometProxyAdmin, computedCometProxyAdminAddress, expectedBytecodeCometProxyAdmin);
 
+        console.log("Owner of cometProxyAdmin: ", CometProxyAdmin(computedCometProxyAdminAddress).owner());
+
          // Prepare bytecode for MarketAdminPermissionChecker
         bytes memory bytecodeMarketAdminPermissionChecker = abi.encodePacked(
             type(MarketAdminPermissionChecker).creationCode,
-            abi.encode(address(0), address(0))
+            abi.encode(timelock, address(0), address(0))
         );
         // Precompute the address of MarketAdminPermissionChecker contract
         address computedMarketAdminPermissionCheckerAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketAdminPermissionChecker));

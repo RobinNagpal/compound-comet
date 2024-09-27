@@ -96,11 +96,11 @@ contract DeployContracts is Script {
         address computedMarketAdminPermissionCheckerAddress = create2Deployer.computeAddress(salt, keccak256(bytecodeMarketAdminPermissionChecker));
         console.log("computed MarketAdminPermissionCheckerAddress: ", computedMarketAdminPermissionCheckerAddress);
 
-        // bytes memory expectedBytecodeMarketAdminPermissionChecker = type(MarketAdminPermissionChecker).runtimeCode;
+        bytes memory expectedBytecodeMarketAdminPermissionChecker = type(MarketAdminPermissionChecker).runtimeCode;
 
-        create2Deployer.deploy(0, salt, bytecodeMarketAdminPermissionChecker);
+//        create2Deployer.deploy(0, salt, bytecodeMarketAdminPermissionChecker);
 
-        // checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketAdminPermissionChecker, computedMarketAdminPermissionCheckerAddress, expectedBytecodeMarketAdminPermissionChecker);
+        checkOrDeployAndCompareBytecodes(create2Deployer, salt, bytecodeMarketAdminPermissionChecker, computedMarketAdminPermissionCheckerAddress, expectedBytecodeMarketAdminPermissionChecker);
 
         vm.stopBroadcast();
     }

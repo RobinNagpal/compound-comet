@@ -16,13 +16,17 @@ contract GovernorProposal is Script {
         // Cast the proxy address to the GovernorBravoDelegate interface
         GovernorBravoDelegate governorBravo = GovernorBravoDelegate(governorBravoProxyAddress);
 
+        // Newly deployed contracts
+        address marketUpdateTimelockAddress = 0x1ECfD7737728C95d9D8823a665d3Acd6189d159D;
+        address marketUpdateProposerAddress = 0x91605FB5098Ff3d973b0e592ED5Ba6d11abc0637;
+        address configuratorNewAddress = 0xdc2dbA66649721fa632E2b668305371d2f05210F;
+        address cometProxyAdminNewAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+        address marketAdminPermissionCheckerAddress = 0x3df3468b80CD5258a69E8F0AbC36321582e53134;
+
+
+        // Old contracts
         address cometProxyAdminOldAddress = 0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779;
-        address cometProxyAdminNewAddress = 0xE0bB5FF77e211EC41344Fd7278a3fbd2112755eE;
         address configuratorProxyContractAddress = 0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3;
-        address marketUpdateTimelockAddress = 0x92821Ee970607cf9124A85bcd97e0ecF4660F951;
-        address marketUpdateProposerAddress = 0xBA6A372486b38546C8c20Fd804fC62357462A5A7;
-        address marketAdminPermissionCheckerAddress = 0x14EB58Db876dF21f7BFeE4e4A675e7007a558F99;
-        address configuratorNewAddress = 0xBd7ef0ea7C0494F595198EC5b31C645908E57d3e;
         address cometProxyAddress = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
 
         address[] memory targets = new address[](7);
@@ -32,33 +36,37 @@ contract GovernorProposal is Script {
         string memory description = "Proposal to trigger updates for market admin";
 
         targets[0] = cometProxyAdminOldAddress;
+        signatures[0] = "changeProxyAdmin(address,address)";
+        calldatas[0] = abi.encode(configuratorProxyContractAddress, cometProxyAdminNewAddress);
+
         targets[1] = cometProxyAdminOldAddress;
+        signatures[1] = "changeProxyAdmin(address,address)";
+        calldatas[1] = abi.encode(cometProxyAddress, cometProxyAdminNewAddress);
+
         targets[2] = cometProxyAdminNewAddress;
+        signatures[2] = "upgrade(address,address)";
+        calldatas[2] = abi.encode(configuratorProxyContractAddress, configuratorNewAddress);
+
         targets[3] = marketAdminPermissionCheckerAddress;
+        signatures[3] = "setMarketAdmin(address)";
+        calldatas[3] = abi.encode(marketUpdateTimelockAddress);
+
         targets[4] = configuratorProxyContractAddress;
+        signatures[4] = "setMarketAdminPermissionChecker(address)";
+        calldatas[4] = abi.encode(marketAdminPermissionCheckerAddress);
+
         targets[5] = cometProxyAdminNewAddress;
+        signatures[5] = "setMarketAdminPermissionChecker(address)";
+        calldatas[5] = abi.encode(marketAdminPermissionCheckerAddress);
+
         targets[6] = marketUpdateTimelockAddress;
+        signatures[6] = "setMarketUpdateProposer(address)";
+        calldatas[6] = abi.encode(marketUpdateProposerAddress);
 
         // Set up the values (all zeros in this case)
         for (uint256 i = 0; i < 7; i++) {
             values[i] = 0;
         }
-
-        signatures[0] = "changeProxyAdmin(address,address)";
-        signatures[1] = "changeProxyAdmin(address,address)";
-        signatures[2] = "upgrade(address,address)";
-        signatures[3] = "setMarketAdmin(address)";
-        signatures[4] = "setMarketAdminPermissionChecker(address)";
-        signatures[5] = "setMarketAdminPermissionChecker(address)";
-        signatures[6] = "setMarketUpdateProposer(address)";
-
-        calldatas[0] = abi.encode(configuratorProxyContractAddress, cometProxyAdminNewAddress);
-        calldatas[1] = abi.encode(cometProxyAddress, cometProxyAdminNewAddress);
-        calldatas[2] = abi.encode(configuratorProxyContractAddress, configuratorNewAddress);
-        calldatas[3] = abi.encode(marketUpdateTimelockAddress);
-        calldatas[4] = abi.encode(marketAdminPermissionCheckerAddress);
-        calldatas[5] = abi.encode(marketAdminPermissionCheckerAddress);
-        calldatas[6] = abi.encode(marketUpdateProposerAddress);
 
         address[] memory voters = new address[](12);
         voters[0] = 0x0579A616689f7ed748dC07692A3F150D44b0CA09; // Impersonate account 1
@@ -151,9 +159,9 @@ contract GovernorProposal is Script {
 
     // Instead of vm.roll, use evm_mine to advance blocks
     function advanceBlocks(uint256 numberOfBlocks) internal {
-        for (uint256 i = 0; i < numberOfBlocks; i++) {
-            vm.rpc("evm_mine", "[]");
-        }
+//        for (uint256 i = 0; i < numberOfBlocks; i++) {
+//            vm.rpc("evm_mine", "[]");
+//        }
     }
 
     // // Instead of vm.warp, use evm_increaseTime

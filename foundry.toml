@@ -8,4 +8,4 @@ cache_path  = 'forge/cache'
 # disable for CI (used for debugging liquidity issues)
 no_match_test = "test.*SwapVia"
 
-fs_permissions = [{ access = "read-write", path = "./contracts/marketupdates"}]
+fs_permissions = [{ access = "read-write", path = "./forge/script/helperContracts/DeployedContracts.sol" }]

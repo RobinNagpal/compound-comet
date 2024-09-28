@@ -3,25 +3,30 @@ pragma solidity ^0.8.0;
 
 import "../lib/forge-std/src/Script.sol";
 import "../lib/forge-std/src/console.sol";
-import "./helperContracts/GovernorBravoDelegate.sol";
-import "./helperContracts/Comp.sol";
+import "../../contracts/IGovernorBravo.sol";
+import "../../contracts/IComp.sol";
 import "../../contracts/marketupdates/CometProxyAdminOld.sol";
+import "./helperContracts/DeployedContracts.sol";
 
-contract GovernorProposal is Script {
+contract GovernorProposal is Script, DeployedAddresses {
+
+    // COMP token address
+    address compTokenAddress = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    IComp compToken = IComp(compTokenAddress);
 
     function run() external {
         // Define the address of the Governor Bravo Proxy
         address governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
 
         // Cast the proxy address to the GovernorBravoDelegate interface
-        GovernorBravoDelegate governorBravo = GovernorBravoDelegate(governorBravoProxyAddress);
+        IGovernorBravo governorBravo = IGovernorBravo(governorBravoProxyAddress);
 
         // Newly deployed contracts
-        address marketUpdateTimelockAddress = 0x1ECfD7737728C95d9D8823a665d3Acd6189d159D;
-        address marketUpdateProposerAddress = 0x91605FB5098Ff3d973b0e592ED5Ba6d11abc0637;
-        address configuratorNewAddress = 0xdc2dbA66649721fa632E2b668305371d2f05210F;
-        address cometProxyAdminNewAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
-        address marketAdminPermissionCheckerAddress = 0x3df3468b80CD5258a69E8F0AbC36321582e53134;
+        address marketUpdateTimelockAddress = computedMarketUpdateTimelockAddress;
+        address marketUpdateProposerAddress = computedMarketUpdateProposerAddress;
+        address configuratorNewAddress = computedConfiguratorAddress;
+        address cometProxyAdminNewAddress = computedCometProxyAdminAddress;
+        address marketAdminPermissionCheckerAddress = computedMarketAdminPermissionCheckerAddress;
 
 
         // Old contracts
@@ -115,18 +120,35 @@ contract GovernorProposal is Script {
         uint votingPeriod = governorBravo.votingPeriod();
 
         console.log("proposal state: ", uint(governorBravo.state(proposalId)));
+        require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Pending, "Proposal is not pending");
 
         // Fast forward by voting delay
         console.log("block number: ", block.number);
         console.log("voting delay: ", votingDelay);
-        vm.roll(block.number + votingDelay + 10);
+        vm.roll(block.number + votingDelay + 7146);
 
-        // advanceBlocks(votingDelay + 1);
-
-        console.log("proposal state: ", uint(governorBravo.state(proposalId)));
-        console.log("block number: ", block.number);
 
         vm.stopBroadcast(); // Stop broadcasting for the previous voter
+        console.log("block number after voting delay: ", block.number);
+        console.log("proposal state: ", uint(governorBravo.state(proposalId)));
+        require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Active, "Proposal is not active");
+
+        console.log("block number: ", block.number);
+
+
+        // Assign COMP tokens and delegate votes
+        for (uint i = 0; i < voters.length; i++) {
+            address voter = voters[i];
+
+            // Assign COMP tokens
+            uint256 amount = 1_000_000e18; // Assign 1 million COMP tokens
+            setCompBalance(voter, amount);
+
+            // Delegate votes to self
+            vm.startPrank(voter);
+            compToken.delegate(voter);
+            vm.stopPrank();
+        }
 
         // Cast votes from multiple accounts
         for (uint i = 0; i < voters.length; i++) {
@@ -154,20 +176,17 @@ contract GovernorProposal is Script {
 
         governorBravo.execute(proposalId);
 
+        console.log("proposal state after execution: ", uint(governorBravo.state(proposalId)));
+
         vm.stopBroadcast();
     }
 
-    // Instead of vm.roll, use evm_mine to advance blocks
-    function advanceBlocks(uint256 numberOfBlocks) internal {
-//        for (uint256 i = 0; i < numberOfBlocks; i++) {
-//            vm.rpc("evm_mine", "[]");
-//        }
+    // Helper function to set COMP balance using vm.store
+    function setCompBalance(address account, uint256 amount) internal {
+        // Calculate the storage slot for balances[account]
+        // The balances mapping is at storage slot 0 in the COMP contract
+        bytes32 slot = keccak256(abi.encode(account, uint256(0)));
+        vm.store(compTokenAddress, slot, bytes32(amount));
     }
-
-    // // Instead of vm.warp, use evm_increaseTime
-    // function increaseTime(uint256 sec) internal {
-    //     vm.rpc("evm_increaseTime", abi.encode(sec));
-    //     vm.rpc("evm_mine", "");
-    // }
 
 }

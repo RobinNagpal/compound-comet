@@ -181,7 +181,7 @@ contract DeployContracts is Script {
         address computedCometProxyAdminAddress,
         address computedMarketAdminPermissionCheckerAddress
     ) internal {
-        string memory path = "./contracts/marketupdates/DeployedAddresses.sol";
+        string memory path = "./forge/script/helperContracts/DeployedAddresses.sol";
         string memory content = "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.15;\n\ncontract DeployedAddresses {\n";
 
         content = string(

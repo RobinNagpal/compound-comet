@@ -230,17 +230,40 @@ contract DeployContracts is Script {
         vm.writeFile(path, content);
     }
 
-    function addressToString(address _address) internal pure returns (string memory) {
-        bytes32 value = bytes32(uint256(uint160(_address)));
-        bytes memory alphabet = "0123456789abcdef";
+    function addressToString(address account) internal pure returns (string memory) {
+        bytes20 addrBytes = bytes20(account);
+        bytes memory hexChars = "0123456789abcdef";
+        bytes memory chars = new bytes(40);
 
-        bytes memory str = new bytes(2 + 2 * 20);
-        str[0] = "0";
-        str[1] = "x";
+        // Convert address to lowercase hex string
         for (uint256 i = 0; i < 20; i++) {
-            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
-            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
+            uint8 b = uint8(addrBytes[i]);
+            chars[2 * i] = hexChars[b >> 4];
+            chars[2 * i + 1] = hexChars[b & 0x0f];
         }
-        return string(str);
+
+        // Compute the keccak256 hash of the lowercase address string
+        bytes32 hash = keccak256(chars);
+
+        // Apply EIP-55 checksum by conditionally capitalizing letters
+        for (uint256 i = 0; i < 40; i++) {
+            // Check if character is a letter
+            if (chars[i] >= 'a' && chars[i] <= 'f') {
+                // Determine whether to capitalize based on the hash
+                uint8 hashNibble = uint8(hash[i / 2]);
+                if (i % 2 == 0) {
+                    hashNibble = hashNibble >> 4;
+                } else {
+                    hashNibble = hashNibble & 0x0f;
+                }
+                if (hashNibble >= 8) {
+                    // Capitalize the letter
+                    chars[i] = bytes1(uint8(chars[i]) - 32);
+                }
+            }
+        }
+
+        // Prepend '0x' and return the checksummed address string
+        return string(abi.encodePacked('0x', chars));
     }
 }

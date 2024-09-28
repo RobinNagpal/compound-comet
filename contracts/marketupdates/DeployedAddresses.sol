@@ -3,9 +3,9 @@
 pragma solidity ^0.8.15;
 
 contract DeployedAddresses {
-    address public constant computedMarketUpdateTimelockAddress = 0x07b7e8dd3c97744842079262c8c92b04032a2c4a;
-    address public constant computedMarketUpdateProposerAddress = 0xbbb951875e87d7318fd6ab721b77b3e984576ccb;
-    address public constant computedConfiguratorAddress = 0x4618b5c7460911fb419fd6df4ed274ed64ef5b12;
-    address public constant computedCometProxyAdminAddress = 0x76aa25efdb6f995c9f3a7c5be6c9b225c4c2d084;
-    address public constant computedMarketAdminPermissionCheckerAddress = 0x4aa4c4a0e93ffafc4648696a542156bec5c3f2f0;
+    address public constant computedMarketUpdateTimelockAddress = 0x07B7e8Dd3C97744842079262C8c92b04032A2c4a;
+    address public constant computedMarketUpdateProposerAddress = 0xBBb951875e87d7318Fd6aB721b77B3E984576ccB;
+    address public constant computedConfiguratorAddress = 0x4618B5c7460911FB419FD6dF4ed274Ed64Ef5b12;
+    address public constant computedCometProxyAdminAddress = 0x76AA25efdb6f995c9f3A7c5be6c9B225C4c2d084;
+    address public constant computedMarketAdminPermissionCheckerAddress = 0x4aA4C4a0e93fFAfc4648696a542156BeC5c3F2f0;
 }

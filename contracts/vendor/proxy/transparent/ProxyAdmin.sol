@@ -4,19 +4,13 @@
 pragma solidity ^0.8.0;
 
 import "./TransparentUpgradeableProxy.sol";
-import "../../../marketupdates/vendor/access/Ownable.sol";
+import "../../access/Ownable.sol";
 
 /**
  * @dev This is an auxiliary contract meant to be assigned as the admin of a {TransparentUpgradeableProxy}. For an
  * explanation of why you would want to use this see the documentation for {TransparentUpgradeableProxy}.
  */
 contract ProxyAdmin is Ownable {
-    /**
-     * @dev Initializes the contract setting the specified address as the initial owner.
-     * @param initialOwner The address to set as the owner of the contract.
-     */
-    constructor(address initialOwner) Ownable(initialOwner) {}
-
     /**
      * @dev Returns the current implementation of `proxy`.
      *

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../lib/forge-std/src/Script.sol";
-import "../lib/forge-std/src/console.sol";
+import "../../lib/forge-std/src/Script.sol";
+import "../..//lib/forge-std/src/console.sol";
 import "./helpers/MarketUpdateAddresses.sol";
-import "../../contracts/marketupdates/MarketUpdateTimelock.sol";
-import "../../contracts/marketupdates/MarketUpdateProposer.sol";
-import "../../contracts/Configurator.sol";
-import "../../contracts/CometProxyAdmin.sol";
-import "../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
-import "../../contracts/Create2DeployerInterface.sol";
+import "../../../contracts/marketupdates/MarketUpdateTimelock.sol";
+import "../../../contracts/marketupdates/MarketUpdateProposer.sol";
+import "../../../contracts/Configurator.sol";
+import "../../../contracts/CometProxyAdmin.sol";
+import "../../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
+import "../../../contracts/Create2DeployerInterface.sol";
+import "./helpers/MarketUpdateContractsDeployer.sol";
 
 contract DeployContracts is Script {
     address public deployedWalletAddress;
@@ -26,12 +27,24 @@ contract DeployContracts is Script {
 
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
         
-        bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
+        bytes32 salt = keccak256(abi.encodePacked("Salt-31")); 
 
         /// Call library function
+        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
+            salt,
+            MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
+            MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
+            MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
+            timelock
+        );
+
         /// Console log deployed contracts
+        console.log("MarketUpdateTimelock: ", deployedContracts.marketUpdateTimelock);
+        console.log("MarketUpdateProposer: ", deployedContracts.marketUpdateProposer);
+        console.log("NewConfiguratorImplementation: ", deployedContracts.newConfiguratorImplementation);
+        console.log("NewCometProxyAdmin: ", deployedContracts.newCometProxyAdmin);
+        console.log("MarketAdminPermissionChecker: ", deployedContracts.marketAdminPermissionChecker);
 
         vm.stopBroadcast();
     }
 }
-`

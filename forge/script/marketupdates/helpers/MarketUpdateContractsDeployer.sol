@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../contracts/Create2DeployerInterface.sol";
-import "../../contracts/marketupdates/MarketUpdateTimelock.sol";
-import "../../contracts/marketupdates/MarketUpdateProposer.sol";
-import "../../contracts/Configurator.sol";
-import "../../contracts/CometProxyAdmin.sol";
-import "../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
+import "../../../../contracts/Create2DeployerInterface.sol";
+import "../../../../contracts/marketupdates/MarketUpdateTimelock.sol";
+import "../../../../contracts/marketupdates/MarketUpdateProposer.sol";
+import "../../../../contracts/Configurator.sol";
+import "../../../../contracts/CometProxyAdmin.sol";
+import "../../../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
+import "../../../lib/forge-std/src/console.sol";
+import "./MarketUpdateAddresses.sol";
 
 
 library MarketUpdateContractsDeployer {
 
-    address create2DeployerAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+    address constant create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
 
     struct DeployedContracts {
         address marketUpdateTimelock;
@@ -28,14 +30,13 @@ library MarketUpdateContractsDeployer {
         string contractName;
     }
 
-
     function deployContracts(
-        string memory salt,
+        bytes32 salt,
         address marketUpdateMultiSig,
         address marketAdminPauseGuardianAddress,
         address marketUpdateProposalGuardianAddress,
         address governorTimelockAddress
-    ) public {
+    ) public returns (DeployedContracts memory) {
 
         ICreate2Deployer create2Deployer = ICreate2Deployer(create2DeployerAddress);
 
@@ -52,9 +53,9 @@ library MarketUpdateContractsDeployer {
         ContractDeploymentParams memory marketUpdateProposerParams = ContractDeploymentParams({
             creationCode: type(MarketUpdateProposer).creationCode,
             constructorArgs: abi.encode(
-                MarketUpdateAddresses.GOVERNOR_TIMELOCK_ADDRESS,
+                governorTimelockAddress,
                 marketUpdateMultiSig,
-                MarketUpdateAddresses.PAUSE_GUARDIAN_ADDRESS,
+                marketAdminPauseGuardianAddress,
                 computedMarketUpdateTimelockAddress
             ),
             expectedRuntimeCode: type(MarketUpdateProposer).runtimeCode,
@@ -74,7 +75,7 @@ library MarketUpdateContractsDeployer {
 
         ContractDeploymentParams memory cometProxyAdminParams = ContractDeploymentParams({
             creationCode: type(CometProxyAdmin).creationCode,
-            constructorArgs: abi.encode(timelock),
+            constructorArgs: abi.encode(governorTimelockAddress),
             expectedRuntimeCode: type(CometProxyAdmin).runtimeCode,
             contractName: "CometProxyAdmin"
         });
@@ -85,7 +86,7 @@ library MarketUpdateContractsDeployer {
 
         ContractDeploymentParams memory marketAdminPermissionCheckerParams = ContractDeploymentParams({
             creationCode: type(MarketAdminPermissionChecker).creationCode,
-            constructorArgs: abi.encode(timelock, address(0), address(0)),
+            constructorArgs: abi.encode(governorTimelockAddress, address(0), address(0)),
             expectedRuntimeCode: type(MarketAdminPermissionChecker).runtimeCode,
             contractName: "MarketAdminPermissionChecker"
         });

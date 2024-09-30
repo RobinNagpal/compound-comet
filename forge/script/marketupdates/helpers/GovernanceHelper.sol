@@ -7,23 +7,16 @@ import "../../../../contracts/IComp.sol";
 
 
 library GovernanceHelper {
-    address governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
-    IGovernorBravo governorBravo = IGovernorBravo(governorBravoProxyAddress);
+    address constant governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
+    IGovernorBravo constant governorBravo = IGovernorBravo(governorBravoProxyAddress);
 
     // COMP token address
-    address compTokenAddress = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    IComp compToken = IComp(compTokenAddress);
+    address constant compTokenAddress = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    IComp constant compToken = IComp(compTokenAddress);
 
+    function moveProposalToActive(VmSafe vm, uint proposalId, IGovernorBravo.ProposalState endState) public {
 
-    // initialize voters array here
-    address[] voters = new address[](
-        0x0579A616689f7ed748dC07692A3F150D44b0CA09,
-        0xD8deA87ddcC0c3C1464Ded6102e4D3E829d0aE41
-    );
-
-    function moveProposalToState(VmSafe memory vm, uint proposalId, IGovernorBravo.ProposalState endState) public {
-
-       if (endState == IGovernorBravo.ProposalState.Active) {
+       if (endState == IGovernorBravo.ProposalState.Pending) {
            // Add a check to see the current state is pending
            uint votingDelay = governorBravo.votingDelay();
 
@@ -31,31 +24,48 @@ library GovernanceHelper {
 
            vm.roll(block.number + votingDelay + 7146);
 
-           require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Pending, "Proposal is not pending");
+           require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Active, "Proposal is not Active");
 
-       } else if (endState == IGovernorBravo.ProposalState.Succeeded) {
-
-           uint votingDelay = governorBravo.votingDelay();
-           uint votingPeriod = governorBravo.votingPeriod();
-
-           console.log("proposal state: ", uint(governorBravo.state(proposalId)));
-           require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Pending, "Proposal is not pending");
-
-           // Fast forward by voting delay
-           console.log("block number: ", block.number);
-           console.log("voting delay: ", votingDelay);
-           vm.roll(block.number + votingDelay + 7146);
-
-           // do something
-        } else if (endState == IGovernorBravo.ProposalState.Executed) {
-            // do something
-        }
+       }
 
         revert("Invalid proposal state");
 
     }
 
-    function voteOnProposal(VmSafe memory vm, address marketUpdateProposer, uint256 proposalId) public {
+    function moveProposalToSucceed(VmSafe vm, uint proposalId, IGovernorBravo.ProposalState endState) public {
+        if (endState == IGovernorBravo.ProposalState.Active) {
+           uint votingPeriod = governorBravo.votingPeriod();
+
+           console.log("proposal state: ", uint(governorBravo.state(proposalId)));
+           require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Active, "Proposal is not Active");
+
+           // Fast forward by voting period
+           vm.roll(block.number + votingPeriod + 1);
+
+            require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Succeeded, "Proposal is not Succeeded");
+        }
+
+        revert("Invalid proposal state");
+    }
+
+    function moveProposalToExecution(VmSafe vm, uint proposalId, IGovernorBravo.ProposalState endState) public {
+        if (endState == IGovernorBravo.ProposalState.Succeeded) {
+           uint votingPeriod = governorBravo.votingPeriod();
+
+           console.log("proposal state: ", uint(governorBravo.state(proposalId)));
+           require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Succeeded, "Proposal is not Succeeded");
+
+           // Fast forward time by the timelock delay (172800 seconds or 2 days)
+            uint timelockDelay = 172800;
+            vm.warp(block.timestamp + timelockDelay + 1); // Advance time past the timelock delay
+
+            require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Queued, "Proposal is not Queued");
+        }
+
+        revert("Invalid proposal state");
+    }
+
+    function voteOnProposal(VmSafe vm, uint256 proposalId) public {
         address[] memory voters = new address[](12);
         voters[0] = 0x0579A616689f7ed748dC07692A3F150D44b0CA09; // Impersonate account 1
         voters[1] = 0xD8deA87ddcC0c3C1464Ded6102e4D3E829d0aE41; // Impersonate account 2
@@ -98,12 +108,10 @@ library GovernanceHelper {
     }
 
     // Helper function to set COMP balance using vm.store
-    function setCompBalance(VmSafe memory vm, address account, uint256 amount) internal {
+    function setCompBalance(VmSafe vm, address account, uint256 amount) internal {
         // Calculate the storage slot for balances[account]
         // The balances mapping is at storage slot 0 in the COMP contract
         bytes32 slot = keccak256(abi.encode(account, uint256(0)));
         vm.store(compTokenAddress, slot, bytes32(amount));
     }
-
-
 }

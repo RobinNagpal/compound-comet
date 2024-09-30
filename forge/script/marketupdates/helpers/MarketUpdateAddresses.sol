@@ -4,7 +4,12 @@ pragma solidity ^0.8.0;
 
 
 library MarketUpdateAddresses {
+    // Old Addresses
+    address public constant MARKET_UPDATE_MULTISIG_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;
+    address public constant MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;
+    address public constant MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS = 0x77B65c68E52C31eb844fb3b4864B91133e2C1308;
 
+    // New Addresses
     address public constant computedMarketUpdateMultiSigAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
     address public constant computedMarketAdminProposerAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
     address public constant computedMarketUpdateTimelockAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;

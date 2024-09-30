@@ -1,5 +1,15 @@
 # Work
 
+### Pairing tasks
+Now 
+- [ ] Populate addresses in the MarketUpdateAddresses
+- [ ] Complete the code of the deployment library
+
+After
+- [ ] Move the governor code into a library
+- [ ] Create a test for mainnet fork
+- [ ] Create a test for all the chains
+
 ### Current Understanding
 - We can't have vm.roll in scripts. It will work for simulation phase, but when the script runs, it will fail. Simulation
 phase is visible when we run it with `-vvvv` flag.
@@ -20,6 +30,7 @@ This can then be used to creating and simulation of the proposal for each chain.
 
 ###### Open Questions
 - What is the best way to create util functions?
+  -  
 - What is the best way to capture addresses for each chain in `MarketUpdateAddresses`. As a map? or something else?
   - We want to be able to retrieve it based on chain name/id
 - How to write a test which runs on the fork of each chain and verifies the proposal execution?

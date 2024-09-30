@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "../../../../contracts/IGovernorBravo.sol";
-import "../../../lib/forge-std/src/Vm.sol";
-import "../../../lib/forge-std/src/console.sol";
-import "../../../../contracts/IComp.sol";
+
+import "@forge-std/src/Vm.sol";
+import "@forge-std/src/console.sol";
+import "@comet-contracts/IGovernorBravo.sol";
+import "@comet-contracts/IComp.sol";
 
 
 library GovernanceHelper {

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../lib/forge-std/src/Script.sol";
-import "../../lib/forge-std/src/console.sol";
-import "../../../contracts/IGovernorBravo.sol";
-import "../../../contracts/IComp.sol";
-import "../../../contracts/marketupdates/CometProxyAdminOld.sol";
+import "@forge-std/src/Script.sol";
+import "@forge-std/src/console.sol";
+
+import "@comet-contracts/IGovernorBravo.sol";
+import "@comet-contracts/IComp.sol";
+import "@comet-contracts/marketupdates/CometProxyAdminOld.sol";
+
 import "./helpers/DeployedAddresses.sol";
 import "./helpers/GovernanceHelper.sol";
 import "./helpers/MarketUpdateAddresses.sol";

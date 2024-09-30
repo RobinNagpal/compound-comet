@@ -9,3 +9,8 @@ cache_path  = 'forge/cache'
 no_match_test = "test.*SwapVia"
 
 fs_permissions = [{ access = "read-write", path = "./forge/script/helperContracts/DeployedAddresses.sol" }]
+
+remappings = [
+    "@forge-std/=forge/lib/forge-std/",
+    "@comet-contracts/=contracts/",
+]

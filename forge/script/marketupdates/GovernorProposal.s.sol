@@ -6,7 +6,7 @@ import "../lib/forge-std/src/console.sol";
 import "../../contracts/IGovernorBravo.sol";
 import "../../contracts/IComp.sol";
 import "../../contracts/marketupdates/CometProxyAdminOld.sol";
-import "./helperContracts/DeployedContracts.sol";
+import "./helpers/DeployedAddresses.sol";
 
 contract GovernorProposal is Script, DeployedAddresses {
 

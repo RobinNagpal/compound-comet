@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "./vendor/access/Ownable.sol";
+import "./../vendor/access/Ownable.sol";
 import "./MarketAdminPermissionCheckerInterface.sol";
 
 contract MarketAdminPermissionChecker is MarketAdminPermissionCheckerInterface, Ownable {

@@ -1,5 +1,5 @@
-import { ethers } from 'hardhat';
-import Safe, { SafeFactory, SafeAccountConfig, PredictedSafeProps } from '@safe-global/protocol-kit';
+import {SafeAccountConfig, SafeFactory} from '@safe-global/protocol-kit';
+import {ethers} from 'hardhat';
 
 async function deploySafe(owners:string[], threshold:number, salt:string){
   const [deployer] = await ethers.getSigners();

@@ -1,4 +1,4 @@
-import {ICreate2Deployer} from './../build/types';
+import {ICreate2Deployer} from './../../build/types';
 import hre, {ethers} from 'hardhat';
 import { SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 
@@ -119,7 +119,21 @@ async function main() {
   const {contract:configurator, computedAddress: configuratorAddress} = await checkAndDeploy(create2Deployer, salt, 'Configurator');
 
   const {contract:cometProxyAdmin, computedAddress: cometProxyAdminAddress} = await checkAndDeploy(create2Deployer, salt, 'CometProxyAdmin');
-  
+
+  console.log('Computed Contract Addresses:', {
+    multisigAddress,
+    marketUpdateTimelockAddress,
+    marketProposerAddress,
+    configuratorAddress,
+    cometProxyAdminAddress
+  });
+
+  console.log('Deployed Contracts Addresses:', {
+    marketUpdateTimelock: marketUpdateTimelock.address,
+    marketUpdateProposer: marketUpdateProposer.address,
+    configurator: configurator.address,
+    cometProxyAdmin: cometProxyAdmin.address
+  });
 }
 
 main()

@@ -3,16 +3,16 @@ pragma solidity ^0.8.0;
 
 import "../lib/forge-std/src/Script.sol";
 import "../lib/forge-std/src/console.sol";
-import "./MarketUpdateConstants.sol";
+import "./helpers/MarketUpdateAddresses.sol";
 import "../../contracts/marketupdates/MarketUpdateTimelock.sol";
 import "../../contracts/marketupdates/MarketUpdateProposer.sol";
 import "../../contracts/Configurator.sol";
 import "../../contracts/CometProxyAdmin.sol";
 import "../../contracts/marketupdates/MarketAdminPermissionChecker.sol";
 import "../../contracts/Create2DeployerInterface.sol";
+import {WriteDeployedContractsToFile} from "./helpers/WriteDeployedContractsToFile.sol";
 
-contract DeployContracts is Script {
-    address[] public owners;
+contract DeployContracts is Script, WriteDeployedContractsToFile {
     address public deployedWalletAddress;
 
     struct ContractDeploymentParams {
@@ -26,21 +26,17 @@ contract DeployContracts is Script {
         address timelock = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
 
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
-
-        owners.push(MarketUpdateConstants.OWNER_1);
-        owners.push(MarketUpdateConstants.OWNER_2);
-        owners.push(msg.sender);
-
+        
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
 
-        deployedWalletAddress = MarketUpdateConstants.WALLET_ADDRESS;
+        deployedWalletAddress = MarketUpdateAddresses.WALLET_ADDRESS;
 
-        ICreate2Deployer create2Deployer = ICreate2Deployer(MarketUpdateConstants.CREATE2_DEPLOYER_ADDRESS);
+        ICreate2Deployer create2Deployer = ICreate2Deployer(MarketUpdateAddresses.CREATE2_DEPLOYER_ADDRESS);
 
         // Prepare deployment parameters for each contract
         ContractDeploymentParams memory marketUpdateTimelockParams = ContractDeploymentParams({
             creationCode: type(MarketUpdateTimelock).creationCode,
-            constructorArgs: abi.encode(MarketUpdateConstants.GOVERNOR_TIMELOCK_ADDRESS, MarketUpdateConstants.DELAY),
+            constructorArgs: abi.encode(MarketUpdateAddresses.GOVERNOR_TIMELOCK_ADDRESS, MarketUpdateAddresses.DELAY),
             expectedRuntimeCode: type(MarketUpdateTimelock).runtimeCode,
             contractName: "MarketUpdateTimelock"
         });
@@ -50,9 +46,9 @@ contract DeployContracts is Script {
         ContractDeploymentParams memory marketUpdateProposerParams = ContractDeploymentParams({
             creationCode: type(MarketUpdateProposer).creationCode,
             constructorArgs: abi.encode(
-                MarketUpdateConstants.GOVERNOR_TIMELOCK_ADDRESS,
+                MarketUpdateAddresses.GOVERNOR_TIMELOCK_ADDRESS,
                 deployedWalletAddress,
-                MarketUpdateConstants.PAUSE_GUARDIAN_ADDRESS,
+                MarketUpdateAddresses.PAUSE_GUARDIAN_ADDRESS,
                 computedMarketUpdateTimelockAddress
             ),
             expectedRuntimeCode: type(MarketUpdateProposer).runtimeCode,
@@ -94,6 +90,7 @@ contract DeployContracts is Script {
 
         // Write the computed addresses to a Solidity file
         writeAddressesToFile(
+            vm,
             computedMarketUpdateTimelockAddress,
             computedMarketUpdateProposerAddress,
             computedConfiguratorAddress,
@@ -174,96 +171,5 @@ contract DeployContracts is Script {
         return deployedBytecode;
     }
 
-    function writeAddressesToFile(
-        address computedMarketUpdateTimelockAddress,
-        address computedMarketUpdateProposerAddress,
-        address computedConfiguratorAddress,
-        address computedCometProxyAdminAddress,
-        address computedMarketAdminPermissionCheckerAddress
-    ) internal {
-        string memory path = "./forge/script/helperContracts/DeployedAddresses.sol";
-        string memory content = "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.15;\n\ncontract DeployedAddresses {\n";
 
-        content = string(
-            abi.encodePacked(
-                content,
-                "    address public constant computedMarketUpdateTimelockAddress = ",
-                addressToString(computedMarketUpdateTimelockAddress),
-                ";\n"
-            )
-        );
-        content = string(
-            abi.encodePacked(
-                content,
-                "    address public constant computedMarketUpdateProposerAddress = ",
-                addressToString(computedMarketUpdateProposerAddress),
-                ";\n"
-            )
-        );
-        content = string(
-            abi.encodePacked(
-                content,
-                "    address public constant computedConfiguratorAddress = ",
-                addressToString(computedConfiguratorAddress),
-                ";\n"
-            )
-        );
-        content = string(
-            abi.encodePacked(
-                content,
-                "    address public constant computedCometProxyAdminAddress = ",
-                addressToString(computedCometProxyAdminAddress),
-                ";\n"
-            )
-        );
-        content = string(
-            abi.encodePacked(
-                content,
-                "    address public constant computedMarketAdminPermissionCheckerAddress = ",
-                addressToString(computedMarketAdminPermissionCheckerAddress),
-                ";\n"
-            )
-        );
-
-        content = string(abi.encodePacked(content, "}\n"));
-
-        vm.writeFile(path, content);
-    }
-
-    function addressToString(address account) internal pure returns (string memory) {
-        bytes20 addrBytes = bytes20(account);
-        bytes memory hexChars = "0123456789abcdef";
-        bytes memory chars = new bytes(40);
-
-        // Convert address to lowercase hex string
-        for (uint256 i = 0; i < 20; i++) {
-            uint8 b = uint8(addrBytes[i]);
-            chars[2 * i] = hexChars[b >> 4];
-            chars[2 * i + 1] = hexChars[b & 0x0f];
-        }
-
-        // Compute the keccak256 hash of the lowercase address string
-        bytes32 hash = keccak256(chars);
-
-        // Apply EIP-55 checksum by conditionally capitalizing letters
-        for (uint256 i = 0; i < 40; i++) {
-            // Check if character is a letter
-            if (chars[i] >= 'a' && chars[i] <= 'f') {
-                // Determine whether to capitalize based on the hash
-                uint8 hashNibble = uint8(hash[i / 2]);
-                if (i % 2 == 0) {
-                    hashNibble = hashNibble >> 4;
-                } else {
-                    hashNibble = hashNibble & 0x0f;
-                }
-                if (hashNibble >= 8) {
-                    // Capitalize the letter
-                    chars[i] = bytes1(uint8(chars[i]) - 32);
-                }
-            }
-        }
-
-        // Prepend '0x' and return the checksummed address string
-        return string(abi.encodePacked('0x', chars));
-    }
 }

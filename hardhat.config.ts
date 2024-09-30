@@ -233,17 +233,14 @@ const config: HardhatUserConfig = {
   networks: {
     optimismSepolia: {
       url: 'https://sepolia.optimism.io',
-      accounts: [`0x${process.env.PRIVATE_KEY}`],  // Add your wallet private key in .env file
       chainId: 11155420
     },
     arbitrumSepolia: {
       url: 'https://arbitrum-sepolia.blockpi.network/v1/rpc/public',
-      accounts: [`0x${process.env.PRIVATE_KEY}`],  // Add your wallet private key in .env file
       chainId: 421614
     },
     mainnetSepolia: {
       url: 'https://ethereum-sepolia.blockpi.network/v1/rpc/public',
-      accounts: [`0x${process.env.PRIVATE_KEY}`],  // Add your wallet private key in .env file
       chainId: 11155111
     },
     hardhat: {

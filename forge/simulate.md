@@ -1,48 +1,36 @@
-# Script Development Checklist
+# Work
 
-## 1. Deployment of Contracts
-- [x] Write a script to deploy the necessary contracts.
-- [x] Verify correct contract addresses and parameters post-deployment.
+### Current Understanding
+- We can't have vm.roll in scripts. It will work for simulation phase, but when the script runs, it will fail. Simulation
+phase is visible when we run it with `-vvvv` flag.
 
-## 2. First Proposal - Governor Bravo (Update Proxy Admins and Market Admins)
-- [ ] Write a script for the first proposal through Governor Bravo.
-- [ ] Update the proxy admins and market admins via the proposal.
-- [ ] Test and simulate the proposal execution.
 
-## 3. Second Proposal - Governor Bravo (Update Supply Kink, Deploy Comet, Upgrade Proxy)
-- [ ] Write a script for the second proposal to update the supply kink.
-- [ ] Simulate the execution of this proposal and test its outcome.
+### Open Questions
+- Is there a way to just simulate the script and not run it? `--skip-simulation` flag 
 
-## 4. Fourth Proposal - MarketUpdateProposer (Update Supply Kink, Deploy Comet, Upgrade Proxy)
-- [ ] Write a script for the fourth proposal using `marketUpdateProposer`.
+### Checklist
+- [ ] Create a file which has list of all the addresses needed for deployment proposals for all the chains. 
+We can use a common struct like MarketUpdateAddresses and use it for all the chains. This should have addresses
+for the old and new contracts.
+- [ ] Create a Contract/Library which will have the code to create deployment proposal based on these addresses.
+- [ ] Create a Contract/Library which has util functions for working with Governor Bravo i.e. timelapses and voting
+- [ ] Create a Contract/Library which have the code to update the supply kink as Governor Bravo and Market Admin.
+This can then be used to creating and simulation of the proposal for each chain.
 - [ ] Verify that the proposal execution is correct and works as intended.
 
----
+###### Open Questions
+- What is the best way to create util functions?
+- What is the best way to capture addresses for each chain in `MarketUpdateAddresses`. As a map? or something else?
+  - We want to be able to retrieve it based on chain name/id
+- How to write a test which runs on the fork of each chain and verifies the proposal execution?
+  - A proper fork will make sure the addresses match to the ones captured in `MarketUpdateAddresses`
+- How do we test the bridge part
 
-# Mainnet Fork Simulation and Execution Process Checklist
+### Real Deployment Checklist
+- [ ] Deploy the new contracts on all the chains.
+- [ ] Create proposals for one chain which ever we want to release first.
+- [ ] Create proposals for second chain which ever we want to release second.
+- [ ] Create a single proposal for all the remaining chains.
 
-## 1. Fork Ethereum Mainnet and Set Up Environment
-- [ ] Fork the Ethereum mainnet using appropriate tools (e.g., Foundry/Forge).
-
-## 2. Verification of Execution on Mainnet Fork
-- [ ] Simulate the execution of the proposal on the mainnet fork.
-- [ ] Validate the correctness of the proposal’s execution steps.
-
-## 3. Voting and Address Impersonation
-- [ ] Impersonate necessary addresses to simulate the voting process.
-- [ ] Cast votes to ensure the proposal meets the required quorum and majority thresholds.
-
-## 4. Virtual Machine Adjustments and Time Lapses
-- [ ] Adjust the VM settings to simulate time lapses (voting periods, timelocks).
-- [ ] Ensure that the lifecycle of the proposal is accurately reflected with proper time intervals.
-
-## 5. Proposal Execution and Deployment Simulation
-- [ ] Simulate the execution of the proposal once time-lapse is complete.
-
-## 6. Updates via Governor Bravo
-- [ ] Verify that the updates via the Governor Bravo function correctly.
-
-## 6. Updates via Market Admin Role
-- [ ] Verify that the updates via the market admin role function correctly.
 
 

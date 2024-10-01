@@ -1,24 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
+import "./MarketUpdateContractsDeployer.sol";
 
 library MarketUpdateAddresses {
     address public constant GOVERNOR_BRAVO_PROXY_ADDRESS = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
     address public constant GOVERNOR_BRAVO_TIMELOCK_ADDRESS = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
 
     // Old Addresses
-    address public constant MARKET_UPDATE_MULTISIG_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;
     address public constant MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;
     address public constant MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS = 0x77B65c68E52C31eb844fb3b4864B91133e2C1308;
 
     // New Addresses
-    address public constant computedMarketUpdateMultiSigAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
-    address public constant computedMarketAdminProposerAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
-    address public constant computedMarketUpdateTimelockAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
-    address public constant computedMarketAdminPermissionCheckerAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
-    address public constant computedConfiguratorImplementationAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
-    address public constant computedNewCometProxyAdminAddress = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+    address public constant MARKET_UPDATE_MULTISIG_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;
 
     enum Chain {
         ETHEREUM,
@@ -53,7 +47,7 @@ library MarketUpdateAddresses {
     }
 
 
-    function getEthereum() public pure returns (MarketUpdateAddressesStruct memory) {
+    function getEthereum(MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         MarketInfo[] memory markets = new MarketInfo[](4);
         markets[0] = MarketInfo({
             baseTokenSymbol: "ETH",
@@ -79,16 +73,16 @@ library MarketUpdateAddresses {
             cometProxyAdminAddress: 0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779,
             markets: markets,
 
-            marketUpdateMultiSigAddress: computedMarketUpdateMultiSigAddress,
-            marketAdminProposerAddress: computedMarketAdminProposerAddress,
-            marketUpdateTimelockAddress: computedMarketUpdateTimelockAddress,
-            marketAdminPermissionCheckerAddress: computedMarketAdminPermissionCheckerAddress,
-            configuratorImplementationAddress: computedConfiguratorImplementationAddress,
-            newCometProxyAdminAddress: computedNewCometProxyAdminAddress
+            marketUpdateMultiSigAddress: marketUpdateMutisig,
+            marketAdminProposerAddress: deployedContracts.marketUpdateProposer,
+            marketUpdateTimelockAddress: deployedContracts.marketUpdateTimelock,
+            marketAdminPermissionCheckerAddress: deployedContracts.marketAdminPermissionChecker,
+            configuratorImplementationAddress: deployedContracts.newConfiguratorImplementation,
+            newCometProxyAdminAddress: deployedContracts.newCometProxyAdmin
         });
     }
 
-    function getPolygon() public pure returns (MarketUpdateAddressesStruct memory) {
+    function getPolygon(MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         MarketInfo[] memory markets = new MarketInfo[](2);
         markets[0] = MarketInfo({
             baseTokenSymbol: "USDC.e",
@@ -106,16 +100,16 @@ library MarketUpdateAddresses {
             cometProxyAdminAddress: 0xd712ACe4ca490D4F3E92992Ecf3DE12251b975F9,
             markets: markets,
 
-            marketUpdateMultiSigAddress: computedMarketUpdateMultiSigAddress,
-            marketAdminProposerAddress: computedMarketAdminProposerAddress,
-            marketUpdateTimelockAddress: computedMarketUpdateTimelockAddress,
-            marketAdminPermissionCheckerAddress: computedMarketAdminPermissionCheckerAddress,
-            configuratorImplementationAddress: computedConfiguratorImplementationAddress,
-            newCometProxyAdminAddress: computedNewCometProxyAdminAddress
+            marketUpdateMultiSigAddress: marketUpdateMutisig,
+            marketAdminProposerAddress: deployedContracts.marketUpdateProposer,
+            marketUpdateTimelockAddress: deployedContracts.marketUpdateTimelock,
+            marketAdminPermissionCheckerAddress: deployedContracts.marketAdminPermissionChecker,
+            configuratorImplementationAddress: deployedContracts.newConfiguratorImplementation,
+            newCometProxyAdminAddress: deployedContracts.newCometProxyAdmin
         });
     }
 
-    function getArbitrum() public pure returns (MarketUpdateAddressesStruct memory) {
+    function getArbitrum(MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         MarketInfo[] memory markets = new MarketInfo[](4);
         markets[0] = MarketInfo({
             baseTokenSymbol: "USDC.e",
@@ -141,16 +135,16 @@ library MarketUpdateAddresses {
             cometProxyAdminAddress: 0xD10b40fF1D92e2267D099Da3509253D9Da4D715e,
             markets: markets,
 
-            marketUpdateMultiSigAddress: computedMarketUpdateMultiSigAddress,
-            marketAdminProposerAddress: computedMarketAdminProposerAddress,
-            marketUpdateTimelockAddress: computedMarketUpdateTimelockAddress,
-            marketAdminPermissionCheckerAddress: computedMarketAdminPermissionCheckerAddress,
-            configuratorImplementationAddress: computedConfiguratorImplementationAddress,
-            newCometProxyAdminAddress: computedNewCometProxyAdminAddress
+            marketUpdateMultiSigAddress: marketUpdateMutisig,
+            marketAdminProposerAddress: deployedContracts.marketUpdateProposer,
+            marketUpdateTimelockAddress: deployedContracts.marketUpdateTimelock,
+            marketAdminPermissionCheckerAddress: deployedContracts.marketAdminPermissionChecker,
+            configuratorImplementationAddress: deployedContracts.newConfiguratorImplementation,
+            newCometProxyAdminAddress: deployedContracts.newCometProxyAdmin
         });
     }
 
-    function getBase() public pure returns (MarketUpdateAddressesStruct memory) {
+    function getBase(MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         MarketInfo[] memory markets = new MarketInfo[](3);
         markets[0] = MarketInfo({
             baseTokenSymbol: "USDC",
@@ -172,16 +166,16 @@ library MarketUpdateAddresses {
             cometProxyAdminAddress: 0xbdE8F31D2DdDA895264e27DD990faB3DC87b372d,
             markets: markets,
 
-            marketUpdateMultiSigAddress: computedMarketUpdateMultiSigAddress,
-            marketAdminProposerAddress: computedMarketAdminProposerAddress,
-            marketUpdateTimelockAddress: computedMarketUpdateTimelockAddress,
-            marketAdminPermissionCheckerAddress: computedMarketAdminPermissionCheckerAddress,
-            configuratorImplementationAddress: computedConfiguratorImplementationAddress,
-            newCometProxyAdminAddress: computedNewCometProxyAdminAddress
+            marketUpdateMultiSigAddress: marketUpdateMutisig,
+            marketAdminProposerAddress: deployedContracts.marketUpdateProposer,
+            marketUpdateTimelockAddress: deployedContracts.marketUpdateTimelock,
+            marketAdminPermissionCheckerAddress: deployedContracts.marketAdminPermissionChecker,
+            configuratorImplementationAddress: deployedContracts.newConfiguratorImplementation,
+            newCometProxyAdminAddress: deployedContracts.newCometProxyAdmin
         });
     }
 
-    function getScroll() public pure returns (MarketUpdateAddressesStruct memory) {
+    function getScroll(MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         MarketInfo[] memory markets = new MarketInfo[](1);
         markets[0] = MarketInfo({
             baseTokenSymbol: "USDC",
@@ -195,16 +189,16 @@ library MarketUpdateAddresses {
             cometProxyAdminAddress: 0x87A27b91f4130a25E9634d23A5B8E05e342bac50,
             markets: markets,
 
-            marketUpdateMultiSigAddress: computedMarketUpdateMultiSigAddress,
-            marketAdminProposerAddress: computedMarketAdminProposerAddress,
-            marketUpdateTimelockAddress: computedMarketUpdateTimelockAddress,
-            marketAdminPermissionCheckerAddress: computedMarketAdminPermissionCheckerAddress,
-            configuratorImplementationAddress: computedConfiguratorImplementationAddress,
-            newCometProxyAdminAddress: computedNewCometProxyAdminAddress
+            marketUpdateMultiSigAddress: marketUpdateMutisig,
+            marketAdminProposerAddress: deployedContracts.marketUpdateProposer,
+            marketUpdateTimelockAddress: deployedContracts.marketUpdateTimelock,
+            marketAdminPermissionCheckerAddress: deployedContracts.marketAdminPermissionChecker,
+            configuratorImplementationAddress: deployedContracts.newConfiguratorImplementation,
+            newCometProxyAdminAddress: deployedContracts.newCometProxyAdmin
         });
     }
 
-    function getOptimism() public pure returns (MarketUpdateAddressesStruct memory) {
+    function getOptimism(MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         MarketInfo[] memory markets = new MarketInfo[](3);
         markets[0] = MarketInfo({
             baseTokenSymbol: "USDC",
@@ -226,28 +220,28 @@ library MarketUpdateAddresses {
             cometProxyAdminAddress: 0x3C30B5a5A04656565686f800481580Ac4E7ed178,
             markets: markets,
 
-            marketUpdateMultiSigAddress: computedMarketUpdateMultiSigAddress,
-            marketAdminProposerAddress: computedMarketAdminProposerAddress,
-            marketUpdateTimelockAddress: computedMarketUpdateTimelockAddress,
-            marketAdminPermissionCheckerAddress: computedMarketAdminPermissionCheckerAddress,
-            configuratorImplementationAddress: computedConfiguratorImplementationAddress,
-            newCometProxyAdminAddress: computedNewCometProxyAdminAddress
+            marketUpdateMultiSigAddress: marketUpdateMutisig,
+            marketAdminProposerAddress: deployedContracts.marketUpdateProposer,
+            marketUpdateTimelockAddress: deployedContracts.marketUpdateTimelock,
+            marketAdminPermissionCheckerAddress: deployedContracts.marketAdminPermissionChecker,
+            configuratorImplementationAddress: deployedContracts.newConfiguratorImplementation,
+            newCometProxyAdminAddress: deployedContracts.newCometProxyAdmin
         });
     }
 
-    function getAddressesForChain(Chain chain) public pure returns (MarketUpdateAddressesStruct memory) {
+    function getAddressesForChain(Chain chain, MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts, address marketUpdateMutisig) public pure returns (MarketUpdateAddressesStruct memory) {
         if (chain == Chain.ETHEREUM) {
-            return getEthereum();
+            return getEthereum(deployedContracts, marketUpdateMutisig);
         } else if (chain == Chain.POLYGON) {
-            return getPolygon();
+            return getPolygon(deployedContracts, marketUpdateMutisig);
         } else if (chain == Chain.ARBITRUM) {
-            return getArbitrum();
+            return getArbitrum(deployedContracts, marketUpdateMutisig);
         } else if (chain == Chain.BASE) {
-            return getBase();
+            return getBase(deployedContracts, marketUpdateMutisig);
         } else if (chain == Chain.SCROLL) {
-            return getScroll();
+            return getScroll(deployedContracts, marketUpdateMutisig);
         } else if (chain == Chain.OPTIMISM) {
-            return getOptimism();
+            return getOptimism(deployedContracts, marketUpdateMutisig);
         }
         revert("MarketUpdateAddresses: Chain not supported");
     }

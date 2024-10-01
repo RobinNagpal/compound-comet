@@ -7,7 +7,7 @@ import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
 import "../script/marketupdates/helpers/MarketUpdateContractsDeployer.sol";
 import "../script/marketupdates/helpers/MarketAdminDeploymentProposer.sol";
 
-contract ProposalTest is Test {
+contract MarketUpdateDeploymentTest is Test {
     // the identifiers of the forks
     uint256 public mainnetFork;
 
@@ -16,6 +16,8 @@ contract ProposalTest is Test {
     // Cast the proxy address to the GovernorBravoDelegate interface
     IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
+    MarketUpdateContractsDeployer.DeployedContracts  public deployedContracts;
+
     // create fork during setup
     function setUp() public {
         mainnetFork = vm.createSelectFork("mainnet");
@@ -23,7 +25,7 @@ contract ProposalTest is Test {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31")); 
 
         /// Call library function
-        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
+        deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             salt,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
@@ -44,18 +46,12 @@ contract ProposalTest is Test {
 
         address proposalCreator = GovernanceHelper.getTopDelegates()[0];
 
-
-
-        MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getEthereum();
+        MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getEthereum(deployedContracts, MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
         uint256 proposalId = MarketAdminDeploymentProposer.createDeploymentProposal(vm, addresses, proposalCreator);
-
-
 
         GovernanceHelper.moveProposalToActive(vm, proposalId);
 
         GovernanceHelper.voteOnProposal(vm, proposalId, proposalCreator);
-
-
 
         GovernanceHelper.moveProposalToSucceed(vm, proposalId);
 

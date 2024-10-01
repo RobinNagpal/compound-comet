@@ -14,7 +14,7 @@ library MarketAdminDeploymentProposer {
         address configuratorProxyAddress = addresses.configuratorProxyAddress;
         address cometProxyAddress = addresses.markets[0].cometProxyAddress;
         address configuratorNewAddress = addresses.configuratorImplementationAddress;
-        address cometProxyAdminNewAddress = addresses.cometProxyAdminAddress;
+        address cometProxyAdminNewAddress = addresses.newCometProxyAdminAddress;
         address marketAdminPermissionCheckerAddress = addresses.marketAdminPermissionCheckerAddress;
         address marketUpdateTimelockAddress = addresses.marketUpdateTimelockAddress;
         address marketUpdateProposerAddress = addresses.marketAdminProposerAddress;

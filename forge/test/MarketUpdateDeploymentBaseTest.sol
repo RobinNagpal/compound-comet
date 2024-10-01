@@ -1,31 +1,21 @@
-pragma solidity 0.8.15;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.15;
 
-import {Test} from "forge-std/Test.sol";
-
+import "@forge-std/src/Vm.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
 import "../script/marketupdates/helpers/MarketUpdateContractsDeployer.sol";
 import "../script/marketupdates/helpers/MarketAdminDeploymentProposer.sol";
 
-contract MarketUpdateDeploymentTest is Test {
-    // the identifiers of the forks
-    uint256 public mainnetFork;
+abstract contract MarketUpdateDeploymentBaseTest {
 
-    string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-
-    // Cast the proxy address to the GovernorBravoDelegate interface
     IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
-    MarketUpdateContractsDeployer.DeployedContracts  public deployedContracts;
-
-    // create fork during setup
-    function setUp() public {
-        mainnetFork = vm.createSelectFork("mainnet");
-
-        bytes32 salt = keccak256(abi.encodePacked("Salt-31")); 
+    function createMarketUpdateDeployment(Vm vm, MarketUpdateAddresses.Chain chain) public {
+        bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
 
         /// Call library function
-        deployedContracts = MarketUpdateContractsDeployer.deployContracts(
+        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             salt,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
@@ -39,14 +29,16 @@ contract MarketUpdateDeploymentTest is Test {
         console.log("NewConfiguratorImplementation: ", deployedContracts.newConfiguratorImplementation);
         console.log("NewCometProxyAdmin: ", deployedContracts.newCometProxyAdmin);
         console.log("MarketAdminPermissionChecker: ", deployedContracts.marketAdminPermissionChecker);
-    }
 
-    // creates a new contract while a fork is active
-    function test_createAndExecuteProposal() public {
 
         address proposalCreator = GovernanceHelper.getTopDelegates()[0];
 
-        MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getEthereum(deployedContracts, MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
+        MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getAddressesForChain(
+            MarketUpdateAddresses.Chain.ETHEREUM,
+            deployedContracts,
+            MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS
+        );
+
         uint256 proposalId = MarketAdminDeploymentProposer.createDeploymentProposal(vm, addresses, proposalCreator);
 
         GovernanceHelper.moveProposalToActive(vm, proposalId);
@@ -61,4 +53,5 @@ contract MarketUpdateDeploymentTest is Test {
 
         console.log("proposal state after execution: ", uint(governorBravo.state(proposalId)));
     }
+
 }

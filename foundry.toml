@@ -14,3 +14,6 @@ remappings = [
     "@forge-std/=forge/lib/forge-std/",
     "@comet-contracts/=contracts/",
 ]
+
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"

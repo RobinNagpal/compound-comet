@@ -7,10 +7,9 @@ import "@comet-contracts/IGovernorBravo.sol";
 
 library MarketAdminDeploymentProposer {
 
-    address constant governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
-    IGovernorBravo constant governorBravo = IGovernorBravo(governorBravoProxyAddress);
+    function createDeploymentProposal(Vm vm, MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses, address proposalCreator) public returns (uint256) {
+        IGovernorBravo governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
-    function createDeploymentProposal(Vm vm, MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses) public returns (uint256) {
         address cometProxyAdminOldAddress = addresses.cometProxyAdminAddress;
         address configuratorProxyAddress = addresses.configuratorProxyAddress;
         address cometProxyAddress = addresses.markets[0].cometProxyAddress;
@@ -54,9 +53,10 @@ library MarketAdminDeploymentProposer {
         signatures[6] = "setMarketUpdateProposer(address)";
         calldatas[6] = abi.encode(marketUpdateProposerAddress);
 
-        vm.prank(0x0579A616689f7ed748dC07692A3F150D44b0CA09);
+        vm.startBroadcast(proposalCreator);
         uint256 proposalId = governorBravo.propose(targets, values, signatures, calldatas, description);
-        
+        vm.stopBroadcast();
+
         return proposalId;
     }
 }

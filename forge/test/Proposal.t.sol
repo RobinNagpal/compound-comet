@@ -9,14 +9,16 @@ import "../script/marketupdates/helpers/MarketAdminDeploymentProposer.sol";
 
 contract ProposalTest is Test {
     // the identifiers of the forks
-    uint256 mainnetFork;
+    uint256 public mainnetFork;
 
-    string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-    address timelock = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+    string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+
+    // Cast the proxy address to the GovernorBravoDelegate interface
+    IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
     // create fork during setup
     function setUp() public {
-        mainnetFork = vm.createSelectFork(MAINNET_RPC_URL);
+        mainnetFork = vm.createSelectFork("mainnet");
 
         bytes32 salt = keccak256(abi.encodePacked("Salt-31")); 
 
@@ -26,7 +28,7 @@ contract ProposalTest is Test {
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
             MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
-            timelock
+            MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS
         );
 
         /// Console log deployed contracts
@@ -40,27 +42,26 @@ contract ProposalTest is Test {
     // creates a new contract while a fork is active
     function test_createAndExecuteProposal() public {
 
-        // Define the address of the Governor Bravo Proxy
-        address governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
+        address proposalCreator = GovernanceHelper.getTopDelegates()[0];
 
-        // Cast the proxy address to the GovernorBravoDelegate interface
-        IGovernorBravo governorBravo = IGovernorBravo(governorBravoProxyAddress);
-        
+
 
         MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getEthereum();
-        uint256 proposalId = MarketAdminDeploymentProposer.createDeploymentProposal(vm, addresses);
+        uint256 proposalId = MarketAdminDeploymentProposer.createDeploymentProposal(vm, addresses, proposalCreator);
+
+
 
         GovernanceHelper.moveProposalToActive(vm, proposalId);
 
-        GovernanceHelper.voteOnProposal(vm, proposalId);
+        GovernanceHelper.voteOnProposal(vm, proposalId, proposalCreator);
+
+
 
         GovernanceHelper.moveProposalToSucceed(vm, proposalId);
 
         governorBravo.queue(proposalId);
 
         GovernanceHelper.moveProposalToExecution(vm, proposalId);
-       
-        governorBravo.execute(proposalId);
 
         console.log("proposal state after execution: ", uint(governorBravo.state(proposalId)));
     }

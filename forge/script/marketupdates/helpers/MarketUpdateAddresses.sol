@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 
 
 library MarketUpdateAddresses {
+    address public constant GOVERNOR_BRAVO_PROXY_ADDRESS = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
+    address public constant GOVERNOR_BRAVO_TIMELOCK_ADDRESS = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+
     // Old Addresses
     address public constant MARKET_UPDATE_MULTISIG_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;
     address public constant MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS = 0x7053e25f7076F4986D632A3C04313C81831e0d55;

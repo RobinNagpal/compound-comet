@@ -14,7 +14,8 @@ import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "./MarketUpdateDeploymentBaseTest.sol";
 
 contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTest {
-
+    address cometProxyAdminNew = 0xDA831B5dd899a5b2bB89b4ccC45599DeBd0c82c9;
+    address configuratorProxy = ChainAddressesLib.MAINNET_CONFIGURATOR_PROXY;
 
     function setUp() public {
         vm.createSelectFork("mainnet");
@@ -24,35 +25,46 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
     function test_UsdcDeployment() public {
         console.log("Create Supply Kink Proposal for USDC Market and verify after execution");
 
-        // check the initial Kink value
-        // create and pass governor bravo set supply kink proposal
-        // verify the kink value after execution
+        address cometProxy = MarketAddresses.MAINNET_USDC_MARKET;
 
-        // set new value using market admin
-        // verify the kink value after execution
+        updateAndVerifySupplyKink(cometProxy, "USDC");
     }
 
     function test_UsdtDeployment() public {
         console.log("Create Supply Kink Proposal for USDT Market and verify after execution");
+
+        address cometProxy = MarketAddresses.MAINNET_USDT_MARKET;
+
+        updateAndVerifySupplyKink(cometProxy, "USDT");
     }
 
     function test_EthDeployment() public {
         console.log("Create Supply Kink Proposal for ETH Market and verify after execution");
 
-        address cometProxyAdminNew = 0xDA831B5dd899a5b2bB89b4ccC45599DeBd0c82c9;
-        address configuratorProxy = ChainAddressesLib.MAINNET_CONFIGURATOR_PROXY;
         address cometProxy = MarketAddresses.MAINNET_ETH_MARKET;
 
-        uint256 oldSupplyKink = Comet(payable(cometProxy)).supplyKink();
-        console.log("Old Supply Kink: ", oldSupplyKink);
+        updateAndVerifySupplyKink(cometProxy, "ETH");
+    }
 
+    function test_WstEthDeployment() public {
+        console.log("Create Supply Kink Proposal for WST_ETH Market and verify after execution");
+
+        address cometProxy = MarketAddresses.MAINNET_WST_ETH_MARKET;
+
+        updateAndVerifySupplyKink(cometProxy, "WST_ETH");
+    }
+
+    function updateAndVerifySupplyKink(address cometProxy, string memory marketName) public {
+        uint256 oldSupplyKinkBeforeGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
         uint256 newSupplyKinkByGovernorTimelock = 300000000000000000;
+        
+        assertNotEq(oldSupplyKinkBeforeGovernorUpdate, newSupplyKinkByGovernorTimelock);
 
         address[] memory targets = new address[](2);
         uint256[] memory values = new uint256[](2);
         string[] memory signatures = new string[](2);
         bytes[] memory calldatas = new bytes[](2);
-        string memory description = "Proposal to update Supply Kink for ETH Market";
+        string memory description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Governor Timelock"));
 
         targets[0] = configuratorProxy;
         signatures[0] = "setSupplyKink(address,uint64)";
@@ -73,26 +85,20 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         // check the new kink value
         uint256 newSupplyKinkAfterGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
-        require(newSupplyKinkAfterGovernorUpdate == newSupplyKinkByGovernorTimelock, "Supply Kink not updated");
+        assertEq(newSupplyKinkAfterGovernorUpdate, newSupplyKinkByGovernorTimelock);
 
         // Setting new Supply Kink using Market Admin
+        uint256 oldSupplyKinkBeforeMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
         uint256 newSupplyKinkByMarketAdmin = 400000000000000000;
 
+        assertNotEq(oldSupplyKinkBeforeMarketAdminUpdate, newSupplyKinkByMarketAdmin);
+
         calldatas[0] = abi.encode(cometProxy, newSupplyKinkByMarketAdmin);
-        address marketUpdateProposer = 0x4c3B63642bC627735c0BFaB7332b96f3a2B0d476;
-        vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
-        MarketUpdateProposer(marketUpdateProposer).propose(targets, values, signatures, calldatas, description);
 
-        // Fast forward by 5 days
-        vm.warp(block.timestamp + 5 days);
+        description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Market Admin"));
+        GovernanceHelper.createAndPassMarketUpdateProposal(vm, proposalRequest, description);
 
-        MarketUpdateProposer(marketUpdateProposer).execute(1);
         uint256 newSupplyKinkAfterMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
-        require(newSupplyKinkAfterMarketAdminUpdate == newSupplyKinkByMarketAdmin, "Supply Kink not updated by Market Admin");
-
-    }
-
-    function test_WstEthDeployment() public {
-        console.log("Create Supply Kink Proposal for WST_ETH Market and verify after execution");
+        assertEq(newSupplyKinkAfterMarketAdminUpdate, newSupplyKinkByMarketAdmin);
     }
 }

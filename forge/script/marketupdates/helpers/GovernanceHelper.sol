@@ -5,6 +5,9 @@ import "@forge-std/src/Vm.sol";
 import "@forge-std/src/console.sol";
 import "@comet-contracts/IGovernorBravo.sol";
 import "@comet-contracts/IComp.sol";
+import "@comet-contracts/marketupdates/MarketUpdateProposer.sol";
+
+import "./MarketUpdateAddresses.sol";
 
 
 library GovernanceHelper {
@@ -12,6 +15,9 @@ library GovernanceHelper {
 
     address constant governorBravoProxyAddress = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529;
     IGovernorBravo constant governorBravo = IGovernorBravo(governorBravoProxyAddress);
+
+    address constant marketUpdateProposerAddress = 0x4c3B63642bC627735c0BFaB7332b96f3a2B0d476;
+    MarketUpdateProposer constant marketUpdateProposer = MarketUpdateProposer(marketUpdateProposerAddress);
 
     // COMP token address
     address constant compTokenAddress = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -45,6 +51,18 @@ library GovernanceHelper {
 
         // Move proposal to Execution state
         moveProposalToExecution(vm, proposalId);
+    }
+
+    function createAndPassMarketUpdateProposal(Vm vm, ProposalRequest memory proposalRequest, string memory description) public returns (uint256) {
+        vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
+        marketUpdateProposer.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
+
+        // Fast forward by 5 days
+        vm.warp(block.timestamp + 5 days);
+
+        marketUpdateProposer.execute(1);
+
+        vm.stopPrank();
     }
 
     function moveProposalToActive(Vm vm, uint proposalId) public {

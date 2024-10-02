@@ -11,7 +11,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
 
     IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
-    function createMarketUpdateDeployment(Vm vm, MarketUpdateAddresses.Chain chain) public {
+    function createMarketUpdateDeployment(Vm vm, MarketUpdateAddresses.Chain chain) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
         
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
@@ -51,6 +51,62 @@ abstract contract MarketUpdateDeploymentBaseTest {
         GovernanceHelper.moveProposalToExecution(vm, proposalId);
 
         console.log("proposal state after execution: ", uint(governorBravo.state(proposalId)));
+
+        return deployedContracts;
     }
 
+    function updateAndVerifySupplyKink(
+        Vm vm,
+        address cometProxy, 
+        address configuratorProxy, 
+        address cometProxyAdminNew, 
+        string memory marketName
+        ) public {
+            
+        uint256 oldSupplyKinkBeforeGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
+        uint256 newSupplyKinkByGovernorTimelock = 300000000000000000;
+        
+        assert(oldSupplyKinkBeforeGovernorUpdate != newSupplyKinkByGovernorTimelock);
+
+        address[] memory targets = new address[](2);
+        uint256[] memory values = new uint256[](2);
+        string[] memory signatures = new string[](2);
+        bytes[] memory calldatas = new bytes[](2);
+        string memory description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Governor Timelock"));
+
+        targets[0] = configuratorProxy;
+        signatures[0] = "setSupplyKink(address,uint64)";
+        calldatas[0] = abi.encode(cometProxy, newSupplyKinkByGovernorTimelock);
+
+        targets[1] = cometProxyAdminNew;
+        signatures[1] = "deployAndUpgradeTo(address,address)";
+        calldatas[1] = abi.encode(configuratorProxy, cometProxy);
+
+        GovernanceHelper.ProposalRequest memory proposalRequest = GovernanceHelper.ProposalRequest({
+            targets: targets,
+            values: values,
+            signatures: signatures,
+            calldatas: calldatas
+        });
+
+        GovernanceHelper.createProposalAndPass(vm, proposalRequest, description);
+
+        // check the new kink value
+        uint256 newSupplyKinkAfterGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
+        assert(newSupplyKinkAfterGovernorUpdate == newSupplyKinkByGovernorTimelock);
+
+        // Setting new Supply Kink using Market Admin
+        uint256 oldSupplyKinkBeforeMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
+        uint256 newSupplyKinkByMarketAdmin = 400000000000000000;
+
+        assert(oldSupplyKinkBeforeMarketAdminUpdate != newSupplyKinkByMarketAdmin);
+
+        calldatas[0] = abi.encode(cometProxy, newSupplyKinkByMarketAdmin);
+
+        description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Market Admin"));
+        GovernanceHelper.createAndPassMarketUpdateProposal(vm, proposalRequest, description);
+
+        uint256 newSupplyKinkAfterMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
+        assert(newSupplyKinkAfterMarketAdminUpdate == newSupplyKinkByMarketAdmin);
+    }
 }

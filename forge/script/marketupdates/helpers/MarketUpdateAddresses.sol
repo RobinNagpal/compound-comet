@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./MarketUpdateContractsDeployer.sol";
+import "./MarketAddresses.sol";
 
 library MarketUpdateAddresses {
     address public constant GOVERNOR_BRAVO_PROXY_ADDRESS = 0xc0Da02939E1441F497fd74F78cE7Decb17B66529; // See - https://etherscan.io/address/0xc0Da02939E1441F497fd74F78cE7Decb17B66529
@@ -119,7 +120,7 @@ library MarketUpdateAddresses {
             MarketInfo[] memory markets = new MarketInfo[](4);
             markets[0] = MarketInfo({
                 baseTokenSymbol: "ETH",
-                cometProxyAddress: 0xA17581A9E3356d9A858b789D68B4d866e593aE94 // See - https://etherscan.io/address/0xA17581A9E3356d9A858b789D68B4d866e593aE94
+                cometProxyAddress: MarketAddresses.MAINNET_ETH_MARKET
             });
             markets[1] = MarketInfo({
                 baseTokenSymbol: "USDC",

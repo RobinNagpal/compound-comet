@@ -26,6 +26,25 @@ library GovernanceHelper {
 
     function createProposalAndPass(Vm vm, ProposalRequest memory proposalRequest, string memory description) public returns (uint256) {
         // Create a proposal
+        address proposalCreator = getTopDelegates()[0];
+        vm.startBroadcast(proposalCreator);
+        uint256 proposalId = governorBravo.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
+        vm.stopBroadcast();
+
+        // Move proposal to Active state
+        moveProposalToActive(vm, proposalId);
+
+        // Vote on the proposal
+        voteOnProposal(vm, proposalId, proposalCreator);
+
+        // Move proposal to Succeeded state
+        moveProposalToSucceed(vm, proposalId);
+
+        // Queue the proposal
+        governorBravo.queue(proposalId);
+
+        // Move proposal to Execution state
+        moveProposalToExecution(vm, proposalId);
     }
 
     function moveProposalToActive(Vm vm, uint proposalId) public {

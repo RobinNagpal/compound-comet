@@ -18,6 +18,13 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
     function test_UsdcDeployment() public {
         console.log("Create Supply Kink Proposal for USDC Market and verify after execution");
+
+        // check the initial Kink value
+        // create and pass governor bravo set supply kink proposal
+        // verify the kink value after execution
+
+        // set new value using market admin
+        // verify the kink value after execution
     }
 
     function test_UsdtDeployment() public {

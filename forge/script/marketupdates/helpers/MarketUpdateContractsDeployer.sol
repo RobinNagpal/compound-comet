@@ -13,7 +13,7 @@ import "./MarketUpdateAddresses.sol";
 
 library MarketUpdateContractsDeployer {
 
-    address constant create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
+    address constant public create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
 
     struct DeployedContracts {
         address marketUpdateTimelock;

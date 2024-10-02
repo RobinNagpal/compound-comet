@@ -17,6 +17,17 @@ library GovernanceHelper {
     address constant compTokenAddress = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     IComp constant compToken = IComp(compTokenAddress);
 
+    struct ProposalRequest {
+        address[] targets;
+        uint256[] values;
+        string[] signatures;
+        bytes[] calldatas;
+    }
+
+    function createProposalAndPass(Vm vm, ProposalRequest memory proposalRequest, string memory description) public returns (uint256) {
+        // Create a proposal
+    }
+
     function moveProposalToActive(Vm vm, uint proposalId) public {
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Pending, "Proposal is not Pending");
         require(governorBravo.proposals(proposalId).eta == 0, "Proposal has already been queued");

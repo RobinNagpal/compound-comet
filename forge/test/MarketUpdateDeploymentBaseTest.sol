@@ -13,8 +13,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
 
     function createMarketUpdateDeployment(Vm vm, MarketUpdateAddresses.Chain chain) public {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
-
-        /// Call library function
+        
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             salt,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
@@ -23,7 +22,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
             MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS
         );
 
-        /// Console log deployed contracts
+
         console.log("MarketUpdateTimelock: ", deployedContracts.marketUpdateTimelock);
         console.log("MarketUpdateProposer: ", deployedContracts.marketUpdateProposer);
         console.log("NewConfiguratorImplementation: ", deployedContracts.newConfiguratorImplementation);

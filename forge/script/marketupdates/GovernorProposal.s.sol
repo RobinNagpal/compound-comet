@@ -11,7 +11,6 @@ import "@comet-contracts/marketupdates/CometProxyAdminOld.sol";
 import "./helpers/DeployedAddresses.sol";
 import "./helpers/GovernanceHelper.sol";
 import "./helpers/MarketUpdateAddresses.sol";
-import "./helpers/MarketAdminDeploymentProposer.sol";
 
 contract GovernorProposal is Script, DeployedAddresses {
 
@@ -26,7 +25,7 @@ contract GovernorProposal is Script, DeployedAddresses {
 
 
         MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getAddressesForChain(MarketUpdateAddresses.getChainFromString(chainName));
-        uint256 proposalId = MarketAdminDeploymentProposer.createDeploymentProposal(vm, addresses);
+        uint256 proposalId = GovernanceHelper.createDeploymentProposal(vm, addresses, addresses);
 
         GovernanceHelper.moveProposalToActive(vm, proposalId);
 

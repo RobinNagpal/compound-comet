@@ -7,7 +7,6 @@ import "@comet-contracts/marketupdates/MarketUpdateProposer.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
 import "../script/marketupdates/helpers/MarketUpdateContractsDeployer.sol";
-import "../script/marketupdates/helpers/MarketAdminDeploymentProposer.sol";
 import "../script/marketupdates/helpers/ChainAddresses.sol";
 import "../script/marketupdates/helpers/MarketAddresses.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";

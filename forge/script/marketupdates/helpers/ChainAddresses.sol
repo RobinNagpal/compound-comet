@@ -13,7 +13,7 @@ library ChainAddressesLib {
     address constant public POLYGON_COMET_PROXY_ADMIN = 0xd712ACe4ca490D4F3E92992Ecf3DE12251b975F9; // See - https://polygonscan.com/address/0xd712ACe4ca490D4F3E92992Ecf3DE12251b975F9
 
     // Arbitrum addresses
-    address constant public ARBITRUM_LOCAL_TIMELOCK = 0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02; // See - https://arbiscan.io/address/0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02
+    address constant public ARBITRUM_LOCAL_TIMELOCK = 0x3fB4d38ea7EC20D91917c09591490Eeda38Cf88A; // See - https://arbiscan.io/address/0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02
     address constant public ARBITRUM_CONFIGURATOR_PROXY = 0xb21b06D71c75973babdE35b49fFDAc3F82Ad3775; // See - https://arbiscan.io/address/0xb21b06D71c75973babdE35b49fFDAc3F82Ad3775
     address constant public ARBITRUM_COMET_PROXY_ADMIN = 0xD10b40fF1D92e2267D099Da3509253D9Da4D715e; // See - https://arbiscan.io/address/0xD10b40fF1D92e2267D099Da3509253D9Da4D715e
 

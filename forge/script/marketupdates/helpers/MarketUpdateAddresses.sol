@@ -83,31 +83,31 @@ library MarketUpdateAddresses {
             });
         } else if (chain == Chain.POLYGON) {
             return ChainAddresses({
-                governorTimelockAddress: ChainAddressesLib.POLYGON_GOVERNOR_TIMELOCK,
+                governorTimelockAddress: ChainAddressesLib.POLYGON_LOCAL_TIMELOCK,
                 configuratorProxyAddress: ChainAddressesLib.POLYGON_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: ChainAddressesLib.POLYGON_COMET_PROXY_ADMIN
             });
         } else if (chain == Chain.ARBITRUM) {
             return ChainAddresses({
-                governorTimelockAddress: ChainAddressesLib.ARBITRUM_GOVERNOR_TIMELOCK,
+                governorTimelockAddress: ChainAddressesLib.ARBITRUM_LOCAL_TIMELOCK,
                 configuratorProxyAddress: ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: ChainAddressesLib.ARBITRUM_COMET_PROXY_ADMIN
             });
         } else if (chain == Chain.BASE) {
             return ChainAddresses({
-                governorTimelockAddress: ChainAddressesLib.BASE_GOVERNOR_TIMELOCK,
+                governorTimelockAddress: ChainAddressesLib.BASE_LOCAL_TIMELOCK,
                 configuratorProxyAddress: ChainAddressesLib.BASE_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: ChainAddressesLib.BASE_COMET_PROXY_ADMIN
             });
         } else if (chain == Chain.SCROLL) {
             return ChainAddresses({
-                governorTimelockAddress: ChainAddressesLib.SCROLL_GOVERNOR_TIMELOCK,
+                governorTimelockAddress: ChainAddressesLib.SCROLL_LOCAL_TIMELOCK,
                 configuratorProxyAddress: ChainAddressesLib.SCROLL_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: ChainAddressesLib.SCROLL_COMET_PROXY_ADMIN
             });
         } else if (chain == Chain.OPTIMISM) {
             return ChainAddresses({
-                governorTimelockAddress: ChainAddressesLib.OPTIMISM_GOVERNOR_TIMELOCK,
+                governorTimelockAddress: ChainAddressesLib.OPTIMISM_LOCAL_TIMELOCK,
                 configuratorProxyAddress: ChainAddressesLib.OPTIMISM_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: ChainAddressesLib.OPTIMISM_COMET_PROXY_ADMIN
             });

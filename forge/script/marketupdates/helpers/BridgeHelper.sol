@@ -11,12 +11,20 @@ library BridgeHelper {
 
 
     function simulateMessageToReceiver(
+        Vm vm,
         MarketUpdateAddresses.Chain chain,
         address messageSender,
         GovernanceHelper.ProposalRequest memory proposalRequest
     ) external {
-        bytes l2Payload = abi.encode(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas);
+        bytes memory l2Payload = abi.encode(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas);
         BaseBridgeReceiver bridgeReceiver = BaseBridgeReceiver(0x42480C37B249e33aABaf4c22B20235656bd38068);
-        bridgeReceiver.processMessage(messageSender, l2Payload); // This will be calling timelock
+
+        // Address of the bridge receiver contract
+        address bridgeReceiverAddress = 0x42480C37B249e33aABaf4c22B20235656bd38068;
+        // bridgeReceiver.processMessage(messageSender, l2Payload); // This will be calling timelock
+        vm.prank(messageSender);
+
+        (bool success, ) = payable(0x42480C37B249e33aABaf4c22B20235656bd38068).call(abi.encodePacked(l2Payload));
+        console.log("is successful: ", success);
     }
 }

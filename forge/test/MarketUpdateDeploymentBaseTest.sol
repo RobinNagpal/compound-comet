@@ -4,6 +4,7 @@ pragma solidity ^0.8.15;
 import "@forge-std/src/Vm.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
+import "../script/marketupdates/helpers/ChainAddresses.sol";
 import "../script/marketupdates/helpers/MarketUpdateContractsDeployer.sol";
 import "../script/marketupdates/helpers/BridgeHelper.sol";
 
@@ -63,7 +64,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
             MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
-            MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS // TODO: This should be the timelock in BridgeReceiver
+            ChainAddressesLib.ARBITRUM_LOCAL_TIMELOCK
         );
 
 
@@ -77,14 +78,14 @@ abstract contract MarketUpdateDeploymentBaseTest {
         address proposalCreator = GovernanceHelper.getTopDelegates()[0];
 
         MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getAddressesForChain(
-            MarketUpdateAddresses.Chain.ETHEREUM,
+            MarketUpdateAddresses.Chain.ARBITRUM,
             deployedContracts,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS
         );
 
-        GovernanceHelper.ProposalRequest proposalRequest = GovernanceHelper.createDeploymentProposalRequest(addresses);
+        GovernanceHelper.ProposalRequest memory proposalRequest = GovernanceHelper.createDeploymentProposalRequest(addresses);
 
-        BridgeHelper.simulateMessageToReceiver(chain, proposalCreator, proposalRequest);
+        BridgeHelper.simulateMessageToReceiver(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
         // TODO: Here move the timelock and execute the transactions. - This is the timelock in bridge receiver
 
         return deployedContracts;
@@ -181,7 +182,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         });
 
         address proposalCreator = GovernanceHelper.getTopDelegates()[0];
-        BridgeHelper.simulateMessageToReceiver(chain, proposalCreator, proposalRequest);
+        BridgeHelper.simulateMessageToReceiver(vm, chain, proposalCreator, proposalRequest);
 
         // TODO: PASS time and execute transactions on local timelock
 

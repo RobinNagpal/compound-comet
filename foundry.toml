@@ -19,3 +19,5 @@ remappings = [
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"

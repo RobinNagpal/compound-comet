@@ -60,12 +60,28 @@ abstract contract MarketUpdateDeploymentBaseTest {
     function createMarketUpdateDeploymentForL2(Vm vm, MarketUpdateAddresses.Chain chain) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
 
+        address localTimelock;
+
+        if (chain == MarketUpdateAddresses.Chain.ARBITRUM) {
+            localTimelock = ChainAddressesLib.ARBITRUM_LOCAL_TIMELOCK;
+        } else if (chain == MarketUpdateAddresses.Chain.OPTIMISM) {
+            localTimelock = ChainAddressesLib.OPTIMISM_LOCAL_TIMELOCK;
+        } else if (chain == MarketUpdateAddresses.Chain.POLYGON) {
+            localTimelock = ChainAddressesLib.POLYGON_LOCAL_TIMELOCK;
+        } else if (chain == MarketUpdateAddresses.Chain.SCROLL) {
+            localTimelock = ChainAddressesLib.SCROLL_LOCAL_TIMELOCK;
+        } else if (chain == MarketUpdateAddresses.Chain.BASE) {
+            localTimelock = ChainAddressesLib.BASE_LOCAL_TIMELOCK;
+        } else {
+            localTimelock = address(0);
+        }
+
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             salt,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
             MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
-            ChainAddressesLib.ARBITRUM_LOCAL_TIMELOCK
+            localTimelock
         );
 
 
@@ -76,10 +92,8 @@ abstract contract MarketUpdateDeploymentBaseTest {
         console.log("MarketAdminPermissionChecker: ", deployedContracts.marketAdminPermissionChecker);
 
 
-        address proposalCreator = GovernanceHelper.getTopDelegates()[0];
-
         MarketUpdateAddresses.MarketUpdateAddressesStruct memory addresses = MarketUpdateAddresses.getAddressesForChain(
-            MarketUpdateAddresses.Chain.ARBITRUM,
+            chain,
             deployedContracts,
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS
         );
@@ -88,7 +102,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
 
         BridgeHelper.simulateMessageToReceiver(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
 
-        BridgeHelper.advanceTimestampAndExecutePropsal(vm);
+        BridgeHelper.advanceTimestampAndExecutePropsal(vm, chain);
 
         return deployedContracts;
     }
@@ -184,10 +198,9 @@ abstract contract MarketUpdateDeploymentBaseTest {
             calldatas: calldatas
         });
 
-        address proposalCreator = GovernanceHelper.getTopDelegates()[0];
-        BridgeHelper.simulateMessageToReceiver(vm, chain, proposalCreator, proposalRequest);
+        BridgeHelper.simulateMessageToReceiver(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
 
-        BridgeHelper.advanceTimestampAndExecutePropsal(vm);
+        BridgeHelper.advanceTimestampAndExecutePropsal(vm, chain);
 
         // check the new kink value
         uint256 newSupplyKinkAfterGovernorUpdate = Comet(payable(cometProxy)).supplyKink();

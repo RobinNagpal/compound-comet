@@ -21,3 +21,6 @@ remappings = [
 mainnet = "${MAINNET_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
+scroll = "${SCROLL_RPC_URL}"
+base = "${BASE_RPC_URL}"

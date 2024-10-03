@@ -138,6 +138,18 @@ library GovernanceHelper {
         vm.stopPrank();
     }
 
+    function createAndPassMarketUpdateProposalL2(Vm vm, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public returns (uint256) {
+        vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
+        MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
+
+        // Fast forward by 5 days
+        vm.warp(block.timestamp + 5 days);
+
+        MarketUpdateProposer(marketUpdateProposer).execute(1);
+
+        vm.stopPrank();
+    }
+
     function moveProposalToActive(Vm vm, uint proposalId) public {
         require(governorBravo.state(proposalId) == IGovernorBravo.ProposalState.Pending, "Proposal is not Pending");
         require(governorBravo.proposals(proposalId).eta == 0, "Proposal has already been queued");

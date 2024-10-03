@@ -24,14 +24,56 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
     function test_ArbUsdcDeployment() public {
         console.log("Create Supply Kink Proposal for USDC Market and verify after execution");
 
-        updateAndVerifySupplyKink(
+        updateAndVerifySupplyKinkInL2(
             vm,
+            MarketUpdateAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDC_MARKET,
             ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
+            deployedContracts.marketUpdateProposer,
             "USDC"
         );
     }
 
+    function test_ArbUsdceDeployment() public {
+        console.log("Create Supply Kink Proposal for USDCe Market and verify after execution");
 
+        updateAndVerifySupplyKinkInL2(
+            vm,
+            MarketUpdateAddresses.Chain.ARBITRUM,
+            MarketAddresses.ARBITRUM_USDCe_MARKET,
+            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.marketUpdateProposer,
+            "USDCe"
+        );
+    }
+
+    function test_ArbUsdtDeployment() public {
+        console.log("Create Supply Kink Proposal for USDT Market and verify after execution");
+
+        updateAndVerifySupplyKinkInL2(
+            vm,
+            MarketUpdateAddresses.Chain.ARBITRUM,
+            MarketAddresses.ARBITRUM_USDT_MARKET,
+            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.marketUpdateProposer,
+            "USDT"
+        );
+    }
+
+    function test_ArbEthDeployment() public {
+        console.log("Create Supply Kink Proposal for Eth Market and verify after execution");
+
+        updateAndVerifySupplyKinkInL2(
+            vm,
+            MarketUpdateAddresses.Chain.ARBITRUM,
+            MarketAddresses.ARBITRUM_ETH_MARKET,
+            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            deployedContracts.newCometProxyAdmin, 
+            deployedContracts.marketUpdateProposer,
+            "ETH"
+        );
+    }
 }

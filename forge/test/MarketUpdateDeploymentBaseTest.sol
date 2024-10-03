@@ -2,6 +2,7 @@
 pragma solidity ^0.8.15;
 
 import "@forge-std/src/Vm.sol";
+import "@comet-contracts/bridges/arbitrum/ArbitrumBridgeReceiver.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
 import "../script/marketupdates/helpers/ChainAddresses.sol";
@@ -86,7 +87,8 @@ abstract contract MarketUpdateDeploymentBaseTest {
         GovernanceHelper.ProposalRequest memory proposalRequest = GovernanceHelper.createDeploymentProposalRequest(addresses);
 
         BridgeHelper.simulateMessageToReceiver(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
-        // TODO: Here move the timelock and execute the transactions. - This is the timelock in bridge receiver
+
+        BridgeHelper.advanceTimestampAndExecutePropsal(vm);
 
         return deployedContracts;
     }
@@ -152,6 +154,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         address cometProxy,
         address configuratorProxy,
         address cometProxyAdminNew,
+        address marketUpdateProposer,
         string memory marketName
         ) public {
 
@@ -184,7 +187,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         address proposalCreator = GovernanceHelper.getTopDelegates()[0];
         BridgeHelper.simulateMessageToReceiver(vm, chain, proposalCreator, proposalRequest);
 
-        // TODO: PASS time and execute transactions on local timelock
+        BridgeHelper.advanceTimestampAndExecutePropsal(vm);
 
         // check the new kink value
         uint256 newSupplyKinkAfterGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
@@ -199,7 +202,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         calldatas[0] = abi.encode(cometProxy, newSupplyKinkByMarketAdmin);
 
         description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Market Admin"));
-        GovernanceHelper.createAndPassMarketUpdateProposal(vm, proposalRequest, description);
+        GovernanceHelper.createAndPassMarketUpdateProposalL2(vm, proposalRequest, description, marketUpdateProposer);
 
         uint256 newSupplyKinkAfterMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
         assert(newSupplyKinkAfterMarketAdminUpdate == newSupplyKinkByMarketAdmin);

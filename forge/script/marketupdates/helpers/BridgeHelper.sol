@@ -4,6 +4,7 @@ pragma solidity ^0.8.15;
 import "./MarketUpdateAddresses.sol";
 import "./GovernanceHelper.sol";
 import "@comet-contracts/bridges/BaseBridgeReceiver.sol";
+import "@comet-contracts/bridges/arbitrum/ArbitrumBridgeReceiver.sol";
 
 
 library BridgeHelper {
@@ -17,7 +18,11 @@ library BridgeHelper {
         GovernanceHelper.ProposalRequest memory proposalRequest
     ) external {
         bytes memory l2Payload = abi.encode(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas);
-        BaseBridgeReceiver bridgeReceiver = BaseBridgeReceiver(0x42480C37B249e33aABaf4c22B20235656bd38068);
+        ArbitrumBridgeReceiver bridgeReceiver = ArbitrumBridgeReceiver(0x42480C37B249e33aABaf4c22B20235656bd38068);
+
+        address bridgeReceiverAddress = 0x42480C37B249e33aABaf4c22B20235656bd38068;
+        bridgeReceiverAddress.call(abi.encodeWithSignature("someMethod(bytes)", l2Payload)); // So that fallback is called
+        bridgeReceiverAddress.call(abi.encodeWithSignature("", l2Payload)); // So that fallback is called
 
         // Address of the bridge receiver contract
         address bridgeReceiverAddress = 0x42480C37B249e33aABaf4c22B20235656bd38068;

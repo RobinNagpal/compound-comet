@@ -52,7 +52,7 @@ library ChainAddresses {
     address constant public OPTIMISM_LOCAL_TIMELOCK = 0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07; // See - https://optimistic.etherscan.io/address/0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07
     address constant public OPTIMISM_CONFIGURATOR_PROXY = 0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713; // See - https://optimistic.etherscan.io/address/0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713
     address constant public OPTIMISM_COMET_PROXY_ADMIN = 0x3C30B5a5A04656565686f800481580Ac4E7ed178; // See - https://optimistic.etherscan.io/address/0x3C30B5a5A04656565686f800481580Ac4E7ed178
-    address constant public OPTIMISM_BRIDGE_RECEIVER = 0x18281dfC4d00905DA1aaA6731414EABa843c468A; // See - https://optimistic.etherscan.io/address/0x18281dfC4d00905DA1aaA6731414EABa843c468A
+    address constant public OPTIMISM_BRIDGE_RECEIVER = 0xC3a73A70d1577CD5B02da0bA91C0Afc8fA434DAF; // See - https://optimistic.etherscan.io/address/0x18281dfC4d00905DA1aaA6731414EABa843c468A
 
     function getChainAddresses(Chain chain) internal pure returns (ChainAddressesStruct memory) {
         if (chain == Chain.ETHEREUM) {

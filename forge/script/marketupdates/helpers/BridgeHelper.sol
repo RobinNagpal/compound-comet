@@ -15,11 +15,6 @@ import "@comet-contracts/bridges/arbitrum/AddressAliasHelper.sol";
 import "@comet-contracts/ITimelock.sol";
 
 library BridgeHelper {
-    ArbitrumBridgeReceiver constant arbitrumBridgeReceiver = ArbitrumBridgeReceiver(payable(0x42480C37B249e33aABaf4c22B20235656bd38068));
-    OptimismBridgeReceiver constant optimismBridgeReceiver = OptimismBridgeReceiver(payable(0xC3a73A70d1577CD5B02da0bA91C0Afc8fA434DAF));
-    PolygonBridgeReceiver constant polygonBridgeReceiver = PolygonBridgeReceiver(payable(0x18281dfC4d00905DA1aaA6731414EABa843c468A));
-    ScrollBridgeReceiver constant scrollBridgeReceiver = ScrollBridgeReceiver(payable(0xC6bf5A64896D679Cf89843DbeC6c0f5d3C9b610D));
-    BaseBridgeReceiver constant baseBridgeReceiver = BaseBridgeReceiver(payable(0x18281dfC4d00905DA1aaA6731414EABa843c468A));
 
     function simulateMessageAndExecuteProposal(
         Vm vm,
@@ -35,6 +30,8 @@ library BridgeHelper {
         );
 
         if (chain == ChainAddresses.Chain.ARBITRUM) {
+            ArbitrumBridgeReceiver arbitrumBridgeReceiver = ArbitrumBridgeReceiver(payable(ChainAddresses.ARBITRUM_BRIDGE_RECEIVER));
+
             // Simulate message to receiver
             address l2Address = AddressAliasHelper.applyL1ToL2Alias(messageSender);
             vm.prank(l2Address);
@@ -60,6 +57,8 @@ library BridgeHelper {
             );
 
             if (chain == ChainAddresses.Chain.OPTIMISM) {
+                OptimismBridgeReceiver optimismBridgeReceiver = OptimismBridgeReceiver(payable(ChainAddresses.OPTIMISM_BRIDGE_RECEIVER));
+
                 address(optimismBridgeReceiver).call(l2Payload);
 
                 uint256 delay = ITimelock(ChainAddresses.OPTIMISM_LOCAL_TIMELOCK).delay();
@@ -69,6 +68,8 @@ library BridgeHelper {
 
             } else {
                 // For Base chain
+                BaseBridgeReceiver baseBridgeReceiver = BaseBridgeReceiver(payable(ChainAddresses.BASE_BRIDGE_RECEIVER));
+
                 address(baseBridgeReceiver).call(l2Payload);
 
                 uint256 delay = ITimelock(ChainAddresses.BASE_LOCAL_TIMELOCK).delay();
@@ -78,7 +79,9 @@ library BridgeHelper {
             }
 
         } else if (chain == ChainAddresses.Chain.POLYGON) {
-            address  fxChild = 0x8397259c983751DAf40400790063935a11afa28a;
+            PolygonBridgeReceiver polygonBridgeReceiver = PolygonBridgeReceiver(payable(ChainAddresses.POLYGON_BRIDGE_RECEIVER));
+
+            address fxChild = 0x8397259c983751DAf40400790063935a11afa28a;
             vm.prank(fxChild);
             polygonBridgeReceiver.processMessageFromRoot(
                 1,
@@ -92,6 +95,8 @@ library BridgeHelper {
             polygonBridgeReceiver.executeProposal(proposalId);
 
         } else if (chain == ChainAddresses.Chain.SCROLL) {
+            ScrollBridgeReceiver scrollBridgeReceiver = ScrollBridgeReceiver(payable(ChainAddresses.SCROLL_BRIDGE_RECEIVER));
+
             address l2Messenger = 0x781e90f1c8Fc4611c9b7497C3B47F99Ef6969CbC;
             vm.prank(l2Messenger);
 

@@ -1,7 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-library ChainAddressesLib {
+library ChainAddresses {
+
+    struct ChainAddressesStruct {
+        address governorTimelockAddress;
+        address configuratorProxyAddress;
+        address cometProxyAdminAddress;
+    }
+
+    enum Chain {
+        ETHEREUM,
+        POLYGON,
+        ARBITRUM,
+        BASE,
+        SCROLL,
+        OPTIMISM
+    }
+
+
     // Mainnet addresses
     address constant public MAINNET_GOVERNOR_TIMELOCK = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925; // See - https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925
     address constant public MAINNET_CONFIGURATOR_PROXY = 0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3; // See - https://etherscan.io/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3
@@ -31,4 +48,47 @@ library ChainAddressesLib {
     address constant public OPTIMISM_LOCAL_TIMELOCK = 0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07; // See - https://optimistic.etherscan.io/address/0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07
     address constant public OPTIMISM_CONFIGURATOR_PROXY = 0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713; // See - https://optimistic.etherscan.io/address/0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713
     address constant public OPTIMISM_COMET_PROXY_ADMIN = 0x3C30B5a5A04656565686f800481580Ac4E7ed178; // See - https://optimistic.etherscan.io/address/0x3C30B5a5A04656565686f800481580Ac4E7ed178
+
+    function getChainAddresses(Chain chain) internal pure returns (ChainAddressesStruct memory) {
+        if (chain == Chain.ETHEREUM) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: MAINNET_GOVERNOR_TIMELOCK,
+                configuratorProxyAddress: MAINNET_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: MAINNET_COMET_PROXY_ADMIN
+            });
+        } else if (chain == Chain.POLYGON) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: POLYGON_LOCAL_TIMELOCK,
+                configuratorProxyAddress: POLYGON_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: POLYGON_COMET_PROXY_ADMIN
+            });
+        } else if (chain == Chain.ARBITRUM) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: ARBITRUM_LOCAL_TIMELOCK,
+                configuratorProxyAddress: ARBITRUM_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: ARBITRUM_COMET_PROXY_ADMIN
+            });
+        } else if (chain == Chain.BASE) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: BASE_LOCAL_TIMELOCK,
+                configuratorProxyAddress: BASE_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: BASE_COMET_PROXY_ADMIN
+            });
+        } else if (chain == Chain.SCROLL) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: SCROLL_LOCAL_TIMELOCK,
+                configuratorProxyAddress: SCROLL_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: SCROLL_COMET_PROXY_ADMIN
+            });
+        } else if (chain == Chain.OPTIMISM) {
+            return ChainAddressesStruct({
+                governorTimelockAddress: OPTIMISM_LOCAL_TIMELOCK,
+                configuratorProxyAddress: OPTIMISM_CONFIGURATOR_PROXY,
+                cometProxyAdminAddress: OPTIMISM_COMET_PROXY_ADMIN
+            });
+        } else {
+            revert("MarketUpdateAddresses: Chain not supported");
+        }
+    }
+
 }

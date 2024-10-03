@@ -18,7 +18,7 @@ contract MarketUpdateScrollDeploymentTest is Test, MarketUpdateDeploymentBaseTes
 
     function setUp() public {
         vm.createSelectFork("scroll");
-        deployedContracts = createMarketUpdateDeploymentForL2(vm, MarketUpdateAddresses.Chain.SCROLL);
+        deployedContracts = createMarketUpdateDeploymentForL2(vm, ChainAddresses.Chain.SCROLL);
     }
 
     function test_ScrollUsdcDeployment() public {
@@ -26,9 +26,9 @@ contract MarketUpdateScrollDeploymentTest is Test, MarketUpdateDeploymentBaseTes
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.SCROLL,
+            ChainAddresses.Chain.SCROLL,
             MarketAddresses.SCROLL_USDC_MARKET,
-            ChainAddressesLib.SCROLL_CONFIGURATOR_PROXY,
+            ChainAddresses.SCROLL_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDC"

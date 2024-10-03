@@ -18,7 +18,7 @@ contract MarketUpdateOptimismDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
     function setUp() public {
         vm.createSelectFork("optimism");
-        deployedContracts = createMarketUpdateDeploymentForL2(vm, MarketUpdateAddresses.Chain.OPTIMISM);
+        deployedContracts = createMarketUpdateDeploymentForL2(vm, ChainAddresses.Chain.OPTIMISM);
     }
 
     function test_OptUsdcDeployment() public {
@@ -26,9 +26,9 @@ contract MarketUpdateOptimismDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.OPTIMISM,
+            ChainAddresses.Chain.OPTIMISM,
             MarketAddresses.OPTIMISM_USDC_MARKET,
-            ChainAddressesLib.OPTIMISM_CONFIGURATOR_PROXY,
+            ChainAddresses.OPTIMISM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDC"
@@ -40,9 +40,9 @@ contract MarketUpdateOptimismDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.OPTIMISM,
+            ChainAddresses.Chain.OPTIMISM,
             MarketAddresses.OPTIMISM_USDT_MARKET,
-            ChainAddressesLib.OPTIMISM_CONFIGURATOR_PROXY,
+            ChainAddresses.OPTIMISM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDT"
@@ -54,9 +54,9 @@ contract MarketUpdateOptimismDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.OPTIMISM,
+            ChainAddresses.Chain.OPTIMISM,
             MarketAddresses.OPTIMISM_ETH_MARKET,
-            ChainAddressesLib.OPTIMISM_CONFIGURATOR_PROXY,
+            ChainAddresses.OPTIMISM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "ETH"

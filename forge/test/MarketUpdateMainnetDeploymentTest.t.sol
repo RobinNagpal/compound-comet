@@ -18,7 +18,7 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
     function setUp() public {
         vm.createSelectFork("mainnet");
-        deployedContracts = createMarketUpdateDeployment(vm, MarketUpdateAddresses.Chain.ETHEREUM);
+        deployedContracts = createMarketUpdateDeployment(vm, ChainAddresses.Chain.ETHEREUM);
     }
 
     function test_UsdcDeployment() public {
@@ -27,7 +27,7 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
         updateAndVerifySupplyKink(
             vm,
             MarketAddresses.MAINNET_USDC_MARKET, 
-            ChainAddressesLib.MAINNET_CONFIGURATOR_PROXY, 
+            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             "USDC"
         );
@@ -39,7 +39,7 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
         updateAndVerifySupplyKink(
             vm,
             MarketAddresses.MAINNET_USDT_MARKET, 
-            ChainAddressesLib.MAINNET_CONFIGURATOR_PROXY, 
+            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             "USDT"
         );
@@ -51,7 +51,7 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
         updateAndVerifySupplyKink(
             vm,
             MarketAddresses.MAINNET_ETH_MARKET, 
-            ChainAddressesLib.MAINNET_CONFIGURATOR_PROXY, 
+            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             "ETH"
         );
@@ -63,7 +63,7 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
         updateAndVerifySupplyKink(
             vm,
             MarketAddresses.MAINNET_WST_ETH_MARKET, 
-            ChainAddressesLib.MAINNET_CONFIGURATOR_PROXY, 
+            ChainAddresses.MAINNET_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             "WST_ETH"
         );

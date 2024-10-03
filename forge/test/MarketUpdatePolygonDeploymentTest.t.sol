@@ -18,7 +18,7 @@ contract MarketUpdatePolygonDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
     function setUp() public {
         vm.createSelectFork("polygon");
-        deployedContracts = createMarketUpdateDeploymentForL2(vm, MarketUpdateAddresses.Chain.POLYGON);
+        deployedContracts = createMarketUpdateDeploymentForL2(vm, ChainAddresses.Chain.POLYGON);
     }
 
     function test_PolygonUsdceDeployment() public {
@@ -26,9 +26,9 @@ contract MarketUpdatePolygonDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.POLYGON,
+            ChainAddresses.Chain.POLYGON,
             MarketAddresses.POLYGON_USDCe_MARKET,
-            ChainAddressesLib.POLYGON_CONFIGURATOR_PROXY,
+            ChainAddresses.POLYGON_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDCe"
@@ -40,9 +40,9 @@ contract MarketUpdatePolygonDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.POLYGON,
+            ChainAddresses.Chain.POLYGON,
             MarketAddresses.POLYGON_USDT_MARKET,
-            ChainAddressesLib.POLYGON_CONFIGURATOR_PROXY,
+            ChainAddresses.POLYGON_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDT"

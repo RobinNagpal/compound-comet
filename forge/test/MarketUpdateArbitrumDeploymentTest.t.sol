@@ -18,7 +18,7 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
     function setUp() public {
         vm.createSelectFork("arbitrum");
-        deployedContracts = createMarketUpdateDeploymentForL2(vm, MarketUpdateAddresses.Chain.ARBITRUM);
+        deployedContracts = createMarketUpdateDeploymentForL2(vm, ChainAddresses.Chain.ARBITRUM);
     }
 
     function test_ArbUsdcDeployment() public {
@@ -26,9 +26,9 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.ARBITRUM,
+            ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDC_MARKET,
-            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDC"
@@ -40,9 +40,9 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.ARBITRUM,
+            ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDCe_MARKET,
-            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDCe"
@@ -54,9 +54,9 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.ARBITRUM,
+            ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_USDT_MARKET,
-            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "USDT"
@@ -68,9 +68,9 @@ contract MarketUpdateArbitrumDeploymentTest is Test, MarketUpdateDeploymentBaseT
 
         updateAndVerifySupplyKinkInL2(
             vm,
-            MarketUpdateAddresses.Chain.ARBITRUM,
+            ChainAddresses.Chain.ARBITRUM,
             MarketAddresses.ARBITRUM_ETH_MARKET,
-            ChainAddressesLib.ARBITRUM_CONFIGURATOR_PROXY,
+            ChainAddresses.ARBITRUM_CONFIGURATOR_PROXY,
             deployedContracts.newCometProxyAdmin, 
             deployedContracts.marketUpdateProposer,
             "ETH"

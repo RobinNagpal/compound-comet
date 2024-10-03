@@ -13,7 +13,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
 
     IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
-    function createMarketUpdateDeployment(Vm vm, ChainAddresses.Chain chain) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
+    function createMarketUpdateDeployment(Vm vm) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
         
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
@@ -60,21 +60,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
     function createMarketUpdateDeploymentForL2(Vm vm, ChainAddresses.Chain chain) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
         bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
 
-        address localTimelock;
-
-        if (chain == ChainAddresses.Chain.ARBITRUM) {
-            localTimelock = ChainAddresses.ARBITRUM_LOCAL_TIMELOCK;
-        } else if (chain == ChainAddresses.Chain.OPTIMISM) {
-            localTimelock = ChainAddresses.OPTIMISM_LOCAL_TIMELOCK;
-        } else if (chain == ChainAddresses.Chain.POLYGON) {
-            localTimelock = ChainAddresses.POLYGON_LOCAL_TIMELOCK;
-        } else if (chain == ChainAddresses.Chain.SCROLL) {
-            localTimelock = ChainAddresses.SCROLL_LOCAL_TIMELOCK;
-        } else if (chain == ChainAddresses.Chain.BASE) {
-            localTimelock = ChainAddresses.BASE_LOCAL_TIMELOCK;
-        } else {
-            localTimelock = address(0);
-        }
+        address localTimelock = ChainAddresses.getLocalTimelockAddress(chain);
 
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             salt,
@@ -100,9 +86,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
 
         GovernanceHelper.ProposalRequest memory proposalRequest = GovernanceHelper.createDeploymentProposalRequest(addresses);
 
-        BridgeHelper.simulateMessageToReceiver(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
-
-        BridgeHelper.advanceTimestampAndExecutePropsal(vm, chain);
+        BridgeHelper.simulateMessageAndExecuteProposal(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
 
         return deployedContracts;
     }
@@ -198,9 +182,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
             calldatas: calldatas
         });
 
-        BridgeHelper.simulateMessageToReceiver(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
-
-        BridgeHelper.advanceTimestampAndExecutePropsal(vm, chain);
+        BridgeHelper.simulateMessageAndExecuteProposal(vm, chain, MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS, proposalRequest);
 
         // check the new kink value
         uint256 newSupplyKinkAfterGovernorUpdate = Comet(payable(cometProxy)).supplyKink();

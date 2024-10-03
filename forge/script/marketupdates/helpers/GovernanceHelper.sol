@@ -103,7 +103,7 @@ library GovernanceHelper {
         return proposalId;
     }
 
-    function createProposalAndPass(Vm vm, ProposalRequest memory proposalRequest, string memory description) public returns (uint256) {
+    function createProposalAndPass(Vm vm, ProposalRequest memory proposalRequest, string memory description) public {
         // Create a proposal
         address proposalCreator = getTopDelegates()[0];
         vm.startBroadcast(proposalCreator);
@@ -126,7 +126,7 @@ library GovernanceHelper {
         moveProposalToExecution(vm, proposalId);
     }
 
-    function createAndPassMarketUpdateProposal(Vm vm, ProposalRequest memory proposalRequest, string memory description) public returns (uint256) {
+    function createAndPassMarketUpdateProposal(Vm vm, ProposalRequest memory proposalRequest, string memory description) public {
         vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
         marketUpdateProposer.propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
 
@@ -138,7 +138,7 @@ library GovernanceHelper {
         vm.stopPrank();
     }
 
-    function createAndPassMarketUpdateProposalL2(Vm vm, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public returns (uint256) {
+    function createAndPassMarketUpdateProposalL2(Vm vm, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
         vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
         MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
 

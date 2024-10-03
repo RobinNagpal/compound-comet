@@ -18,7 +18,7 @@ contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTe
 
     function setUp() public {
         vm.createSelectFork("mainnet");
-        deployedContracts = createMarketUpdateDeployment(vm, ChainAddresses.Chain.ETHEREUM);
+        deployedContracts = createMarketUpdateDeployment(vm);
     }
 
     function test_UsdcDeployment() public {

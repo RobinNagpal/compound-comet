@@ -32,9 +32,9 @@ library MarketUpdateContractsDeployer {
 
     function deployContracts(
         bytes32 salt,
-        address marketUpdateMultiSig,
-        address marketAdminPauseGuardianAddress,
-        address marketUpdateProposalGuardianAddress,
+        address marketUpdateMultiSig, // TODO: Check this is properly used
+        address marketAdminPauseGuardianAddress, // TODO: Check this is properly used
+        address marketUpdateProposalGuardianAddress, // TODO: Check this is properly used
         address governorTimelockAddress
     ) public returns (DeployedContracts memory) {
 
@@ -55,7 +55,7 @@ library MarketUpdateContractsDeployer {
             constructorArgs: abi.encode(
                 governorTimelockAddress,
                 marketUpdateMultiSig,
-                marketAdminPauseGuardianAddress,
+                marketUpdateProposalGuardianAddress,
                 computedMarketUpdateTimelockAddress
             ),
             expectedRuntimeCode: type(MarketUpdateProposer).runtimeCode,

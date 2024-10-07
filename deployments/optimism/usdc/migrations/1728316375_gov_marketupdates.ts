@@ -1,17 +1,19 @@
+import { exp, proposal } from '../../../../src/deploy';
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { exp, proposal } from '../../../../src/deploy';
 
 interface Vars {
   deployedContracts: any;
-}
+};
+
 const governorTimelockAddress = '0x6d903f6003cca6255D85CcA4D3B5E5146dC33925';
 const marketUpdateMultiSig = '0x7053e25f7076F4986D632A3C04313C81831e0d55';
 const marketUpdateProposalGuardian =
   '0x77B65c68E52C31eb844fb3b4864B91133e2C1308';
 const delay = 360000;
 
-export default migration('1728038985_my_migration', {
+
+export default migration('1728316375_gov_marketupdates', {
   prepare: async (deploymentManager: DeploymentManager) => {
     const ethers = deploymentManager.hre.ethers;
 
@@ -50,7 +52,7 @@ export default migration('1728038985_my_migration', {
 
     const marketAdminPermissionChecker = await deploymentManager.deploy(
       'marketAdminPermissionChecker',
-      'marketupdaes/MarketAdminPermissionChecker',
+      'marketupdates/MarketAdminPermissionChecker.sol',
       [
         governorTimelockAddress,
         ethers.constants.AddressZero,
@@ -187,5 +189,5 @@ export default migration('1728038985_my_migration', {
     const [proposalId] = event.args;
 
     trace(`Created proposal ${proposalId}.`);
-  },
+  }
 });

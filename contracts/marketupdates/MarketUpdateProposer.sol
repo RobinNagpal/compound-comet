@@ -136,6 +136,18 @@ contract MarketUpdateProposer {
         emit SetMarketAdmin(oldMarketAdmin, newMarketAdmin);
     }
     
+    /**
+     * @notice Function used to propose a new proposal for market updates
+     * @dev Can only be called by the market admin. Reverts with Unauthorized if the caller is not the market admin
+     * The function requires the provided arrays to have the same length and at least one action
+     * Emits a MarketUpdateProposalCreated event with the proposal details
+     * @param targets Target addresses for proposal calls
+     * @param values Eth values for proposal calls
+     * @param signatures Function signatures for proposal calls
+     * @param calldatas Calldatas for proposal calls
+     * @param description String description of the proposal
+     * @return Proposal id of new proposal
+     */
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
         if (msg.sender != marketAdmin) revert Unauthorized();
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "MarketUpdateProposer::propose: proposal function information arity mismatch");
@@ -208,6 +220,11 @@ contract MarketUpdateProposer {
         emit MarketUpdateProposalCancelled(proposalId);
     }
 
+    /**
+     * @notice Gets the state of a proposal
+     * @param proposalId The id of the proposal
+     * @return Proposal state
+     */
     function state(uint proposalId) public view returns (ProposalState) {
         require(proposalCount >= proposalId && proposalId > initialProposalId, "MarketUpdateProposer::state: invalid proposal id");
         MarketUpdateProposal storage proposal = proposals[proposalId];
@@ -228,6 +245,20 @@ contract MarketUpdateProposer {
         return c;
     }
 
+    /**
+     * @notice Get details of a proposal by its id
+     * @param proposalId The id of the proposal
+     * @return id The id of the proposal
+     * @return proposer The address of the proposer
+     * @return eta The estimated time at which the proposal can be executed
+     * @return targets targets of the proposal actions
+     * @return values ETH values of the proposal actions
+     * @return signatures signatures of the proposal actions
+     * @return calldatas calldatas of the proposal actions
+     * @return description description of the proposal
+     * @return canceled boolean indicating whether the proposal has been canceled
+     * @return executed boolean indicating whether the proposal has been executed
+     */
     function getProposal(uint proposalId) public view
         returns (
             uint id,

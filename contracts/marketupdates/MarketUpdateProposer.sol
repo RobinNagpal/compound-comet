@@ -83,7 +83,7 @@ contract MarketUpdateProposer {
     error InvalidAddress();
 
     constructor(address governor_, address marketAdmin_, address proposalGuardian_, ITimelock timelock_) public {
-        if (address(governor_) == address(0) || address(marketAdmin_) == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
+        if (governor_ == address(0) || marketAdmin_ == address(0) || address(timelock_) == address(0)) revert InvalidAddress();
         governor = governor_;
         marketAdmin = marketAdmin_;
         proposalGuardian = proposalGuardian_;
@@ -160,7 +160,7 @@ contract MarketUpdateProposer {
         MarketUpdateProposal storage newProposal = proposals[newProposalID];
 
         require(newProposal.id == 0, "MarketUpdateProposer::propose: ProposalID collision");
-        uint eta = add256(block.timestamp, timelock.delay());
+        uint eta = block.timestamp + timelock.delay();
         newProposal.id = newProposalID;
         newProposal.proposer = msg.sender;
         newProposal.eta = eta;
@@ -230,18 +230,13 @@ contract MarketUpdateProposer {
             return ProposalState.Canceled;
         } else if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= add256(proposal.eta, timelock.GRACE_PERIOD())) {
+        } else if (block.timestamp >= (proposal.eta + timelock.GRACE_PERIOD())) {
             return ProposalState.Expired;
         } else {
             return ProposalState.Queued;
         }
     }
 
-    function add256(uint256 a, uint256 b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a, "addition overflow");
-        return c;
-    }
 
     /**
      * @notice Get details of a proposal by its id
@@ -258,15 +253,15 @@ contract MarketUpdateProposer {
      */
     function getProposal(uint proposalId) public view
         returns (
-            uint id,
-            address proposer,
+            uint,
+            address,
             uint eta,
-            address[] memory targets,
-            uint[] memory values,
-            string[] memory signatures,
-            bytes[] memory calldatas,
-            bool canceled,
-            bool executed
+            address[] memory,
+            uint[] memory,
+            string[] memory,
+            bytes[] memory,
+            bool,
+            bool
         )
     {
         MarketUpdateProposal storage proposal = proposals[proposalId];

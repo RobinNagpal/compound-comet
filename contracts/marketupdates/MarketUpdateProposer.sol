@@ -69,6 +69,9 @@ contract MarketUpdateProposer {
 
     /// @notice The initial proposal ID, set when the contract is deployed
     uint public initialProposalId;
+    
+    /// @notice The maximum number of actions that can be included in a proposal
+    uint public constant proposalMaxOperations = 10; // 10 actions
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
@@ -152,7 +155,8 @@ contract MarketUpdateProposer {
         if (msg.sender != marketAdmin) revert Unauthorized();
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "MarketUpdateProposer::propose: proposal function information arity mismatch");
         require(targets.length != 0, "MarketUpdateProposer::propose: must provide actions");
-
+        require(targets.length <= proposalMaxOperations, "MarketUpdateProposer::propose: too many actions");
+        
         proposalCount++;
         uint newProposalID = proposalCount;
         MarketUpdateProposal storage newProposal = proposals[newProposalID];

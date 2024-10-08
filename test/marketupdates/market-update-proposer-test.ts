@@ -172,7 +172,6 @@ describe('MarketUpdateProposer', function() {
     expect(proposal.targets[0]).to.equal(configuratorProxy.address);
     expect(proposal.signatures[0]).to.equal('setSupplyKink(address,uint64)');
     expect(proposal.calldatas[0]).to.equal(setSupplyKinkCalldata);
-    expect(proposal.description).to.equal(proposalDescription);
   });
 
   it('can cancel the proposal', async () => {

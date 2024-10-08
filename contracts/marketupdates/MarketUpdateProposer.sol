@@ -41,8 +41,6 @@ contract MarketUpdateProposer {
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
 
-        string description;
-
         /// @notice Flag marking whether the proposal has been canceled
         bool canceled;
 
@@ -68,10 +66,10 @@ contract MarketUpdateProposer {
     uint public proposalCount;
 
     /// @notice The initial proposal ID, set when the contract is deployed
-    uint public initialProposalId;
+    uint public constant INITIAL_PROPOSAL_ID = 0;
     
     /// @notice The maximum number of actions that can be included in a proposal
-    uint public constant proposalMaxOperations = 10; // 10 actions
+    uint public constant PROPOSAL_MAX_OPERATIONS = 20; // 20 actions
 
     /// @notice An event emitted when a new proposal is created
     event MarketUpdateProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, string description);
@@ -155,7 +153,7 @@ contract MarketUpdateProposer {
         if (msg.sender != marketAdmin) revert Unauthorized();
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "MarketUpdateProposer::propose: proposal function information arity mismatch");
         require(targets.length != 0, "MarketUpdateProposer::propose: must provide actions");
-        require(targets.length <= proposalMaxOperations, "MarketUpdateProposer::propose: too many actions");
+        require(targets.length <= PROPOSAL_MAX_OPERATIONS, "MarketUpdateProposer::propose: too many actions");
         
         proposalCount++;
         uint newProposalID = proposalCount;
@@ -170,11 +168,8 @@ contract MarketUpdateProposer {
         newProposal.values = values;
         newProposal.signatures = signatures;
         newProposal.calldatas = calldatas;
-        newProposal.description = description;
         newProposal.canceled = false;
         newProposal.executed = false;
-
-        proposals[newProposal.id] = newProposal;
 
         emit MarketUpdateProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, description);
 
@@ -183,7 +178,6 @@ contract MarketUpdateProposer {
         }
 
         return newProposal.id;
-
     }
 
     function queueOrRevertInternal(address target, uint value, string memory signature, bytes memory data, uint eta) internal {
@@ -230,7 +224,7 @@ contract MarketUpdateProposer {
      * @return Proposal state
      */
     function state(uint proposalId) public view returns (ProposalState) {
-        require(proposalCount >= proposalId && proposalId > initialProposalId, "MarketUpdateProposer::state: invalid proposal id");
+        require(proposalCount >= proposalId && proposalId > INITIAL_PROPOSAL_ID, "MarketUpdateProposer::state: invalid proposal id");
         MarketUpdateProposal storage proposal = proposals[proposalId];
         if (proposal.canceled) {
             return ProposalState.Canceled;
@@ -259,7 +253,6 @@ contract MarketUpdateProposer {
      * @return values ETH values of the proposal actions
      * @return signatures signatures of the proposal actions
      * @return calldatas calldatas of the proposal actions
-     * @return description description of the proposal
      * @return canceled boolean indicating whether the proposal has been canceled
      * @return executed boolean indicating whether the proposal has been executed
      */
@@ -272,7 +265,6 @@ contract MarketUpdateProposer {
             uint[] memory values,
             string[] memory signatures,
             bytes[] memory calldatas,
-            string memory description,
             bool canceled,
             bool executed
         )
@@ -286,7 +278,6 @@ contract MarketUpdateProposer {
             proposal.values,
             proposal.signatures,
             proposal.calldatas,
-            proposal.description,
             proposal.canceled,
             proposal.executed
         );

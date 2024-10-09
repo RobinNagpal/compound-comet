@@ -1,67 +1,84 @@
 # Makefile for verifying contracts
 
-# Environment variables for Etherscan API key and chain ID
-ETHERSCAN_API_KEY = YOUR_ETHERSCAN_API_KEY
-CHAIN_ID = 11155111  # Sepolia Testnet
+
+# Declare constants at the top
+GOVERNOR_TIMELOCK_ADDRESS = 0xDeployedGovernorTimelock
+MARKET_UPDATE_MULTISIG = 0xDeployedMarketUpdateMultisig
+PROPOSAL_GUARDIAN_ADDRESS = 0xDeployedProposalGuardian
+MARKET_ADMIN_TIMELOCK_ADDRESS = 0xDeployedComputedTimelock
+MARKET_UPDATE_PROPOSER = 0xDeployedComputedTimelock
+CHAIN_ID = 11155111
+ETHERSCAN_API_KEY = "your-api-key"
 
 # Define targets for each contract
 verify-all: verify-MarketUpdateTimelock verify-MarketUpdateProposer verify-Configurator verify-CometProxyAdmin verify-MarketAdminPermissionChecker
 
+# Verifying MarketUpdateTimelock
 verify-MarketUpdateTimelock:
+	@echo "Verifying MarketUpdateTimelock..."
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version "v0.8.15+commit.e14f2714" \
 		--optimizer-runs 200 \
-		--constructor-args 0000000000000000000000006d903f6003cca6255d85cca4d3b5e5146dc339250000000000000000000000000000000000000000000000000000000000057e40 \
+		--constructor-args $(shell ./get-constructor-args.sh MarketUpdateTimelock $(GOVERNOR_TIMELOCK_ADDRESS) 360000) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
-		0x09f92907978E1581C735ff0729fAbc44E688bdfd \
+		${MARKET_ADMIN_TIMELOCK_ADDRESS} \
 		contracts/marketupdates/MarketUpdateTimelock.sol:MarketUpdateTimelock
 
+# Verifying MarketUpdateProposer
 verify-MarketUpdateProposer:
+	@echo "Verifying MarketUpdateProposer..."
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version "v0.8.15+commit.e14f2714" \
 		--optimizer-runs 200 \
-		--constructor-args 0000000000000000000000006d903f6003cca6255d85cca4d3b5e5146dc339250000000000000000000000007053e25f7076f4986d632a3c04313c81831e0d5500000000000000000000000077b65c68e52c31eb844fb3b4864b91133e2c130800000000000000000000000009f92907978e1581c735ff0729fabc44e688bdfd \
+		--constructor-args $(shell ./get-constructor-args.sh MarketUpdateProposer $(GOVERNOR_TIMELOCK_ADDRESS) $(MARKET_UPDATE_MULTISIG) $(PROPOSAL_GUARDIAN_ADDRESS) $(MARKET_ADMIN_TIMELOCK_ADDRESS)) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
-		0xC8BD472ba473B30669C5333252cD25aFDf25242f \
+		${MARKET_UPDATE_PROPOSER} \
 		contracts/marketupdates/MarketUpdateProposer.sol:MarketUpdateProposer
 
-verify-Configurator:
-	forge verify-contract \
-		--chain-id $(CHAIN_ID) \
-		--compiler-version "v0.8.15+commit.e14f2714" \
-		--optimizer-runs 200 \
-		--etherscan-api-key $(ETHERSCAN_API_KEY) \
-		--watch \
-		--via-ir \
-		0x8Ef30bA74f4C9381175Cc6DF6856734B55CfDE65 \
-		contracts/Configurator.sol:Configurator
-
+# Verifying CometProxyAdmin
 verify-CometProxyAdmin:
+	@echo "Verifying CometProxyAdmin..."
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version "v0.8.15+commit.e14f2714" \
 		--optimizer-runs 200 \
-		--constructor-args 0000000000000000000000006d903f6003cca6255d85cca4d3b5e5146dc33925 \
+		--constructor-args $(shell ./get-constructor-args.sh CometProxyAdmin $(GOVERNOR_TIMELOCK_ADDRESS)) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
-		0x24ac95E852d471c6EE0115326886E17547214ABc \
+		0xDeployedCometProxyAdmin \
 		contracts/CometProxyAdmin.sol:CometProxyAdmin
 
-verify-MarketAdminPermissionChecker:
+# Verifying Configurator
+verify-Configurator:
+	@echo "Verifying Configurator..."
 	forge verify-contract \
 		--chain-id $(CHAIN_ID) \
 		--compiler-version "v0.8.15+commit.e14f2714" \
 		--optimizer-runs 200 \
-		--constructor-args 0000000000000000000000006d903f6003cca6255d85cca4d3b5e5146dc3392500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 \
+		--constructor-args $(shell ./get-constructor-args.sh Configurator) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \
-		0x317739F521DdA1BB6f16582b5dF3E70Ab3DE2FE3 \
+		0xDeployedConfigurator \
+		contracts/Configurator.sol:Configurator
+
+# Verifying MarketAdminPermissionChecker
+verify-MarketAdminPermissionChecker:
+	@echo "Verifying MarketAdminPermissionChecker..."
+	forge verify-contract \
+		--chain-id $(CHAIN_ID) \
+		--compiler-version "v0.8.15+commit.e14f2714" \
+		--optimizer-runs 200 \
+		--constructor-args $(shell ./get-constructor-args.sh MarketAdminPermissionChecker $(GOVERNOR_TIMELOCK_ADDRESS) 0xAddress1 0xAddress2) \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		--watch \
+		--via-ir \
+		0xDeployedMarketAdminPermissionChecker \
 		contracts/marketupdates/MarketAdminPermissionChecker.sol:MarketAdminPermissionChecker

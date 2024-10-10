@@ -10,6 +10,7 @@ import "@comet-contracts/CometProxyAdmin.sol";
 import "@comet-contracts/marketupdates/MarketAdminPermissionChecker.sol";
 import "@comet-contracts/Create2DeployerInterface.sol";
 import "./helpers/MarketUpdateAddresses.sol";
+import "./helpers/ChainAddresses.sol";
 
 contract DeployContracts is Script {
     address public deployedWalletAddress;
@@ -32,7 +33,12 @@ contract DeployContracts is Script {
     }
 
     function run() external {
-        address timelock = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
+        uint256 passedChainId = vm.envUint("CHAIN_ID");
+
+        require(block.chainid == passedChainId, "Chain ID mismatch");
+
+        ChainAddresses.Chain chain = ChainAddresses.getChainBasedOnChainId(passedChainId);
+        ChainAddresses.ChainAddressesStruct memory chainAddresses = ChainAddresses.getChainAddresses(chain);
 
         console.log("Deploying contracts with sender: ", msg.sender);
 
@@ -51,7 +57,7 @@ contract DeployContracts is Script {
             MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
             MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
             MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
-            timelock
+            chainAddresses.governorTimelockAddress
         );
 
         /// Console log deployed contracts

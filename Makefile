@@ -5,7 +5,7 @@
 GOVERNOR_TIMELOCK_ADDRESS = 0xDeployedGovernorTimelock
 MARKET_UPDATE_MULTISIG = 0xDeployedMarketUpdateMultisig
 PROPOSAL_GUARDIAN_ADDRESS = 0xDeployedProposalGuardian
-MARKET_UPDATE_TIMELOCK_ADDRESS = 0xDeployedComputedTimelock
+MARKET_ADMIN_TIMELOCK_ADDRESS = 0xDeployedComputedTimelock
 MARKET_UPDATE_PROPOSER = 0xDeployedComputedProposer
 COMET_PROXY_ADMIN = 0xDeployedComputedProxyAdmin
 CONFIGURATOR = 0xDeployedComputedConfigurator
@@ -23,7 +23,7 @@ verify-all: verify-MarketUpdateTimelock verify-MarketUpdateProposer verify-Confi
 # Deploying the contracts
 deploy-contracts:
 	@echo "Deploying contracts..."
-	forge script forge/script/marketupdates/DeployContracts.s.sol:DeployContracts \
+	CHAIN_ID=$(CHAIN_ID) forge script forge/script/marketupdates/DeployContracts.s.sol:DeployContracts \
 		--rpc-url $(RPC_URL) \
 		--optimize \
 		--optimizer-runs 200 \

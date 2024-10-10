@@ -30,7 +30,6 @@ deploy-contracts:
 		--use $(SOLIDITY_COMPILER_VERSION) \
 		--evm-version $(EVM_VERSION) \
 		--broadcast \
-		--verify \
 		--via-ir \
 		-vvvv \
 		--sender $(SENDER)

@@ -157,13 +157,17 @@ abstract contract MarketUpdateDeploymentBaseTest {
 
     function updateAndVerifySupplyKinkInL2(
         Vm vm,
+        string memory marketName,
         ChainAddresses.Chain chain,
         address cometProxy,
-        address configuratorProxy,
-        address cometProxyAdminNew,
-        address marketUpdateProposer,
-        string memory marketName
+        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts
     ) public {
+
+        ChainAddresses.ChainAddressesStruct memory chainAddresses = ChainAddresses.getChainAddresses(chain);
+
+        address configuratorProxy = chainAddresses.configuratorProxyAddress;
+        address cometProxyAdminNew = deployedContracts.newCometProxyAdmin;
+        address marketUpdateProposer = deployedContracts.marketUpdateProposer;
 
         uint256 oldSupplyKinkBeforeGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
         uint256 newSupplyKinkByGovernorTimelock = 300000000000000000;
@@ -206,7 +210,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         calldatas[0] = abi.encode(cometProxy, newSupplyKinkByMarketAdmin);
 
         description = string(abi.encodePacked("Proposal to update Supply Kink for ", marketName, " Market by Market Admin"));
-        GovernanceHelper.createAndPassMarketUpdateProposalL2(vm, proposalRequest, description, marketUpdateProposer);
+        GovernanceHelper.createAndPassMarketUpdateProposalL2(vm, chainAddresses.marketAdmin, proposalRequest, description, marketUpdateProposer);
 
         uint256 newSupplyKinkAfterMarketAdminUpdate = Comet(payable(cometProxy)).supplyKink();
         assert(newSupplyKinkAfterMarketAdminUpdate == newSupplyKinkByMarketAdmin);

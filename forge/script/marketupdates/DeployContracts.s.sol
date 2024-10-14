@@ -49,14 +49,14 @@ contract DeployContracts is Script {
 
         console.log("Broadcasting transaction with deployer: ", deployer);
 
-        bytes32 salt = keccak256(abi.encodePacked("Salt-34"));
+        bytes32 salt = keccak256(abi.encodePacked(vm.envString("SALT")));
 
         /// Call library function
         DeployedContracts memory deployedContracts = deployContracts(
             salt,
-            MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
-            MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
-            MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
+            chainAddresses.marketAdmin,
+            chainAddresses.marketUpdatePauseGuardian,
+            chainAddresses.marketUpdateProposalGuardian,
             chainAddresses.governorTimelockAddress
         );
 

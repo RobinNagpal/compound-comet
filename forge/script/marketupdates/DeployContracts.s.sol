@@ -18,7 +18,7 @@ contract DeployContracts is Script {
     address constant public create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
     address constant public ZER0_ADDRESS_MARKET_UPDATE_PROPOSAL_GUARDIAN = address(0);
     address constant public ZER0_ADDRESS_MARKET_ADMIN_PAUSE_GUARDIAN = address(0);
-    address constant public ZER0_ADDRESS_MARKET_UPDATE_MULTI_SIG = address(0);
+    address constant public INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG = address(0x7e14050080306cd36b47DE61ce604b3a1EC70c4e);
 
     struct DeployedContracts {
         address marketUpdateTimelock;
@@ -99,7 +99,7 @@ contract DeployContracts is Script {
             creationCode: type(MarketUpdateProposer).creationCode,
             constructorArgs: abi.encode(
                 msg.sender,
-                ZER0_ADDRESS_MARKET_UPDATE_MULTI_SIG,
+                INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG,
                 ZER0_ADDRESS_MARKET_UPDATE_PROPOSAL_GUARDIAN,
                 computedMarketUpdateTimelockAddress
             ),
@@ -109,7 +109,7 @@ contract DeployContracts is Script {
 
         address computedMarketUpdateProposerAddress = deployContractWithCreate2(create2Deployer, salt, marketUpdateProposerParams);
         MarketUpdateProposer(computedMarketUpdateProposerAddress).setMarketAdmin(marketUpdateMultiSig);
-        MarketUpdateProposer(computedMarketUpdateProposerAddress).setMarketAdminPauseGuardian(marketAdminPauseGuardianAddress);
+        MarketUpdateProposer(computedMarketUpdateProposerAddress).setProposalGuardian(marketAdminPauseGuardianAddress);
         MarketUpdateProposer(computedMarketUpdateProposerAddress).setGovernor(localTimelockAddress);
 
         MarketUpdateTimelock(payable(computedMarketUpdateTimelockAddress)).setMarketUpdateProposer(computedMarketUpdateProposerAddress);
@@ -138,7 +138,7 @@ contract DeployContracts is Script {
 
         ContractDeploymentParams memory marketAdminPermissionCheckerParams = ContractDeploymentParams({
             creationCode: type(MarketAdminPermissionChecker).creationCode,
-            constructorArgs: abi.encode(msg.sender, ZER0_ADDRESS_MARKET_UPDATE_MULTI_SIG, address(0)),
+            constructorArgs: abi.encode(msg.sender, INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG, address(0)),
             expectedRuntimeCode: type(MarketAdminPermissionChecker).runtimeCode,
             contractName: "MarketAdminPermissionChecker"
         });

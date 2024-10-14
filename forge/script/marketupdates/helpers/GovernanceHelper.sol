@@ -123,8 +123,8 @@ library GovernanceHelper {
         moveProposalToExecution(vm, proposalId);
     }
 
-    function createAndPassMarketUpdateProposal(Vm vm, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
-        vm.startPrank(MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS);
+    function createAndPassMarketUpdateProposal(Vm vm, address marketAdmin, ProposalRequest memory proposalRequest, string memory description, address marketUpdateProposer) public {
+        vm.startPrank(marketAdmin);
         MarketUpdateProposer(marketUpdateProposer).propose(proposalRequest.targets, proposalRequest.values, proposalRequest.signatures, proposalRequest.calldatas, description);
 
         // Fast forward by 5 days

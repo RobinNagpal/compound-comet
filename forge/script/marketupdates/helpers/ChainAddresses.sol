@@ -39,6 +39,7 @@ library ChainAddresses {
     address constant public POLYGON_CONFIGURATOR_PROXY = 0x83E0F742cAcBE66349E3701B171eE2487a26e738; // See - https://polygonscan.com/address/0x83E0F742cAcBE66349E3701B171eE2487a26e738
     address constant public POLYGON_COMET_PROXY_ADMIN = 0xd712ACe4ca490D4F3E92992Ecf3DE12251b975F9; // See - https://polygonscan.com/address/0xd712ACe4ca490D4F3E92992Ecf3DE12251b975F9
     address constant public POLYGON_BRIDGE_RECEIVER = 0x18281dfC4d00905DA1aaA6731414EABa843c468A; // See - https://polygonscan.com/address/0x18281dfC4d00905DA1aaA6731414EABa843c468A
+
     address constant public POLYGON_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e;
     address constant public POLYGON_MARKET_UPDATE_PAUSE_GUARDIAN = 0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5  ; // See - pauseGuardian in https://polygonscan.com/address/0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5#readProxyContract
     address constant public POLYGON_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5  ; // See - https://polygonscan.com/address/0x8Ab717CAC3CbC4934E63825B88442F5810aAF6e5#readProxyContract
@@ -48,6 +49,7 @@ library ChainAddresses {
     address constant public ARBITRUM_CONFIGURATOR_PROXY = 0xb21b06D71c75973babdE35b49fFDAc3F82Ad3775; // See - https://arbiscan.io/address/0xb21b06D71c75973babdE35b49fFDAc3F82Ad3775
     address constant public ARBITRUM_COMET_PROXY_ADMIN = 0xD10b40fF1D92e2267D099Da3509253D9Da4D715e; // See - https://arbiscan.io/address/0xD10b40fF1D92e2267D099Da3509253D9Da4D715e
     address constant public ARBITRUM_BRIDGE_RECEIVER = 0x42480C37B249e33aABaf4c22B20235656bd38068; // See - https://arbiscan.io/address/0x42480C37B249e33aABaf4c22B20235656bd38068
+
     address constant public ARBITRUM_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e;
     address constant public ARBITRUM_MARKET_UPDATE_PAUSE_GUARDIAN = 0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d; // See - https://arbiscan.io/address/0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07#readProxyContract
     address constant public ARBITRUM_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x78E6317DD6D43DdbDa00Dce32C2CbaFc99361a9d; // See - https://arbiscan.io/address/0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07#readProxyContract
@@ -57,6 +59,7 @@ library ChainAddresses {
     address constant public BASE_CONFIGURATOR_PROXY = 0x45939657d1CA34A8FA39A924B71D28Fe8431e581; // See - https://basescan.org/address/0x45939657d1CA34A8FA39A924B71D28Fe8431e581
     address constant public BASE_COMET_PROXY_ADMIN = 0xbdE8F31D2DdDA895264e27DD990faB3DC87b372d; // See - https://basescan.org/address/0xbdE8F31D2DdDA895264e27DD990faB3DC87b372d
     address constant public BASE_BRIDGE_RECEIVER = 0x18281dfC4d00905DA1aaA6731414EABa843c468A; // See - https://basescan.org/address/0x18281dfC4d00905DA1aaA6731414EABa843c468A
+
     address constant public BASE_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e;
     address constant public BASE_MARKET_UPDATE_PAUSE_GUARDIAN = 0x3cb4653F3B45F448D9100b118B75a1503281d2ee; // See - https://basescan.org/address/0x46e6b214b524310239732D51387075E0e70970bf#readProxyContract
     address constant public BASE_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x3cb4653F3B45F448D9100b118B75a1503281d2ee; // See - https://basescan.org/address/0x46e6b214b524310239732D51387075E0e70970bf#readProxyContract
@@ -66,6 +69,7 @@ library ChainAddresses {
     address constant public SCROLL_CONFIGURATOR_PROXY = 0xECAB0bEEa3e5DEa0c35d3E69468EAC20098032D7; // See - https://scrollscan.com/address/0xECAB0bEEa3e5DEa0c35d3E69468EAC20098032D7
     address constant public SCROLL_COMET_PROXY_ADMIN = 0x87A27b91f4130a25E9634d23A5B8E05e342bac50; // See - https://scrollscan.com/address/0x87A27b91f4130a25E9634d23A5B8E05e342bac50
     address constant public SCROLL_BRIDGE_RECEIVER = 0xC6bf5A64896D679Cf89843DbeC6c0f5d3C9b610D; // See - https://scrollscan.com/address/0xC6bf5A64896D679Cf89843DbeC6c0f5d3C9b610D
+
     address constant public SCROLL_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e;
     address constant public SCROLL_MARKET_UPDATE_PAUSE_GUARDIAN = 0x0747a435b8a60070A7a111D015046d765098e4cc; // See - https://scrollscan.com/address/0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44#readProxyContract
     address constant public SCROLL_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x0747a435b8a60070A7a111D015046d765098e4cc; // See - https://scrollscan.com/address/0xB2f97c1Bd3bf02f5e74d13f02E3e26F93D77CE44#readProxyContract
@@ -75,6 +79,7 @@ library ChainAddresses {
     address constant public OPTIMISM_CONFIGURATOR_PROXY = 0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713; // See - https://optimistic.etherscan.io/address/0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713
     address constant public OPTIMISM_COMET_PROXY_ADMIN = 0x3C30B5a5A04656565686f800481580Ac4E7ed178; // See - https://optimistic.etherscan.io/address/0x3C30B5a5A04656565686f800481580Ac4E7ed178
     address constant public OPTIMISM_BRIDGE_RECEIVER = 0xC3a73A70d1577CD5B02da0bA91C0Afc8fA434DAF; // See - https://optimistic.etherscan.io/address/0x18281dfC4d00905DA1aaA6731414EABa843c468A
+
     address constant public OPTIMISM_MARKET_ADMIN = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e;
     address constant public OPTIMISM_MARKET_UPDATE_PAUSE_GUARDIAN = 0x3fFd6c073a4ba24a113B18C8F373569640916A45; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd#readProxyContract
     address constant public OPTIMISM_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0x3fFd6c073a4ba24a113B18C8F373569640916A45; // See - https://optimistic.etherscan.io/address/0xE36A30D249f7761327fd973001A32010b521b6Fd#readProxyContract

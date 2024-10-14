@@ -28,6 +28,11 @@ library ChainAddresses {
     address constant public MAINNET_CONFIGURATOR_PROXY = 0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3; // See - https://etherscan.io/address/0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3
     address constant public MAINNET_COMET_PROXY_ADMIN = 0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779; // See - https://etherscan.io/address/0x1EC63B5883C3481134FD50D5DAebc83Ecd2E8779
 
+    address constant public MAINNET_MAKET_ADMIN = address(0);
+    address constant public MAINNET_MARKET_UPDATE_PAUSE_GUARDIAN = 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c ; // See - pauseGuardian in https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3#readProxyContract
+    address constant public MAINNET_MARKET_UPDATE_PROPOSAL_GUARDIAN = 0xbbf3f1421D886E9b2c5D716B5192aC998af2012c ; // See - https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3#readProxyContract
+
+
     // Polygon addresses
     address constant public POLYGON_LOCAL_TIMELOCK = 0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02; // See - https://polygonscan.com/address/0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02
     address constant public POLYGON_CONFIGURATOR_PROXY = 0x83E0F742cAcBE66349E3701B171eE2487a26e738; // See - https://polygonscan.com/address/0x83E0F742cAcBE66349E3701B171eE2487a26e738

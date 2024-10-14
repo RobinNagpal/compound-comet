@@ -14,6 +14,9 @@ import "@forge-std/src/Vm.sol";
 library MarketUpdateContractsDeployer {
 
     address constant public create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
+    address constant public ZER0_ADDRESS_MARKET_UPDATE_PROPOSAL_GUARDIAN = address(0);
+    address constant public ZER0_ADDRESS_MARKET_ADMIN_PAUSE_GUARDIAN = address(0);
+    address constant public ZER0_ADDRESS_MARKET_UPDATE_MULTI_SIG = address(0);
 
     struct DeployedContracts {
         address marketUpdateTimelock;
@@ -59,8 +62,8 @@ library MarketUpdateContractsDeployer {
             creationCode: type(MarketUpdateProposer).creationCode,
             constructorArgs: abi.encode(
                 msg.sender,
-                marketUpdateMultiSig,
-                marketUpdateProposalGuardianAddress,
+                ZER0_ADDRESS_MARKET_UPDATE_MULTI_SIG,
+                ZER0_ADDRESS_MARKET_UPDATE_PROPOSAL_GUARDIAN,
                 computedMarketUpdateTimelockAddress
             ),
             expectedRuntimeCode: type(MarketUpdateProposer).runtimeCode,
@@ -68,6 +71,8 @@ library MarketUpdateContractsDeployer {
         });
 
         address computedMarketUpdateProposerAddress = deployContractWithCreate2(create2Deployer, salt, marketUpdateProposerParams);
+        MarketUpdateProposer(computedMarketUpdateProposerAddress).setMarketAdmin(marketUpdateMultiSig);
+        MarketUpdateProposer(computedMarketUpdateProposerAddress).setMarketAdminPauseGuardian(marketAdminPauseGuardianAddress);
         MarketUpdateProposer(computedMarketUpdateProposerAddress).setGovernor(localTimelockAddress);
 
         MarketUpdateTimelock(payable(computedMarketUpdateTimelockAddress)).setMarketUpdateProposer(computedMarketUpdateProposerAddress);
@@ -96,12 +101,13 @@ library MarketUpdateContractsDeployer {
 
         ContractDeploymentParams memory marketAdminPermissionCheckerParams = ContractDeploymentParams({
             creationCode: type(MarketAdminPermissionChecker).creationCode,
-            constructorArgs: abi.encode(msg.sender, marketUpdateMultiSig, address(0)),
+            constructorArgs: abi.encode(msg.sender, ZER0_ADDRESS_MARKET_UPDATE_MULTI_SIG, address(0)),
             expectedRuntimeCode: type(MarketAdminPermissionChecker).runtimeCode,
             contractName: "MarketAdminPermissionChecker"
         });
 
         address computedMarketAdminPermissionCheckerAddress = deployContractWithCreate2(create2Deployer, salt, marketAdminPermissionCheckerParams);
+        MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).setMarketAdmin(marketUpdateMultiSig);
         MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).transferOwnership(localTimelockAddress);
         vm.stopBroadcast();
         return DeployedContracts({

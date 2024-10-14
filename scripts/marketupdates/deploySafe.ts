@@ -76,7 +76,7 @@ async function main() {
     );
   }
   
-  const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('deterministic-safe-1'));
+  const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(saltString));
 
   const {safe} = await deploySafe(owners, threshold, salt, chainId);
   

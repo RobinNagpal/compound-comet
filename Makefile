@@ -18,6 +18,7 @@ EVM_VERSION = "london"
 RPC_URL = "RPCUrlOfTheNetwork"
 OWNERS = '["0xOwner1", "0xOwner2", "0xOwner3"]'
 THRESHOLD = 2
+SALT = 'Deploy-safe-1'
 
 # Define targets for each contract
 verify-all: verify-MarketUpdateTimelock verify-MarketUpdateProposer verify-Configurator verify-CometProxyAdmin verify-MarketAdminPermissionChecker
@@ -25,7 +26,7 @@ verify-all: verify-MarketUpdateTimelock verify-MarketUpdateProposer verify-Confi
 # Deploying Safe
 deploy-safe:
 	@echo "Deploying Safe..."
-	OWNERS=$(OWNERS) THRESHOLD=$(THRESHOLD) CHAIN_ID=$(CHAIN_ID) yarn hardhat run scripts/marketupdates/deploySafe.ts
+	OWNERS=$(OWNERS) THRESHOLD=$(THRESHOLD) SALT=$(SALT) CHAIN_ID=$(CHAIN_ID) yarn hardhat run scripts/marketupdates/deploySafe.ts
 
 # Deploying the contracts
 deploy-contracts:

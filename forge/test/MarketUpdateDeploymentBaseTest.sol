@@ -15,15 +15,17 @@ abstract contract MarketUpdateDeploymentBaseTest {
     IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
     function createMarketUpdateDeployment(Vm vm) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
-        bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
-        
+        bytes32 salt = keccak256(abi.encodePacked(vm.envString("SALT")));
+        ChainAddresses.Chain chain = ChainAddresses.getChainBasedOnChainId(1);
+        ChainAddresses.ChainAddressesStruct memory chainAddresses = ChainAddresses.getChainAddresses(chain);
+
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             vm,
             salt,
-            MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
-            MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
-            MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
-            MarketUpdateAddresses.GOVERNOR_BRAVO_TIMELOCK_ADDRESS
+            ChainAddresses.marketAdmin,
+            ChainAddresses.marketUpdatePauseGuardian,
+            ChainAddresses.marketUpdateProposalGuardian,
+            ChainAddresses.governorTimelockAddress
         );
 
 
@@ -60,16 +62,18 @@ abstract contract MarketUpdateDeploymentBaseTest {
     }
 
     function createMarketUpdateDeploymentForL2(Vm vm, ChainAddresses.Chain chain) public returns (MarketUpdateContractsDeployer.DeployedContracts memory) {
-        bytes32 salt = keccak256(abi.encodePacked("Salt-31"));
+        bytes32 salt = keccak256(abi.encodePacked(vm.envString("SALT")));
 
         address localTimelock = ChainAddresses.getLocalTimelockAddress(chain);
+        ChainAddresses.ChainAddressesStruct memory chainAddresses = ChainAddresses.getChainAddresses(chain);
+
 
         MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.deployContracts(
             vm,
             salt,
-            MarketUpdateAddresses.MARKET_UPDATE_MULTISIG_ADDRESS,
-            MarketUpdateAddresses.MARKET_ADMIN_PAUSE_GUARDIAN_ADDRESS,
-            MarketUpdateAddresses.MARKET_UPDATE_PROPOSAL_GUARDIAN_ADDRESS,
+            chainAddresses.marketAdmin,
+            chainAddresses.marketUpdatePauseGuardian,
+            chainAddresses.marketUpdateProposalGuardian,
             localTimelock
         );
 

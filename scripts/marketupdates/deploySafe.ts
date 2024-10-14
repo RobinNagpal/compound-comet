@@ -12,6 +12,7 @@ async function deploySafe(owners:string[], threshold:number, salt:string, chainI
     10: process.env.OP_MAINNET_RPC, // Optimism Mainnet
     42161: process.env.ARB_MAINNET_RPC, // Arbitrum Mainnet
     534352: process.env.SCROLL_MAINNET_RPC, // Scroll Mainnet
+    5000: process.env.MANTLE_RPC_URL, // Mantle Mainnet
   };
   
   const rpcUrl = rpcUrls[chainId];
@@ -33,6 +34,8 @@ async function deploySafe(owners:string[], threshold:number, salt:string, chainI
     owners:[...owners],
     threshold: threshold
   };
+
+  console.log('Deploying safe with config:', safeAccountConfig);
 
   console.log('Predicting safe address..');
   const predictedDeployAddress = await safeFactory.predictSafeAddress(safeAccountConfig,salt);

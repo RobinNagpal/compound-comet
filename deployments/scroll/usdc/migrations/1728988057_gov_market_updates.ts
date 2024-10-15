@@ -7,11 +7,11 @@ import { exp, proposal } from '../../../../src/deploy';
 interface Vars {}
 
 const localTimelockAddress = '0xF6013e80E9e6AC211Cc031ad1CE98B3Aa20b73E4';
-const marketUpdateTimelockAddress = '0xcEBA8eb2D2Abd786d4e8f7c029ebbfCeD365af6e';
-const marketUpdateProposerAddress = '0x7a1DB8214AA9247e9Ea2f372415E5b6FdD28B8eC';
-const newConfiguratorImplementationAddress = '0x33d3dFAAc03696AD800E3232944bf4b7f3b58aAf';
-const newCometProxyAdminAddress = '0x02c136cb84e58616b4f75b5Ee24e8A129e21D5f8';
-const marketAdminPermissionCheckerAddress = '0x6eA1d5D46565b273A1815Da4EcC9275101B3405e';
+const marketUpdateTimelockAddress = '0xEF68eF5a7AE8d6ED49151024282414325C9907CB';
+const marketUpdateProposerAddress = '0xCf69AD817b24BE69060966b430169a8785f14B84';
+const newConfiguratorImplementationAddress = '0xcD4969Ea1709172dE872CE0dDF84cAD7FD03D6ab';
+const newCometProxyAdminAddress = '0xdD731c8823D7b10B6583ff7De217741135568Cf2';
+const marketAdminPermissionCheckerAddress = '0x07B99b9F9e18aB8455961e487D2fd503a3C0d4c3';
 
 export default migration('1728988057_gov_market_updates', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -76,11 +76,6 @@ export default migration('1728988057_gov_market_updates', {
       [marketUpdateProposerAddress]
     );
 
-    const setMarketUpdateTimelockDelayCalldata = utils.defaultAbiCoder.encode(
-      ['uint'],
-      [172800]  // 2 days
-    );
-
     const l2ProposalData = utils.defaultAbiCoder.encode(
       ['address[]', 'uint256[]', 'string[]', 'bytes[]'],
       [
@@ -94,7 +89,7 @@ export default migration('1728988057_gov_market_updates', {
           marketUpdateTimelockAddress,
           marketUpdateTimelockAddress,
         ],
-        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
         [
           'changeProxyAdmin(address,address)',
           'changeProxyAdmin(address,address)',
@@ -103,7 +98,6 @@ export default migration('1728988057_gov_market_updates', {
           'setMarketAdminPermissionChecker(address)',
           'setMarketAdminPermissionChecker(address)',
           'setMarketUpdateProposer(address)',
-          'setDelay(uint)',
         ],
         [
           changeProxyAdminForCometProxyCalldata,
@@ -113,7 +107,6 @@ export default migration('1728988057_gov_market_updates', {
           setMarketAdminPermissionCheckerForConfiguratorProxyCalldata,
           setMarketAdminPermissionCheckerForCometProxyCalldata,
           setMarketUpdateProposerCalldata,
-          setMarketUpdateTimelockDelayCalldata,
         ],
       ]
     );
@@ -193,9 +186,6 @@ export default migration('1728988057_gov_market_updates', {
 
     // 5. Check that the owner of the new comet proxy admin is the local timelock
     expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
-
-    // 6. Check that the delay of the market update timelock is 2 days
-    expect(await marketUpdateTimelock.delay()).to.be.equal(60 * 60 * 24 * 2);
 
     tracer('All checks passed.');
   },

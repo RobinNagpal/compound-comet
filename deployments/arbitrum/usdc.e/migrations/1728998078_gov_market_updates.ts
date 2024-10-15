@@ -14,7 +14,7 @@ const newConfiguratorImplementationAddress = '0x33d3dFAAc03696AD800E3232944bf4b7
 const newCometProxyAdminAddress = '0x02c136cb84e58616b4f75b5Ee24e8A129e21D5f8';
 const marketAdminPermissionCheckerAddress = '0x6eA1d5D46565b273A1815Da4EcC9275101B3405e';
 
-export default migration('1728993566_gov_market_updates', {
+export default migration('1728998078_gov_market_updates', {
   prepare: async (deploymentManager: DeploymentManager) => {
     return {};
   },
@@ -37,7 +37,7 @@ export default migration('1728993566_gov_market_updates', {
       '0xD10b40fF1D92e2267D099Da3509253D9Da4D715e';
     const configuratorProxyAddress =
       '0xb21b06D71c75973babdE35b49fFDAc3F82Ad3775';
-    const cometProxyAddress = '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf';
+    const cometProxyAddress = '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA';
 
     const changeProxyAdminForCometProxyCalldata = utils.defaultAbiCoder.encode(
       ['address', 'address'],

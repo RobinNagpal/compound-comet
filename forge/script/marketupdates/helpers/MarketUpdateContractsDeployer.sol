@@ -120,7 +120,7 @@ library MarketUpdateContractsDeployer {
         });
 
         address computedMarketAdminPermissionCheckerAddress = deployContractWithCreate2(create2Deployer, salt, marketAdminPermissionCheckerParams);
-        MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).setMarketAdmin(marketUpdateMultiSig);
+        MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).setMarketAdmin(computedMarketUpdateTimelockAddress);
         MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).setMarketAdminPauseGuardian(marketAdminPauseGuardianAddress);
 
         MarketAdminPermissionChecker(computedMarketAdminPermissionCheckerAddress).transferOwnership(localTimelockAddress);

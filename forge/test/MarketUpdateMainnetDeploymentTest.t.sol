@@ -12,7 +12,7 @@ import "../script/marketupdates/helpers/MarketAddresses.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "./MarketUpdateDeploymentBaseTest.sol";
 
-contract MarketUpdateMainnetDeploymentTest is Test, MarketUpdateDeploymentBaseTest {
+contract MarketUpdateMainnetDeploymentTest is MarketUpdateDeploymentBaseTest {
 
     MarketUpdateContractsDeployer.DeployedContracts internal deployedContracts;
     ChainAddresses.ChainAddressesStruct internal chainAddresses;

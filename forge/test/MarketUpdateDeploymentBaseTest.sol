@@ -3,14 +3,16 @@ pragma solidity ^0.8.15;
 
 import "@forge-std/src/Vm.sol";
 import "@comet-contracts/bridges/arbitrum/ArbitrumBridgeReceiver.sol";
+import "@comet-contracts/marketupdates/MarketAdminPermissionChecker.sol";
 import "../script/marketupdates/helpers/GovernanceHelper.sol";
 import "../script/marketupdates/helpers/MarketUpdateAddresses.sol";
 import "../script/marketupdates/helpers/ChainAddresses.sol";
 import "../script/marketupdates/helpers/MarketUpdateContractsDeployer.sol";
 import "../script/marketupdates/helpers/BridgeHelper.sol";
 import "@forge-std/src/console.sol";
+import "forge-std/Test.sol";
 
-abstract contract MarketUpdateDeploymentBaseTest {
+abstract contract MarketUpdateDeploymentBaseTest is Test {
 
     IGovernorBravo public governorBravo = IGovernorBravo(MarketUpdateAddresses.GOVERNOR_BRAVO_PROXY_ADDRESS);
 
@@ -111,7 +113,7 @@ abstract contract MarketUpdateDeploymentBaseTest {
         uint256 oldSupplyKinkBeforeGovernorUpdate = Comet(payable(cometProxy)).supplyKink();
         uint256 newSupplyKinkByGovernorTimelock = 300000000000000000;
 
-        assert(oldSupplyKinkBeforeGovernorUpdate != newSupplyKinkByGovernorTimelock);
+        assertEq(MarketAdminPermissionChecker(deployedContracts.marketAdminPermissionChecker).marketAdmin(), deployedContracts.marketUpdateTimelock);
 
         address[] memory targets = new address[](2);
         uint256[] memory values = new uint256[](2);

@@ -6,12 +6,13 @@ import {
   MarketUpdateTimelock,
   CometProxyAdmin,
   Configurator,
-  TransparentUpgradeableProxy
 } from './../../../../build/types';
 import { expect } from 'chai';
 import { exp, proposal } from '../../../../src/deploy';
 
 interface Vars {}
+
+const marketAdminAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
 
 const localTimelockAddress = '0xF6013e80E9e6AC211Cc031ad1CE98B3Aa20b73E4';
 const marketUpdateTimelockAddress = '0xEF68eF5a7AE8d6ED49151024282414325C9907CB';
@@ -19,7 +20,7 @@ const marketUpdateProposerAddress = '0xCf69AD817b24BE69060966b430169a8785f14B84'
 const newConfiguratorImplementationAddress = '0xcD4969Ea1709172dE872CE0dDF84cAD7FD03D6ab';
 const newCometProxyAdminAddress = '0xdD731c8823D7b10B6583ff7De217741135568Cf2';
 const marketAdminPermissionCheckerAddress = '0x07B99b9F9e18aB8455961e487D2fd503a3C0d4c3';
-const safeWalletAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
+
 const communityMultiSigAddress = '0x0747a435b8a60070A7a111D015046d765098e4cc';
 
 const cometProxyAdminOldAddress = '0x87A27b91f4130a25E9634d23A5B8E05e342bac50';
@@ -145,59 +146,26 @@ export default migration('1728988057_gov_market_updates', {
       newCometProxyAdminAddress
     )) as CometProxyAdmin;
 
-    // 1. Check that the market admin permission checker for configurator is set correctly
-    expect(await configurator.marketAdminPermissionChecker()).to.be.equal(
-      marketAdminPermissionChecker.address
-    );
-
-    // 2. Check that the market admin permission checker for comet proxy is set correctly
-    expect(await cometProxyAdminNew.marketAdminPermissionChecker()).to.be.equal(
-      marketAdminPermissionChecker.address
-    );
-
-    // 3. Check that the market admin of permission checket is market update timelock
-    expect(await marketAdminPermissionChecker.marketAdmin()).to.be.equal(
-      marketUpdateTimelock.address
-    );
-
-    // 4. Check that market update proposer of marketUpdateTimelock is market update proposer
-    expect(await marketUpdateTimelock.marketUpdateProposer()).to.be.equal(
-      marketUpdateProposer.address
-    );
-
-    // 5. Check that the owner of the new comet proxy admin is the local timelock
-    expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
-
-    // 6. Check that the Governor of market update timelock is the local timelock
-    expect(await marketUpdateTimelock.governor()).to.be.equal(localTimelockAddress);
-
-    // 7. Check that the delay of market update timelock is 2 days
-    expect(await marketUpdateTimelock.delay()).to.be.equal(2 * 24 * 60 * 60);
-
-    // 8. Check that the Governor of market update proposer is the local timelock
-    expect(await marketUpdateProposer.governor()).to.be.equal(localTimelockAddress);
-
-    // 9. Check that the market admin of market update proposer is Safe Wallet
-    expect(await marketUpdateProposer.marketAdmin()).to.be.equal(safeWalletAddress);
-
-    // 10. Check that the Timelock of market update propose is the MarketUpdateTimelock
-    expect(await marketUpdateProposer.timelock()).to.be.equal(marketUpdateTimelock.address);
-
-    // 11. Check that the proposalGuardian of market update proposer is communityMultiSigAddress (market pause guardian)
-    expect(await marketUpdateProposer.proposalGuardian()).to.be.equal(communityMultiSigAddress);
-
-    // 12. Check that the Governor for the new configurator implementation is zero address
     expect(configurator.address).to.be.equal(configuratorProxyAddress);
     expect(await (configurator as Configurator).governor()).to.be.equal(localTimelockAddress);
-
-    // 13. Check that the market admin permission checker of the new configurator implementation is zero address
     expect(await (configurator as Configurator).marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionCheckerAddress);
 
-    // 14. Check that the owner of market admin permission checker is local timelock
-    expect(await marketAdminPermissionChecker.owner()).to.be.equal(localTimelockAddress);
+    expect(await cometProxyAdminNew.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionChecker.address);
+    expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
 
-    // 15. Check that the market admin pause guardian of market admin permission checker is communityMultiSigAddress(market pause guardian)
+    expect(await marketAdminPermissionChecker.marketAdmin()).to.be.equal(marketAdminAddress);
+    expect(await marketAdminPermissionChecker.owner()).to.be.equal(localTimelockAddress);
     expect(await marketAdminPermissionChecker.marketAdminPauseGuardian()).to.be.equal(communityMultiSigAddress);
+
+    expect(await marketUpdateTimelock.marketUpdateProposer()).to.be.equal(marketUpdateProposer.address);
+    expect(await marketUpdateTimelock.governor()).to.be.equal(localTimelockAddress);
+    expect(await marketUpdateTimelock.delay()).to.be.equal(2 * 24 * 60 * 60);
+
+    expect(await marketUpdateProposer.governor()).to.be.equal(localTimelockAddress);
+    expect(await marketUpdateProposer.marketAdmin()).to.be.equal(marketAdminAddress);
+
+    expect(await marketUpdateProposer.timelock()).to.be.equal(marketUpdateTimelock.address);
+    expect(await marketUpdateProposer.proposalGuardian()).to.be.equal(communityMultiSigAddress);
 
     tracer('All checks passed.');
   },

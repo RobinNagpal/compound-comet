@@ -2,9 +2,7 @@
 
 
 # Declare constants at the top
-GOVERNOR_TIMELOCK_ADDRESS = 0xDeployedGovernorTimelock
-MARKET_UPDATE_MULTISIG = 0
-PROPOSAL_GUARDIAN_ADDRESS = 0
+MARKET_UPDATE_MULTISIG = 0x7e14050080306cd36b47DE61ce604b3a1EC70c4e
 MARKET_ADMIN_TIMELOCK_ADDRESS = 0xcEBA8eb2D2Abd786d4e8f7c029ebbfCeD365af6e
 MARKET_UPDATE_PROPOSER = 0x7a1DB8214AA9247e9Ea2f372415E5b6FdD28B8eC
 CONFIGURATOR_IMPL = 0x33d3dFAAc03696AD800E3232944bf4b7f3b58aAf
@@ -68,7 +66,7 @@ verify-MarketUpdateProposer:
 		--chain-id $(CHAIN_ID) \
 		--compiler-version $(SOLIDITY_COMPILER_VERSION) \
 		--optimizer-runs 200 \
-		--constructor-args $(shell cast abi-encode "constructor(address,address,address,address)" $(SENDER) $(MARKET_UPDATE_MULTISIG) $(PROPOSAL_GUARDIAN_ADDRESS) $(MARKET_ADMIN_TIMELOCK_ADDRESS)) \
+		--constructor-args $(shell cast abi-encode "constructor(address,address,address,address)" $(SENDER) $(MARKET_UPDATE_MULTISIG) 0x0000000000000000000000000000000000000000 $(MARKET_ADMIN_TIMELOCK_ADDRESS)) \
 		--etherscan-api-key $(ETHERSCAN_API_KEY) \
 		--watch \
 		--via-ir \

@@ -195,7 +195,7 @@ export default migration('1728993566_gov_market_updates', {
     expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
 
     // 6. Check that the delay of the market update timelock is 2 days
-    expect(await marketUpdateTimelock.delay().to.be.equal(60 * 60 * 24 * 2);
+    expect(await marketUpdateTimelock.delay()).to.be.equal(60 * 60 * 24 * 2);
 
     tracer('All checks passed.');
   },

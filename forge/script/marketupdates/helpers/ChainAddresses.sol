@@ -144,9 +144,9 @@ library ChainAddresses {
                 governorTimelockAddress: OPTIMISM_LOCAL_TIMELOCK,
                 configuratorProxyAddress: OPTIMISM_CONFIGURATOR_PROXY,
                 cometProxyAdminAddress: OPTIMISM_COMET_PROXY_ADMIN,
-                marketUpdatePauseGuardian: address(0),
-                marketUpdateProposalGuardian: address(0),
-                marketAdmin: address(0)
+                marketUpdatePauseGuardian: OPTIMISM_MARKET_UPDATE_PAUSE_GUARDIAN,
+                marketUpdateProposalGuardian: OPTIMISM_MARKET_UPDATE_PROPOSAL_GUARDIAN,
+                marketAdmin: OPTIMISM_MARKET_ADMIN
             });
         }  else if (chain == Chain.MAINNET_SEPOLIA) {
             return ChainAddressesStruct({

@@ -1,6 +1,6 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
-import { MarketAdminPermissionChecker, MarketUpdateProposer, MarketUpdateTimelock, CometProxyAdmin } from './,,/../../../../../build/types';
+import { MarketAdminPermissionChecker, MarketUpdateProposer, MarketUpdateTimelock, CometProxyAdmin, Configurator } from './../../../../build/types';
 import { expect } from 'chai';
 import { exp, proposal } from '../../../../src/deploy';
 
@@ -12,6 +12,8 @@ const marketUpdateProposerAddress = '0xCf69AD817b24BE69060966b430169a8785f14B84'
 const newConfiguratorImplementationAddress = '0xcD4969Ea1709172dE872CE0dDF84cAD7FD03D6ab';
 const newCometProxyAdminAddress = '0xdD731c8823D7b10B6583ff7De217741135568Cf2';
 const marketAdminPermissionCheckerAddress = '0x07B99b9F9e18aB8455961e487D2fd503a3C0d4c3';
+const safeWalletAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
+const GnosisSafeProxy = '0x0747a435b8a60070A7a111D015046d765098e4cc';
 
 export default migration('1728988057_gov_market_updates', {
   prepare: async (deploymentManager: DeploymentManager) => {
@@ -163,6 +165,11 @@ export default migration('1728988057_gov_market_updates', {
       newCometProxyAdminAddress
     )) as CometProxyAdmin;
 
+    const newConfiguratorImplementation = await ethers.getContractAt(
+      'Configurator',
+      newConfiguratorImplementationAddress,
+    ) as Configurator;
+
     // 1. Check that the market admin permission checker for configurator is set correctly
     expect(await configurator.marketAdminPermissionChecker()).to.be.equal(
       marketAdminPermissionChecker.address
@@ -185,6 +192,40 @@ export default migration('1728988057_gov_market_updates', {
 
     // 5. Check that the owner of the new comet proxy admin is the local timelock
     expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
+
+    // 6. Check that the Governor of market update timelock is the local timelock
+    expect(await marketUpdateTimelock.governor()).to.be.equal(localTimelockAddress);
+
+    // 7. Check that the delay of market update timelock is 2 days
+    expect(await marketUpdateTimelock.delay()).to.be.equal(2 * 24 * 60 * 60);
+
+    // 8. Check that the Governor of market update proposer is the local timelock
+    expect(await marketUpdateProposer.governor()).to.be.equal(localTimelockAddress);
+
+    // 9. Check that the market admin of market update proposer is Safe Wallet
+    expect(await marketUpdateProposer.marketAdmin()).to.be.equal(safeWalletAddress);
+
+    // 10. Check that the Timelock of market update propose is the MarketUpdateTimelock
+    expect(await marketUpdateProposer.timelock()).to.be.equal(marketUpdateTimelock.address);
+
+    // 11. Check that the proposalGuardian of market update proposer is GnosisSafeProxy (market pause guardian)
+    expect(await marketUpdateProposer.proposalGuardian()).to.be.equal(GnosisSafeProxy);
+
+    // 12. Check that the Governor for the new configurator implementation is zero address
+    expect(await newConfiguratorImplementation.governor()).to.be.equal(
+      ethers.constants.AddressZero
+    );
+
+    // 13. Check that the market admin permission checker of the new configurator implementation is zero address
+    expect(await newConfiguratorImplementation.marketAdminPermissionChecker()).to.be.equal(
+      ethers.constants.AddressZero
+    );
+
+    // 14. Check that the owner of market admin permission checker is local timelock
+    expect(await marketAdminPermissionChecker.owner()).to.be.equal(localTimelockAddress);
+
+    // 15. Check that the market admin pause guardian of market admin permission checker is GnosisSafeProxy(market pause guardian)
+    expect(await marketAdminPermissionChecker.marketAdminPauseGuardian()).to.be.equal(GnosisSafeProxy);
 
     tracer('All checks passed.');
   },

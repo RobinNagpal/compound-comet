@@ -87,7 +87,6 @@ export default migration('1728988057_gov_market_updates', {
           configuratorProxyAddress,
           newCometProxyAdminAddress,
           marketUpdateTimelockAddress,
-          marketUpdateTimelockAddress,
         ],
         [0, 0, 0, 0, 0, 0, 0],
         [

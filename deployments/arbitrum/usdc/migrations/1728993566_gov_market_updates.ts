@@ -1,8 +1,9 @@
 import { DeploymentManager } from '../../../../plugins/deployment_manager/DeploymentManager';
 import { migration } from '../../../../plugins/deployment_manager/Migration';
+import { applyL1ToL2Alias, estimateL2Transaction } from '../../../../scenario/utils/arbitrumUtils';
 import { MarketAdminPermissionChecker, MarketUpdateProposer, MarketUpdateTimelock, CometProxyAdmin } from './,,/../../../../../build/types';
 import { expect } from 'chai';
-import { exp, proposal } from '../../../../src/deploy';
+import { proposal } from '../../../../src/deploy';
 
 interface Vars {}
 
@@ -27,9 +28,9 @@ export default migration('1728993566_gov_market_updates', {
     const ethers = deploymentManager.hre.ethers;
     const { utils } = ethers;
 
-    const { bridgeReceiver } = await deploymentManager.getContracts();
+    const { bridgeReceiver, timelock: l2Timelock } = await deploymentManager.getContracts();
 
-    const { scrollMessenger, governor } =
+    const { timelock, governor, arbitrumInbox } =
       await govDeploymentManager.getContracts();
 
     const cometProxyAdminOldAddress =
@@ -78,7 +79,7 @@ export default migration('1728993566_gov_market_updates', {
 
     const setMarketUpdateTimelockDelayCalldata = utils.defaultAbiCoder.encode(
       ['uint'],
-      [172820]  // 2 days
+      [172800]  // 2 days
     );
 
     const l2ProposalData = utils.defaultAbiCoder.encode(
@@ -118,19 +119,39 @@ export default migration('1728993566_gov_market_updates', {
       ]
     );
 
-    const actions = [
+    const createRetryableTicketGasParams = await estimateL2Transaction(
       {
-        contract: scrollMessenger,
-        signature: 'sendMessage(address,uint256,bytes,uint256)',
-        args: [bridgeReceiver.address, 0, l2ProposalData, 6_000_000],
-        value: exp(0.1, 18),
+        from: applyL1ToL2Alias(timelock.address),
+        to: bridgeReceiver.address,
+        data: l2ProposalData
+      },
+      deploymentManager
+    );
+    const refundAddress = l2Timelock.address;
+
+    const mainnetActions = [
+      // 1. Set Comet configuration and deployAndUpgradeTo USDC Comet on Arbitrum.
+      {
+        contract: arbitrumInbox,
+        signature: 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)',
+        args: [
+          bridgeReceiver.address,                           // address to,
+          0,                                                // uint256 l2CallValue,
+          createRetryableTicketGasParams.maxSubmissionCost, // uint256 maxSubmissionCost,
+          refundAddress,                                    // address excessFeeRefundAddress,
+          refundAddress,                                    // address callValueRefundAddress,
+          createRetryableTicketGasParams.gasLimit,          // uint256 gasLimit,
+          createRetryableTicketGasParams.maxFeePerGas,      // uint256 maxFeePerGas,
+          l2ProposalData,                                   // bytes calldata data
+        ],
+        value: createRetryableTicketGasParams.deposit
       },
     ];
 
     const description =
       'Governance proposal with actions to change proxy admins, upgrade the configurator, and set the market admin and related roles.';
     const txn = await govDeploymentManager.retry(async () =>
-      trace(await governor.propose(...(await proposal(actions, description))))
+      trace(await governor.propose(...(await proposal(mainnetActions, description))))
     );
 
     const event = txn.events.find((event) => event.event === 'ProposalCreated');

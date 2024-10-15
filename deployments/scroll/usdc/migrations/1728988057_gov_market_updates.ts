@@ -15,11 +15,12 @@ interface Vars {}
 const marketAdminAddress = '0x7e14050080306cd36b47DE61ce604b3a1EC70c4e';
 
 const localTimelockAddress = '0xF6013e80E9e6AC211Cc031ad1CE98B3Aa20b73E4';
-const marketUpdateTimelockAddress = '0xEF68eF5a7AE8d6ED49151024282414325C9907CB';
-const marketUpdateProposerAddress = '0xCf69AD817b24BE69060966b430169a8785f14B84';
-const newConfiguratorImplementationAddress = '0xcD4969Ea1709172dE872CE0dDF84cAD7FD03D6ab';
-const newCometProxyAdminAddress = '0xdD731c8823D7b10B6583ff7De217741135568Cf2';
-const marketAdminPermissionCheckerAddress = '0x07B99b9F9e18aB8455961e487D2fd503a3C0d4c3';
+
+const marketUpdateTimelockAddress = '0x81Bc6016Fa365bfE929a51Eec9217B441B598eC6';
+const marketUpdateProposerAddress = '0xB6Ef3AC71E9baCF1F4b9426C149d855Bfc4415F9';
+const newConfiguratorImplementationAddress = '0x371DB45c7ee248dAFf4Dc1FFB67A20faa0ecFE02';
+const newCometProxyAdminAddress = '0x24D86Da09C4Dd64e50dB7501b0f695d030f397aF';
+const marketAdminPermissionCheckerAddress = '0x62DD0452411113404cf9a7fE88A5E6E86f9B71a6';
 
 const communityMultiSigAddress = '0x0747a435b8a60070A7a111D015046d765098e4cc';
 
@@ -153,7 +154,7 @@ export default migration('1728988057_gov_market_updates', {
     expect(await cometProxyAdminNew.marketAdminPermissionChecker()).to.be.equal(marketAdminPermissionChecker.address);
     expect(await cometProxyAdminNew.owner()).to.be.equal(localTimelockAddress);
 
-    expect(await marketAdminPermissionChecker.marketAdmin()).to.be.equal(marketAdminAddress);
+    expect(await marketAdminPermissionChecker.marketAdmin()).to.be.equal(marketUpdateTimelockAddress);
     expect(await marketAdminPermissionChecker.owner()).to.be.equal(localTimelockAddress);
     expect(await marketAdminPermissionChecker.marketAdminPauseGuardian()).to.be.equal(communityMultiSigAddress);
 

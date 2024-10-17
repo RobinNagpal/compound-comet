@@ -13,7 +13,7 @@ import "./helpers/MarketUpdateAddresses.sol";
 import "./helpers/MarketUpdateContractsDeployer.sol";
 import "./helpers/ChainAddresses.sol";
 
-contract DeployContracts is Script {
+contract ComputeContractAddresses is Script {
     address public deployedWalletAddress;
 
     address constant public create2DeployerAddress = 0x13b0D85CcB8bf860b6b79AF3029fCA081AE9beF2;
@@ -49,7 +49,7 @@ contract DeployContracts is Script {
             chainAddresses.marketUpdatePauseGuardian,
             chainAddresses.marketUpdateProposalGuardian,
             chainAddresses.governorTimelockAddress,
-            true    // deploy flag set to true
+            false    // deploy flag set to false
         );
 
         /// Console log deployed contracts

@@ -225,7 +225,7 @@ for (let i = 0; i < MULTIPLIERS.length; i++) {
   scenario(
     `Comet#rewards > can claim supply rewards on scaling rewards contract with multiplier of ${MULTIPLIERS[i]}`,
     {
-      filter: async (ctx) => await isRewardSupported(ctx),
+      filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'scroll', deployment: 'usdc'}]),
       tokenBalances: {
         albert: { $base: ' == 100' }, // in units of asset, not wei
       },

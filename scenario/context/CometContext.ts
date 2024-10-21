@@ -254,7 +254,7 @@ export class CometContext {
     throw new Error(`Unable to find asset by address ${address}`);
   }
 
-  async sourceTokens(amount: number | bigint, asset: CometAsset | string, recipient: AddressLike) {
+  async sourceTokens(amount: number | bigint, asset: CometAsset | string, recipient: AddressLike, blockNumber?: number) {
     const { world } = this;
     const recipientAddress = resolveAddress(recipient);
     const cometAsset = typeof asset === 'string' ? this.getAssetByAddress(asset) : asset;
@@ -281,13 +281,24 @@ export class CometContext {
     if (amountRemaining != 0n) {
       // Source from logs (expensive, in terms of node API limits)
       debug('Source Tokens: sourcing from logs...', amountRemaining, cometAsset.address);
-      await sourceTokens({
-        dm: this.world.deploymentManager,
-        amount: amountRemaining,
-        asset: cometAsset.address,
-        address: recipientAddress,
-        blacklist: [comet.address],
-      });
+      if (blockNumber) {
+        await sourceTokens({
+          dm: this.world.deploymentManager,
+          amount: amountRemaining,
+          asset: cometAsset.address,
+          address: recipientAddress,
+          blacklist: [comet.address],
+          blockNumber,
+        });
+      } else {
+        await sourceTokens({
+          dm: this.world.deploymentManager,
+          amount: amountRemaining,
+          asset: cometAsset.address,
+          address: recipientAddress,
+          blacklist: [comet.address],
+        });
+      }
     }
   }
 

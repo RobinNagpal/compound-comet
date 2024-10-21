@@ -260,7 +260,12 @@ async function testScalingReward(properties: CometProperties, context: CometCont
     [albert.address]
   );
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
-  await context.sourceTokens(100000, rewardTokenAddress, newRewards.address);
+  await context.sourceTokens(
+    100000,
+    rewardTokenAddress,
+    newRewards.address,
+    2751700
+  );
 
   await baseAsset.approve(albert, comet.address);
   await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 100n * baseScale });

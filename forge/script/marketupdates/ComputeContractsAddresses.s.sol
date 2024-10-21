@@ -42,14 +42,13 @@ contract ComputeContractAddresses is Script {
         bytes32 salt = keccak256(abi.encodePacked(vm.envString("SALT")));
 
         /// Call library function
-        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer._prepareAndDeployContracts(
+        MarketUpdateContractsDeployer.DeployedContracts memory deployedContracts = MarketUpdateContractsDeployer.calculateContractAddresses(
             salt,
             msg.sender,
             chainAddresses.marketAdmin,
             chainAddresses.marketUpdatePauseGuardian,
             chainAddresses.marketUpdateProposalGuardian,
-            chainAddresses.governorTimelockAddress,
-            false    // deploy flag set to false
+            chainAddresses.governorTimelockAddress
         );
 
         /// Console log deployed contracts

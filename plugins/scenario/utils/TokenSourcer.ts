@@ -64,12 +64,7 @@ export async function sourceTokens({
   } else if (amount.isNegative()) {
     await removeTokens(dm, amount.abs(), asset, address);
   } else {
-    if(blockNumber) {
-      await addTokens(dm, amount, asset, address, [address].concat(blacklist), blockNumber);
-    } else {
-      await addTokens(dm, amount, asset, address, [address].concat(blacklist));
-    }
-    
+    await addTokens(dm, amount, asset, address, [address].concat(blacklist), blockNumber);
   }
 }
 

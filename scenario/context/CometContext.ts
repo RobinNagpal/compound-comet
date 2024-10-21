@@ -281,24 +281,14 @@ export class CometContext {
     if (amountRemaining != 0n) {
       // Source from logs (expensive, in terms of node API limits)
       debug('Source Tokens: sourcing from logs...', amountRemaining, cometAsset.address);
-      if (blockNumber) {
-        await sourceTokens({
-          dm: this.world.deploymentManager,
-          amount: amountRemaining,
-          asset: cometAsset.address,
-          address: recipientAddress,
-          blacklist: [comet.address],
-          blockNumber,
-        });
-      } else {
-        await sourceTokens({
-          dm: this.world.deploymentManager,
-          amount: amountRemaining,
-          asset: cometAsset.address,
-          address: recipientAddress,
-          blacklist: [comet.address],
-        });
-      }
+      await sourceTokens({
+        dm: this.world.deploymentManager,
+        amount: amountRemaining,
+        asset: cometAsset.address,
+        address: recipientAddress,
+        blacklist: [comet.address],
+        blockNumber,
+      });
     }
   }
 

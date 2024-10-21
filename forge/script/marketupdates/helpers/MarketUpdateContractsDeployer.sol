@@ -50,8 +50,7 @@ library MarketUpdateContractsDeployer {
             marketUpdateMultiSig,
             marketAdminPauseGuardianAddress,
             marketUpdateProposalGuardianAddress,
-            localTimelockAddress,
-            true  // deploy flag set to true
+            localTimelockAddress
         );
 
         vm.stopBroadcast();
@@ -151,8 +150,7 @@ library MarketUpdateContractsDeployer {
         address marketUpdateMultiSig,
         address marketAdminPauseGuardianAddress,
         address marketUpdateProposalGuardianAddress,
-        address localTimelockAddress,
-        bool deploy
+        address localTimelockAddress
     ) internal returns (DeployedContracts memory) {
 
         ICreate2Deployer create2Deployer = ICreate2Deployer(create2DeployerAddress);
@@ -182,7 +180,7 @@ library MarketUpdateContractsDeployer {
     }
 
 
-    function getMarketUpdateTimelockParams(address msgSender) internal view returns (ContractDeploymentParams) {
+    function getMarketUpdateTimelockParams(address msgSender) internal pure returns (ContractDeploymentParams memory) {
         return ContractDeploymentParams({
             creationCode: type(MarketUpdateTimelock).creationCode,
             constructorArgs: abi.encode(msgSender, 2 days),
@@ -192,7 +190,7 @@ library MarketUpdateContractsDeployer {
     }
 
 
-    function getMarketUpdateProposerParams(address msgSender, address marketUpdateMultiSig, address marketUpdateProposalGuardianAddress, address computedMarketUpdateTimelockAddress) internal view returns (ContractDeploymentParams) {
+    function getMarketUpdateProposerParams(address msgSender, address marketUpdateMultiSig, address marketUpdateProposalGuardianAddress, address computedMarketUpdateTimelockAddress) internal pure returns (ContractDeploymentParams memory) {
         return ContractDeploymentParams({
             creationCode: type(MarketUpdateProposer).creationCode,
             constructorArgs: abi.encode(
@@ -206,7 +204,7 @@ library MarketUpdateContractsDeployer {
         });
     }
 
-    function getConfiguratorParams() internal view returns (ContractDeploymentParams) {
+    function getConfiguratorParams() internal pure returns (ContractDeploymentParams memory) {
         return ContractDeploymentParams({
             creationCode: type(Configurator).creationCode,
             constructorArgs: "",
@@ -215,7 +213,7 @@ library MarketUpdateContractsDeployer {
         });
     }
 
-    function getMarketAdminPermissionCheckerParams(address msgSender) internal view returns (ContractDeploymentParams) {
+    function getMarketAdminPermissionCheckerParams(address msgSender) internal pure returns (ContractDeploymentParams memory) {
         return ContractDeploymentParams({
             creationCode: type(MarketAdminPermissionChecker).creationCode,
             constructorArgs: abi.encode(msgSender, INITIAL_ADDRESS_MARKET_UPDATE_MULTI_SIG, address(0)),
@@ -225,7 +223,7 @@ library MarketUpdateContractsDeployer {
     }
 
 
-    function getCometProxyAdminParams(address msgSender) internal view returns (ContractDeploymentParams) {
+    function getCometProxyAdminParams(address msgSender) internal pure returns (ContractDeploymentParams memory) {
         return ContractDeploymentParams({
             creationCode: type(CometProxyAdmin).creationCode,
             constructorArgs: abi.encode(msgSender),

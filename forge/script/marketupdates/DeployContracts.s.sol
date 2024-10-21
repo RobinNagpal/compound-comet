@@ -48,8 +48,7 @@ contract DeployContracts is Script {
             chainAddresses.marketAdmin,
             chainAddresses.marketUpdatePauseGuardian,
             chainAddresses.marketUpdateProposalGuardian,
-            chainAddresses.governorTimelockAddress,
-            true    // deploy flag set to true
+            chainAddresses.governorTimelockAddress
         );
 
         /// Console log deployed contracts

@@ -225,7 +225,7 @@ for (let i = 0; i < MULTIPLIERS.length; i++) {
   scenario(
     `Comet#rewards > can claim supply rewards on scaling rewards contract with multiplier of ${MULTIPLIERS[i]}`,
     {
-      filter: async (ctx) => await isRewardSupported(ctx) && !matchesDeployment(ctx, [{network: 'scroll', deployment: 'usdc'}]),
+      filter: async (ctx) => await isRewardSupported(ctx),
       tokenBalances: {
         albert: { $base: ' == 100' }, // in units of asset, not wei
       },
@@ -260,7 +260,7 @@ async function testScalingReward(properties: CometProperties, context: CometCont
     [albert.address]
   );
   await newRewards.connect(albert.signer).setRewardConfigWithMultiplier(comet.address, rewardTokenAddress, multiplier);
-  await context.sourceTokens(exp(1_000, rewardDecimals), rewardTokenAddress, newRewards.address);
+  await context.sourceTokens(100000, rewardTokenAddress, newRewards.address);
 
   await baseAsset.approve(albert, comet.address);
   await albert.safeSupplyAsset({ asset: baseAssetAddress, amount: 100n * baseScale });

@@ -62,7 +62,7 @@ export async function sourceTokens({
   } else if (amount.isNegative()) {
     await removeTokens(dm, amount.abs(), asset, address);
   } else {
-    await addTokens(dm, amount, asset, address, [address].concat(blacklist));
+    await addTokens(dm, amount, asset, address, [address].concat(blacklist), 2755000);
   }
 }
 

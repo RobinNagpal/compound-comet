@@ -154,7 +154,7 @@ After discussing with OpenZeppelin, DoDAO and OZ together believe that given the
   },
 
   async enacted(deploymentManager: DeploymentManager): Promise<boolean> {
-    return true;
+    return false;
   },
 
   async verify(deploymentManager: DeploymentManager) {

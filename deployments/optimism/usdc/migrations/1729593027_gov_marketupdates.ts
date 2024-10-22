@@ -22,7 +22,7 @@ const newConfiguratorImplementationAddress = '0x371DB45c7ee248dAFf4Dc1FFB67A20fa
 const newCometProxyAdminAddress = '0x24D86Da09C4Dd64e50dB7501b0f695d030f397aF';
 const marketAdminPermissionCheckerAddress = '0x62DD0452411113404cf9a7fE88A5E6E86f9B71a6';
 
-const communityMultiSigAddress = '0x0747a435b8a60070A7a111D015046d765098e4cc';
+const communityMultiSigAddress = '0x3fFd6c073a4ba24a113B18C8F373569640916A45';
 
 const cometProxyAdminOldAddress = '0x3C30B5a5A04656565686f800481580Ac4E7ed178';
 const configuratorProxyAddress = '0x84E93EC6170ED630f5ebD89A1AAE72d4F63f2713';

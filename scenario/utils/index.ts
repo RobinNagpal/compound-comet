@@ -362,6 +362,7 @@ export async function executeOpenProposal(
   { id, startBlock, endBlock }: OpenProposal
 ) {
 
+  if(id.eq(349) || id.eq(353)) return;
 
   const governor = await dm.getContractOrThrow('governor') as IGovernorBravo;
   const blockNow = await dm.hre.ethers.provider.getBlockNumber();
@@ -402,12 +403,10 @@ export async function executeOpenProposal(
     debug(`Executing proposal ${id} on network ${dm.network}`);
     const block = await dm.hre.ethers.provider.getBlock('latest');
     const proposal = await governor.proposals(id);
+    debug((`Proposal details: ${JSON.stringify(proposal)}\n`));
     await setNextBlockTimestamp(dm, Math.max(block.timestamp, proposal.eta.toNumber()) + 1);
     await setNextBaseFeeToZero(dm);
-    if(dm.network === 'mainnet') {
-      return;
-    }
-    const result = await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
+    await governor.execute(id, { gasPrice: 0, gasLimit: 12000000 });
   }
   await redeployRenzoOracle(dm);
 }

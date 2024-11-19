@@ -138,7 +138,7 @@ The forum post includes two solutions, and OpenZeppelin has provided details and
 
 After discussing with OpenZeppelin, DoDAO and OZ together believe that given the amount of changes, updating the Configurator could be the best solution. OpenZeppelin mentioned a couple of important points in the forum post:
 
-1. Grant the market admin role to an Safe address, which can be maintained by Gauntlet or other community members.
+1. Grant the market admin role to a Safe address, which can be maintained by Gauntlet or other community members.
 2. Market Updates to the Configurator will go through a timelock, providing sufficient time for the community to review or even block the market updates via this alternate route.
 `;
 

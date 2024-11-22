@@ -124,7 +124,7 @@ const networkConfigs: NetworkConfig[] = [
   {
     network: 'base',
     chainId: 8453,
-    url: `https://fluent-prettiest-scion.base-mainnet.quiknode.pro/${QUICKNODE_KEY}`,
+    url: `https://base-mainnet.infura.io/v3/${INFURA_KEY}`,
   },
   {
     network: 'arbitrum',
@@ -257,6 +257,20 @@ const config: HardhatUserConfig = {
       hardfork: 'shanghai',
       chains: {
         534352: {
+          hardforkHistory: {
+            london: 0,
+            berlin: 0,
+            shanghai: 0,
+          }
+        },
+        137: {
+          hardforkHistory: {
+            london: 0,
+            berlin: 0,
+            shanghai: 0,
+          }
+        },
+        8453: {
           hardforkHistory: {
             london: 0,
             berlin: 0,
